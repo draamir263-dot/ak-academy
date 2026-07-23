@@ -5,6 +5,9 @@ export default function Navbar() {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
 
+  // CHANGE THIS TO YOUR ACTUAL ADMIN EMAIL
+  const adminEmail = "draamir308@gmail.com"; 
+
   const handleLogout = async () => {
     await logout();
     navigate('/');
@@ -22,28 +25,38 @@ export default function Navbar() {
           </Link>
 
           {/* Navigation Links */}
-          <div className="flex items-center space-x-4 sm:space-x-6">
-            <Link to="/" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+          <div className="flex items-center space-x-2 sm:space-x-4 md:space-x-6">
+            <Link to="/" className="text-gray-600 hover:text-blue-600 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Home
             </Link>
-            <Link to="/dashboard" className="text-gray-600 hover:text-blue-600 px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            <Link to="/dashboard" className="text-gray-600 hover:text-blue-600 px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Dashboard
             </Link>
+            
+            {/* SECRET ADMIN BUTTON - Only shows if admin is logged in */}
+            {currentUser && currentUser.email === adminEmail && (
+              <Link 
+                to="/admin" 
+                className="bg-purple-600 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-semibold hover:bg-purple-700 transition-colors"
+              >
+                Admin
+              </Link>
+            )}
             
             {/* Auth Buttons */}
             {currentUser ? (
               <button 
                 onClick={handleLogout}
-                className="bg-red-500 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-red-600 transition-colors"
+                className="bg-red-500 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-semibold hover:bg-red-600 transition-colors"
               >
                 Log Out
               </button>
             ) : (
               <Link 
                 to="/login" 
-                className="bg-blue-600 text-white px-4 py-2 rounded-md text-sm font-semibold hover:bg-blue-700 transition-colors"
+                className="bg-blue-600 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-semibold hover:bg-blue-700 transition-colors"
               >
-                Log In / Sign Up
+                Log In
               </Link>
             )}
           </div>
