@@ -19,10 +19,8 @@ export default function TestBuilder() {
 
   // Handle starting the test
   const startTest = () => {
-    // We will navigate to the Test Engine in the next milestone!
-    // For now, we just log it to prove it works.
-    console.log(`Starting test: ${numQuestions} questions, ${filter} filter, ${timerMode} mode`);
-    alert(`Starting test with ${numQuestions} questions! (Test Engine coming in Milestone 6)`);
+    // Navigate to the Test Engine and pass the number of questions
+    navigate(`/test-engine/${subjectName}/${chapterName}/${numQuestions}`);
   };
 
   if (!chapter) {
