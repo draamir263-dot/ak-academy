@@ -6,21 +6,18 @@ export default function TestBuilder() {
   const { subjectName, chapterName } = useParams();
   const navigate = useNavigate();
   
-  // Find the chapter data
   const subject = structuredData.find(s => s.name === subjectName);
   const chapter = subject?.chapters.find(c => c.name === chapterName);
   
   const maxQuestions = chapter ? chapter.totalMcqs : 0;
 
-  // Form state
   const [numQuestions, setNumQuestions] = useState(10);
   const [filter, setFilter] = useState('Mixed');
   const [timerMode, setTimerMode] = useState('Practice');
 
-  // Handle starting the test
   const startTest = () => {
-    // Navigate to the Test Engine and pass the number of questions
-    navigate(`/test-engine/${subjectName}/${chapterName}/${numQuestions}`);
+    // Pass the filter to the Test Engine via React Router state
+    navigate(`/test-engine/${subjectName}/${chapterName}/${numQuestions}`, { state: { filter } });
   };
 
   if (!chapter) {
