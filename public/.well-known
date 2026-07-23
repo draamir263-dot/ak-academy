@@ -1,0 +1,9 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "app.vercel.ak_academy_puce.twa",
+        "sha256_cert_fingerprints": ["2F:34:03:8E:CD:83:28:40:2D:95:19:8A:23:12:C1:D7:47:9B:84:C8:B6:D7:0B:BC:49:D9:42:CC:A9:B0:A9:D9"]
+      }
+    }]
+
