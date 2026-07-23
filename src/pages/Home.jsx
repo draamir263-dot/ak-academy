@@ -1,3 +1,4 @@
+import { Link } from 'react-router-dom';
 import { structuredData } from '../services/questionLoader';
 
 export default function Home() {
@@ -24,9 +25,11 @@ export default function Home() {
                 </div>
               </div>
             </div>
-            <button className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+            
+            {/* This makes the button navigate to the Subject page! */}
+            <Link to={`/subject/${subject.name}`} className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center">
               Start Practice
-            </button>
+            </Link>
           </div>
         ))}
       </div>
