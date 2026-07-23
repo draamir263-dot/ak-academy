@@ -8,6 +8,7 @@ import Dashboard from './pages/Dashboard';
 import NotFound from './pages/NotFound';
 import Login from './pages/Login';
 import Payment from './pages/Payment';
+import Admin from './pages/Admin';
 import Navbar from './components/Navbar';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />
         <Route path="/payment" element={<Payment />} />
+        <Route path="/admin" element={<Admin />} />
         <Route path="/subject/:subjectName" element={<Subject />} />
         <Route path="/test-builder/:subjectName/:chapterName" element={<TestBuilder />} />
         <Route path="/test-engine/:subjectName/:chapterName/:numQuestions" element={<TestEngine />} />
