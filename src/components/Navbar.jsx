@@ -5,9 +5,6 @@ export default function Navbar() {
   const { currentUser, logout } = useAuth();
   const navigate = useNavigate();
 
-  // YOUR ACTUAL ADMIN EMAIL
-  const adminEmail = "draamir308@gmail.com"; 
-
   const handleLogout = async () => {
     await logout();
     navigate('/');
@@ -33,8 +30,8 @@ export default function Navbar() {
               Dashboard
             </Link>
             
-            {/* SECRET ADMIN BUTTON - Shows on ALL devices if admin is logged in */}
-            {currentUser && currentUser.email === adminEmail && (
+            {/* SECRET ADMIN BUTTON - Only shows for draamir308@gmail.com */}
+            {currentUser && currentUser.email?.toLowerCase() === "draamir308@gmail.com" && (
               <Link 
                 to="/admin" 
                 className="bg-purple-600 text-white px-3 sm:px-4 py-2 rounded-md text-sm font-semibold hover:bg-purple-700 transition-colors"

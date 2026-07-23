@@ -50,15 +50,14 @@ export default function Admin() {
       setMessage(`Success! User approved until ${expiryDate.toLocaleDateString()}.`);
     } catch (err) {
       console.error("Error approving user: ", err);
-      setMessage('Error approving user.');
+      setMessage('Error approving user. Check Firestore rules.');
     }
   };
 
   // SECURITY: Only allow your specific admin email to see this page
-  // CHANGE "your_email@gmail.com" TO THE EMAIL YOU USE TO LOG IN!
   const adminEmail = "draamir308@gmail.com"; 
 
-  if (!currentUser || currentUser.email !== adminEmail) {
+  if (!currentUser || currentUser.email?.toLowerCase() !== adminEmail) {
     return (
       <div className="min-h-screen p-8 text-center">
         <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
