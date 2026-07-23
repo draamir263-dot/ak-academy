@@ -4,14 +4,10 @@ import { structuredData } from '../services/questionLoader';
 export default function Home() {
   return (
     <div className="min-h-screen p-8">
-      <header className="text-center mb-12">
+      {/* Added mt-8 to give space below the new Navbar */}
+      <header className="text-center mb-12 mt-8">
         <h1 className="text-4xl font-extrabold text-blue-900">AK Academy</h1>
         <p className="text-lg text-gray-500 mt-2">Make MDCAT on Your Fingertips</p>
-        
-        {/* Dashboard Button */}
-        <Link to="/dashboard" className="inline-block mt-6 bg-gray-800 text-white px-6 py-2 rounded-lg font-semibold hover:bg-gray-900 transition-colors">
-          View Performance Dashboard
-        </Link>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
