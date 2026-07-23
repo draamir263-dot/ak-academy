@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import Home from './pages/Home';
 import Subject from './pages/Subject';
@@ -12,6 +13,36 @@ import Admin from './pages/Admin';
 import Navbar from './components/Navbar';
 
 function App() {
+  const [isOnline, setIsOnline] = useState(navigator.onLine);
+
+  useEffect(() => {
+    // Update network status
+    const handleOnline = () => setIsOnline(true);
+    const handleOffline = () => setIsOnline(false);
+
+    window.addEventListener('online', handleOnline);
+    window.addEventListener('offline', handleOffline);
+
+    return () => {
+      window.removeEventListener('online', handleOnline);
+      window.removeEventListener('offline', handleOffline);
+    };
+  }, []);
+
+  // If no internet, show this screen and block access
+  if (!isOnline) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 p-8 text-center">
+        <div>
+          <div className="text-6xl mb-4">📡</div>
+          <h1 className="text-2xl font-bold text-red-600 mb-2">No Internet Connection</h1>
+          <p className="text-gray-500">AK Academy requires an active internet connection to load MCQs and sync your progress. Please connect to Wi-Fi or mobile data.</p>
+        </div>
+      </div>
+    );
+  }
+
+  // If online, show the normal app
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
