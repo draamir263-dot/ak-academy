@@ -6,9 +6,12 @@ import { Link } from 'react-router-dom';
 
 export default function Admin() {
   const { currentUser } = useAuth();
-  const [users, setUsers] = useState([]);
+  const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  
+  // Tab state: 'pending' or 'all'
+  const [activeTab, setActiveTab] = useState('pending');
 
   // Fetch all users from database
   useEffect(() => {
@@ -16,10 +19,7 @@ export default function Admin() {
       try {
         const querySnapshot = await getDocs(collection(db, 'users'));
         const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        
-        // Filter to only show users who have a pending payment
-        const pendingUsers = usersList.filter(u => u.paymentStatus === 'pending');
-        setUsers(pendingUsers);
+        setAllUsers(usersList);
       } catch (err) {
         console.error("Error fetching users: ", err);
       }
@@ -32,15 +32,13 @@ export default function Admin() {
   const handleApprove = async (userId, plan) => {
     setMessage('');
     try {
-      // Calculate Expiry Date based on plan
       const expiryDate = new Date();
       if (plan === '6_months') {
-        expiryDate.setDate(expiryDate.getDate() + 180); // Add 180 days
+        expiryDate.setDate(expiryDate.getDate() + 180);
       } else if (plan === '1_year') {
-        expiryDate.setDate(expiryDate.getDate() + 365); // Add 365 days
+        expiryDate.setDate(expiryDate.getDate() + 365);
       }
 
-      // Update database: set premium to true, save expiry date, change status
       await updateDoc(doc(db, 'users', userId), {
         isPremium: true,
         expiryDate: expiryDate.toISOString(),
@@ -54,7 +52,24 @@ export default function Admin() {
     }
   };
 
-  // SECURITY: Only allow your specific admin email to see this page
+  // Handle Cancel Access Button Click
+  const handleCancelAccess = async (userId, email) => {
+    setMessage('');
+    if (window.confirm(`Are you sure you want to cancel premium access for ${email}?`)) {
+      try {
+        await updateDoc(doc(db, 'users', userId), {
+          isPremium: false,
+          paymentStatus: "canceled"
+        });
+        setMessage(`Success! Premium access canceled for ${email}.`);
+      } catch (err) {
+        console.error("Error canceling user: ", err);
+        setMessage('Error canceling user.');
+      }
+    }
+  };
+
+  // SECURITY CHECK
   const adminEmail = "draamir308@gmail.com"; 
 
   if (!currentUser || currentUser.email?.toLowerCase() !== adminEmail) {
@@ -67,6 +82,11 @@ export default function Admin() {
     );
   }
 
+  // Filter users based on active tab
+  const pendingUsers = allUsers.filter(u => u.paymentStatus === 'pending');
+  const premiumUsers = allUsers.filter(u => u.isPremium === true);
+  const otherUsers = allUsers.filter(u => u.isPremium !== true && u.paymentStatus !== 'pending');
+
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
@@ -74,7 +94,7 @@ export default function Admin() {
         
         <header className="mb-8">
           <h1 className="text-4xl font-extrabold text-blue-900">Admin Dashboard</h1>
-          <p className="text-lg text-gray-500 mt-2">Approve pending student payments.</p>
+          <p className="text-lg text-gray-500 mt-2">Manage student accounts and payments.</p>
         </header>
 
         {message && (
@@ -83,35 +103,122 @@ export default function Admin() {
           </div>
         )}
 
+        {/* Tabs */}
+        <div className="flex gap-2 mb-6 border-b border-gray-200">
+          <button 
+            onClick={() => setActiveTab('pending')}
+            className={`px-4 py-2 font-semibold border-b-2 transition-colors ${activeTab === 'pending' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          >
+            Pending Payments ({pendingUsers.length})
+          </button>
+          <button 
+            onClick={() => setActiveTab('all')}
+            className={`px-4 py-2 font-semibold border-b-2 transition-colors ${activeTab === 'all' ? 'border-blue-600 text-blue-600' : 'border-transparent text-gray-500 hover:text-gray-700'}`}
+          >
+            All Registered Students ({allUsers.length})
+          </button>
+        </div>
+
         <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6">
-          <h2 className="text-2xl font-bold text-gray-800 mb-4">Pending Payments ({users.length})</h2>
-          
           {loading ? (
             <p className="text-gray-500">Loading...</p>
-          ) : users.length === 0 ? (
-            <p className="text-gray-500 italic">No pending payments right now.</p>
-          ) : (
-            <div className="space-y-4">
-              {users.map(user => (
-                <div key={user.id} className="border border-gray-200 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                  <div>
-                    <p className="font-bold text-gray-800">{user.email}</p>
-                    <p className="text-sm text-gray-500 mt-1">
-                      <strong>Plan:</strong> {user.plan === '6_months' ? '6 Months (5,000 PKR)' : '1 Year (10,000 PKR)'}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      <strong>Transaction ID:</strong> {user.trxId}
-                    </p>
-                  </div>
-                  <button 
-                    onClick={() => handleApprove(user.id, user.plan)}
-                    className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors w-full md:w-auto"
-                  >
-                    Approve & Unlock
-                  </button>
+          ) : activeTab === 'pending' ? (
+            /* PENDING PAYMENTS TAB */
+            <>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">Pending Payments</h2>
+              {pendingUsers.length === 0 ? (
+                <p className="text-gray-500 italic">No pending payments right now.</p>
+              ) : (
+                <div className="space-y-4">
+                  {pendingUsers.map(user => (
+                    <div key={user.id} className="border border-gray-200 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                      <div>
+                        <p className="font-bold text-gray-800">{user.email}</p>
+                        <p className="text-sm text-gray-500 mt-1">
+                          <strong>Plan:</strong> {user.plan === '6_months' ? '6 Months (5,000 PKR)' : '1 Year (10,000 PKR)'}
+                        </p>
+                        <p className="text-sm text-gray-500">
+                          <strong>Transaction ID:</strong> {user.trxId}
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => handleApprove(user.id, user.plan)}
+                        className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors w-full md:w-auto"
+                      >
+                        Approve & Unlock
+                      </button>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
+              )}
+            </>
+          ) : (
+            /* ALL STUDENTS TAB */
+            <>
+              <h2 className="text-xl font-bold text-gray-800 mb-4">All Registered Students</h2>
+              {allUsers.length === 0 ? (
+                <p className="text-gray-500 italic">No students registered yet.</p>
+              ) : (
+                <div className="space-y-4">
+                  
+                  {/* Active Premium Users */}
+                  {premiumUsers.length > 0 && (
+                    <div className="mb-6">
+                      <h3 className="text-sm font-bold text-green-600 uppercase mb-2">Premium Active</h3>
+                      <div className="space-y-4">
+                        {premiumUsers.map(user => {
+                          const daysLeft = user.expiryDate ? Math.ceil((new Date(user.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+                          return (
+                            <div key={user.id} className="border border-green-200 bg-green-50 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                              <div>
+                                <p className="font-bold text-gray-800">{user.email}</p>
+                                <p className="text-sm text-gray-500 mt-1">
+                                  <strong>Status:</strong> Active for {daysLeft} more days
+                                </p>
+                              </div>
+                              <button 
+                                onClick={() => handleCancelAccess(user.id, user.email)}
+                                className="bg-red-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-600 transition-colors w-full md:w-auto"
+                              >
+                                Cancel Access
+                              </button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Expired / Canceled Users */}
+                  {otherUsers.length > 0 && (
+                    <div>
+                      <h3 className="text-sm font-bold text-gray-500 uppercase mb-2">Inactive / Expired</h3>
+                      <div className="space-y-4">
+                        {otherUsers.map(user => (
+                          <div key={user.id} className="border border-gray-200 bg-gray-50 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 opacity-75">
+                            <div>
+                              <p className="font-bold text-gray-700">{user.email}</p>
+                              <p className="text-sm text-gray-400 mt-1">
+                                <strong>Status:</strong> {user.paymentStatus === 'canceled' ? 'Canceled by Admin' : 'Expired/Not Paid'}
+                              </p>
+                            </div>
+                            {user.paymentStatus === 'pending' && (
+                               <button 
+                               onClick={() => handleApprove(user.id, user.plan)}
+                               className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors w-full md:w-auto"
+                             >
+                               Approve
+                             </button>
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                </div>
+              )}
+            </>
           )}
         </div>
       </div>
