@@ -7,6 +7,11 @@ export default function Home() {
       <header className="text-center mb-12">
         <h1 className="text-4xl font-extrabold text-blue-900">AK Academy</h1>
         <p className="text-lg text-gray-500 mt-2">Make MDCAT on Your Fingertips</p>
+        
+        {/* Dashboard Button */}
+        <Link to="/dashboard" className="inline-block mt-6 bg-gray-800 text-white px-6 py-2 rounded-lg font-semibold hover:bg-gray-900 transition-colors">
+          View Performance Dashboard
+        </Link>
       </header>
 
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
@@ -26,7 +31,6 @@ export default function Home() {
               </div>
             </div>
             
-            {/* This makes the button navigate to the Subject page! */}
             <Link to={`/subject/${subject.name}`} className="w-full bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors text-center">
               Start Practice
             </Link>
