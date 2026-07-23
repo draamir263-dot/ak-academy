@@ -1,0 +1,17 @@
+[
+  {
+    "id": "chem_11_bonding_1",
+    "subject": "Chemistry",
+    "year": "11th",
+    "chapter": "Chemical Bonding",
+    "question": "Which type of bond is formed when electrons are transferred from one atom to another?",
+    "optionA": "Covalent bond",
+    "optionB": "Ionic bond",
+    "optionC": "Metallic bond",
+    "optionD": "Hydrogen bond",
+    "correctAnswer": "B",
+    "explanation": "Ionic bonds are formed through the complete transfer of electrons from a metal to a non-metal.",
+    "summary": "Chemical Bonding Basics",
+    "difficulty": "Easy"
+  }
+]

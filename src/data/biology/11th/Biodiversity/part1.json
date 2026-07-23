@@ -1,0 +1,32 @@
+[
+  {
+    "id": "bio_11_biodiversity_1",
+    "subject": "Biology",
+    "year": "11th",
+    "chapter": "Biodiversity",
+    "question": "Which of the following is the basic unit of classification?",
+    "optionA": "Genus",
+    "optionB": "Species",
+    "optionC": "Family",
+    "optionD": "Kingdom",
+    "correctAnswer": "B",
+    "explanation": "Species is the basic unit of classification.",
+    "summary": "Taxonomy basics",
+    "difficulty": "Easy"
+  },
+  {
+    "id": "bio_11_biodiversity_2",
+    "subject": "Biology",
+    "year": "11th",
+    "chapter": "Biodiversity",
+    "question": "Which scientist proposed the modern system of binomial nomenclature?",
+    "optionA": "Charles Darwin",
+    "optionB": "Gregor Mendel",
+    "optionC": "Carolus Linnaeus",
+    "optionD": "Louis Pasteur",
+    "correctAnswer": "C",
+    "explanation": "Carolus Linnaeus is known as the father of modern taxonomy.",
+    "summary": "Taxonomy history",
+    "difficulty": "Medium"
+  }
+]

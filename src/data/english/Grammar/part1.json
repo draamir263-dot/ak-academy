@@ -1,0 +1,17 @@
+[
+  {
+    "id": "eng_grammar_tenses_1",
+    "subject": "English",
+    "year": "Grammar",
+    "chapter": "Tenses",
+    "question": "Choose the correct form: She ____ to school every day.",
+    "optionA": "go",
+    "optionB": "goes",
+    "optionC": "going",
+    "optionD": "gone",
+    "correctAnswer": "B",
+    "explanation": "The subject 'She' is third-person singular, so the verb 'go' takes an 's' at the end.",
+    "summary": "Subject-Verb Agreement",
+    "difficulty": "Easy"
+  }
+]

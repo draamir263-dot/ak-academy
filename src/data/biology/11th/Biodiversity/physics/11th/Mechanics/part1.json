@@ -1,0 +1,17 @@
+[
+  {
+    "id": "phy_11_mechanics_1",
+    "subject": "Physics",
+    "year": "11th",
+    "chapter": "Mechanics",
+    "question": "What is the SI unit of force?",
+    "optionA": "Joule",
+    "optionB": "Watt",
+    "optionC": "Newton",
+    "optionD": "Pascal",
+    "correctAnswer": "C",
+    "explanation": "The SI unit of force is Newton (N), named after Sir Isaac Newton.",
+    "summary": "Units of Physics",
+    "difficulty": "Easy"
+  }
+]

@@ -1,0 +1,17 @@
+[
+  {
+    "id": "log_analytical_series_1",
+    "subject": "Logical Reasoning",
+    "year": "Analytical",
+    "chapter": "Series",
+    "question": "Find the next number in the series: 2, 4, 8, 16, ?",
+    "optionA": "20",
+    "optionB": "24",
+    "optionC": "32",
+    "optionD": "64",
+    "correctAnswer": "C",
+    "explanation": "Each number is multiplied by 2 to get the next number. 16 x 2 = 32.",
+    "summary": "Number Series",
+    "difficulty": "Medium"
+  }
+]
