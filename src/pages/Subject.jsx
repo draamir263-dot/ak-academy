@@ -35,9 +35,14 @@ export default function Subject() {
                 <h2 className="text-xl font-bold text-gray-800">{chapter.name}</h2>
                 <p className="text-sm text-gray-500 mt-1">{chapter.totalMcqs} MCQs available</p>
               </div>
-              <button className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors">
+              
+              {/* This makes the button navigate to the Test Builder page! */}
+              <Link 
+                to={`/test-builder/${subject.name}/${chapter.name}`} 
+                className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
+              >
                 Start
-              </button>
+              </Link>
             </div>
           ))}
         </div>
