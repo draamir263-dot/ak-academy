@@ -11,6 +11,10 @@
     "optionD": "Habitat fragmentation",
     "correctAnswer": "B",
     "explanation": "Biodiversity refers to the variety and variability of life on Earth, including ecosystems, species, and genes.",
+    "explanationA": "Incorrect. Population density refers to the number of individuals per unit area.",
+    "explanationB": "Correct! Biodiversity encompasses the variety of living organisms in an ecosystem.",
+    "explanationC": "Incorrect. Carrying capacity is the maximum population size an environment can sustain.",
+    "explanationD": "Incorrect. Habitat fragmentation refers to the division of habitats into smaller pieces.",
     "summary": "Definition of Biodiversity",
     "difficulty": "Easy"
   },
@@ -26,6 +30,10 @@
     "optionD": "Mutations",
     "correctAnswer": "B",
     "explanation": "Habitat destruction (like deforestation) is the leading cause of species extinction and biodiversity loss globally.",
+    "explanationA": "Incorrect. Natural disasters cause temporary loss, but habitats usually recover.",
+    "explanationB": "Correct! Deforestation and urbanization permanently remove habitats.",
+    "explanationC": "Incorrect. Overproduction does not directly cause biodiversity loss.",
+    "explanationD": "Incorrect. Mutations are natural genetic variations and rarely cause immediate species loss.",
     "summary": "Threats to Biodiversity",
     "difficulty": "Medium"
   }

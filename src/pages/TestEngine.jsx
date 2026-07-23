@@ -134,10 +134,30 @@ export default function TestEngine() {
 
           {/* Explanation Box (Only shows after answering) */}
           {showExplanation && (
-            <div className="mt-6 p-5 bg-blue-50 border-l-4 border-blue-500 rounded-r-xl">
-              <h3 className="font-bold text-blue-900 mb-2">Explanation:</h3>
-              <p className="text-gray-700 mb-4">{currentQuestion.explanation}</p>
+            <div className="mt-6 p-5 bg-blue-50 border-l-4 border-blue-500 rounded-r-xl space-y-4">
               
+              {/* Main Explanation */}
+              <div>
+                <h3 className="font-bold text-blue-900 mb-1">Explanation</h3>
+                <p className="text-gray-700">{currentQuestion.explanation}</p>
+              </div>
+              
+              {/* Option Breakdown (Like UWorld) */}
+              <div className="border-t border-blue-200 pt-3 space-y-3">
+                <h4 className="font-semibold text-gray-700 text-sm">Option Breakdown:</h4>
+                {['A', 'B', 'C', 'D'].map(opt => (
+                  <div key={opt} className={`p-3 rounded-lg ${opt === currentQuestion.correctAnswer ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                    <p className={`font-bold text-sm ${opt === currentQuestion.correctAnswer ? 'text-green-800' : 'text-red-800'}`}>
+                      {opt}. {currentQuestion[`option${opt}`]} {opt === currentQuestion.correctAnswer ? '(Correct)' : ''}
+                    </p>
+                    <p className="text-gray-600 text-sm mt-1">
+                      {currentQuestion[`explanation${opt}`] || "No specific explanation provided for this option."}
+                    </p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Summary Box */}
               <div className="bg-white p-3 rounded-lg border border-gray-100">
                 <p className="text-sm font-semibold text-gray-500">Summary:</p>
                 <p className="text-sm text-gray-700">{currentQuestion.summary}</p>

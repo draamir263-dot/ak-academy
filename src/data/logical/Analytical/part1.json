@@ -11,6 +11,10 @@
     "optionD": "64",
     "correctAnswer": "C",
     "explanation": "Each number is multiplied by 2 to get the next number. 16 x 2 = 32.",
+    "explanationA": "Incorrect. Adding 4 to 16 gives 20, but the pattern is multiplying by 2.",
+    "explanationB": "Incorrect. Adding 8 to 16 gives 24, which breaks the geometric progression.",
+    "explanationC": "Correct! 16 multiplied by 2 equals 32.",
+    "explanationD": "Incorrect. 64 would be the *next* number after 32 (32 x 2 = 64).",
     "summary": "Number Series",
     "difficulty": "Medium"
   }

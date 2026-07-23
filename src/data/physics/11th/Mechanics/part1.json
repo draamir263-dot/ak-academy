@@ -11,6 +11,10 @@
     "optionD": "Pascal",
     "correctAnswer": "C",
     "explanation": "The SI unit of force is Newton (N), named after Sir Isaac Newton.",
+    "explanationA": "Incorrect. Joule is the SI unit of energy or work.",
+    "explanationB": "Incorrect. Watt is the SI unit of power.",
+    "explanationC": "Correct! 1 Newton is the force required to accelerate a 1 kg mass by 1 m/s².",
+    "explanationD": "Incorrect. Pascal is the SI unit of pressure.",
     "summary": "Units of Physics",
     "difficulty": "Easy"
   }

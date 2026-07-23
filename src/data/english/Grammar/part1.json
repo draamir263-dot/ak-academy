@@ -11,6 +11,10 @@
     "optionD": "gone",
     "correctAnswer": "B",
     "explanation": "The subject 'She' is third-person singular, so the verb 'go' takes an 's' at the end.",
+    "explanationA": "Incorrect. 'Go' is used for first-person (I, we) and plural subjects (they).",
+    "explanationB": "Correct! 'Goes' is the correct third-person singular present tense form.",
+    "explanationC": "Incorrect. 'Going' requires a helping verb (e.g., is going).",
+    "explanationD": "Incorrect. 'Gone' is the past participle and requires a helping verb (e.g., has gone).",
     "summary": "Subject-Verb Agreement",
     "difficulty": "Easy"
   }
