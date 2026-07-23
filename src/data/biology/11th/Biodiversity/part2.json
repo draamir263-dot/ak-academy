@@ -1,0 +1,32 @@
+[
+  {
+    "id": "bio_11_biodiversity_3",
+    "subject": "Biology",
+    "year": "11th",
+    "chapter": "Biodiversity",
+    "question": "Which term describes the variety of living organisms in an ecosystem?",
+    "optionA": "Population density",
+    "optionB": "Biodiversity",
+    "optionC": "Carrying capacity",
+    "optionD": "Habitat fragmentation",
+    "correctAnswer": "B",
+    "explanation": "Biodiversity refers to the variety and variability of life on Earth, including ecosystems, species, and genes.",
+    "summary": "Definition of Biodiversity",
+    "difficulty": "Easy"
+  },
+  {
+    "id": "bio_11_biodiversity_4",
+    "subject": "Biology",
+    "year": "11th",
+    "chapter": "Biodiversity",
+    "question": "Which of the following is considered the primary cause of current biodiversity loss?",
+    "optionA": "Natural disasters",
+    "optionB": "Habitat destruction",
+    "optionC": "Overproduction",
+    "optionD": "Mutations",
+    "correctAnswer": "B",
+    "explanation": "Habitat destruction (like deforestation) is the leading cause of species extinction and biodiversity loss globally.",
+    "summary": "Threats to Biodiversity",
+    "difficulty": "Medium"
+  }
+]
