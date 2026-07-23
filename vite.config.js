@@ -7,7 +7,7 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['favicon.ico'],
+      includeAssets: ['favicon.ico', 'icon.png'],
       manifest: {
         name: 'AK Academy',
         short_name: 'AK Academy',
@@ -15,11 +15,19 @@ export default defineConfig({
         theme_color: '#2563eb',
         background_color: '#f8fafc',
         display: 'standalone',
+        orientation: 'portrait',
         start_url: '/',
+        scope: '/',
         icons: [
           {
             src: 'icon.png',
             sizes: '512x512',
+            type: 'image/png',
+            purpose: 'any maskable'
+          },
+          {
+            src: 'icon.png',
+            sizes: '192x192',
             type: 'image/png',
             purpose: 'any maskable'
           }
