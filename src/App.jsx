@@ -3,6 +3,7 @@ import Home from './pages/Home';
 import Subject from './pages/Subject';
 import TestBuilder from './pages/TestBuilder';
 import TestEngine from './pages/TestEngine';
+import Results from './pages/Results';
 
 function App() {
   return (
@@ -12,6 +13,7 @@ function App() {
         <Route path="/subject/:subjectName" element={<Subject />} />
         <Route path="/test-builder/:subjectName/:chapterName" element={<TestBuilder />} />
         <Route path="/test-engine/:subjectName/:chapterName/:numQuestions" element={<TestEngine />} />
+        <Route path="/results" element={<Results />} />
       </Routes>
     </div>
   );

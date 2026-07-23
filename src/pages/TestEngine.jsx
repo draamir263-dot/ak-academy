@@ -57,9 +57,8 @@ export default function TestEngine() {
   };
 
   const handleEndTest = () => {
-    // We will send them to the Results page in Milestone 7!
-    alert("Test Ended! (Results page coming next)");
-    navigate(`/subject/${subjectName}`);
+    // Send the questions and the user's answers to the Results page
+    navigate('/results', { state: { testQuestions, userAnswers, subjectName, chapterName } });
   };
 
   // Helper function to determine button color
