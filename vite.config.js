@@ -7,9 +7,21 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // FIX: This must be inside the 'workbox' object!
       workbox: {
-        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // 5 MB limit
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+        // FORCE NETWORK FIRST: Always check Vercel for new MCQs before using cache
+        runtimeCaching: [
+          {
+            urlPattern: ({url}) => url.pathname === '/' || url.pathname.endsWith('.html'),
+            handler: 'NetworkFirst',
+            options: { cacheName: 'html-cache' },
+          },
+          {
+            urlPattern: ({url}) => url.pathname.endsWith('.js'),
+            handler: 'NetworkFirst',
+            options: { cacheName: 'js-cache' },
+          }
+        ]
       },
       includeAssets: ['favicon.ico', 'icon.png'],
       manifest: {
