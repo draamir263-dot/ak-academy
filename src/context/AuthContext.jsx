@@ -1,10 +1,20 @@
 import { createContext, useContext, useEffect, useState } from 'react';
 import { auth, db } from '../services/firebase';
 import { createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut, onAuthStateChanged } from 'firebase/auth';
-import { doc, getDoc, setDoc, updateDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, onSnapshot } from 'firebase/firestore';
 
 const AuthContext = createContext();
 export const useAuth = () => useContext(AuthContext);
+
+// Helper to get/generate a unique session ID for this device
+const getDeviceSessionId = () => {
+  let id = localStorage.getItem('ak_session_id');
+  if (!id) {
+    id = Math.random().toString(36).substring(2) + Date.now().toString(36);
+    localStorage.setItem('ak_session_id', id);
+  }
+  return id;
+};
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
@@ -23,11 +33,18 @@ export const AuthProvider = ({ children }) => {
     return userCredential;
   }
 
-  function login(email, password) {
-    return signInWithEmailAndPassword(auth, email, password);
+  async function login(email, password) {
+    const cred = await signInWithEmailAndPassword(auth, email, password);
+    const sessionId = getDeviceSessionId();
+    // Register this device's session ID in Firebase
+    await updateDoc(doc(db, 'users', cred.user.uid), {
+      activeSessionId: sessionId
+    });
+    return cred;
   }
 
-  function logout() {
+  async function logout() {
+    localStorage.removeItem('ak_session_id');
     return signOut(auth);
   }
 
@@ -41,52 +58,54 @@ export const AuthProvider = ({ children }) => {
   }
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async user => {
+    let unsubDoc;
+    const unsubAuth = onAuthStateChanged(auth, user => {
       setCurrentUser(user);
+      if (unsubDoc) unsubDoc(); // unsubscribe from previous user
+      
       if (user) {
-        const userDoc = await getDoc(doc(db, 'users', user.uid));
-        if (userDoc.exists()) {
-          const userData = userDoc.data();
-          const expiry = userData.expiryDate ? new Date(userData.expiryDate) : null;
-          setExpiryDate(expiry);
-          
-          // AUTO-EXPIRY LOGIC: Check if expiry date is in the past
-          if (userData.isPremium && expiry && expiry > new Date()) {
-            setIsPremium(true);
-          } else {
-            // If date is passed, lock the account
-            setIsPremium(false);
-            if (userData.isPremium) {
-              // Update database to reflect expiration
-              await updateDoc(doc(db, 'users', user.uid), { isPremium: false });
+        const sessionId = getDeviceSessionId();
+        
+        // Listen to user's document in real-time
+        unsubDoc = onSnapshot(doc(db, 'users', user.uid), (docSnap) => {
+          if (docSnap.exists()) {
+            const userData = docSnap.data();
+            
+            // 1. SINGLE DEVICE CHECK
+            if (userData.activeSessionId && userData.activeSessionId !== sessionId) {
+              console.log("Another device logged in. Logging out.");
+              logout();
+              window.location.href = '/login?reason=another_device';
+              return;
+            }
+
+            // 2. PREMIUM & EXPIRY CHECK
+            const expiry = userData.expiryDate ? new Date(userData.expiryDate) : null;
+            setExpiryDate(expiry);
+            if (userData.isPremium && expiry && expiry > new Date()) {
+              setIsPremium(true);
+            } else {
+              setIsPremium(false);
+              if (userData.isPremium) {
+                updateDoc(doc(db, 'users', user.uid), { isPremium: false });
+              }
             }
           }
-        } else {
-          setIsPremium(false);
-          setExpiryDate(null);
-        }
+          setLoading(false);
+        });
       } else {
         setIsPremium(false);
         setExpiryDate(null);
+        setLoading(false);
       }
-      setLoading(false);
     });
-    return unsubscribe;
+
+    return () => {
+      unsubAuth();
+      if (unsubDoc) unsubDoc();
+    };
   }, []);
 
-  const value = {
-    currentUser,
-    isPremium,
-    expiryDate,
-    signup,
-    login,
-    logout,
-    submitPayment
-  };
-
-  return (
-    <AuthContext.Provider value={value}>
-      {!loading && children}
-    </AuthContext.Provider>
-  );
-}
+  const value = { currentUser, isPremium, expiryDate, signup, login, logout, submitPayment };
+  return <AuthContext.Provider value={value}>{!loading && children}</AuthContext.Provider>;
+};

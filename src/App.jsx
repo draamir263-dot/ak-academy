@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { useRegisterSW } from 'virtual:pwa-register/react';
 import Home from './pages/Home';
 import Subject from './pages/Subject';
 import TestBuilder from './pages/TestBuilder';
@@ -14,10 +15,34 @@ import Navbar from './components/Navbar';
 
 function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
+  const [hasInitialized, setHasInitialized] = useState(false);
+
+  // PWA Auto-Update: Forces the app to download new MCQs when reopened
+  const {
+    needRefresh: [needRefresh, setNeedRefresh],
+    updateServiceWorker,
+  } = useRegisterSW({
+    onRegisteredSW(swUrl, r) {
+      console.log('PWA Registered');
+    },
+  });
 
   useEffect(() => {
-    // Update network status
-    const handleOnline = () => setIsOnline(true);
+    if (needRefresh) {
+      updateServiceWorker(true); // Silently refresh the app to load new MCQs
+    }
+  }, [needRefresh]);
+
+  useEffect(() => {
+    // If we are online, mark as initialized so they can use it even if they go offline later
+    if (navigator.onLine) {
+      setHasInitialized(true);
+    }
+
+    const handleOnline = () => {
+      setIsOnline(true);
+      setHasInitialized(true);
+    };
     const handleOffline = () => setIsOnline(false);
 
     window.addEventListener('online', handleOnline);
@@ -29,24 +54,22 @@ function App() {
     };
   }, []);
 
-  // If no internet, show this screen and block access
-  if (!isOnline) {
+  // Only block if they are offline AND haven't initialized (i.e., just opened the app offline)
+  if (!isOnline && !hasInitialized) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 p-8 text-center">
         <div>
           <div className="text-6xl mb-4">📡</div>
           <h1 className="text-2xl font-bold text-red-600 mb-2">No Internet Connection</h1>
-          <p className="text-gray-500">AK Academy requires an active internet connection to load MCQs and sync your progress. Please connect to Wi-Fi or mobile data.</p>
+          <p className="text-gray-500">AK Academy requires an active internet connection to load the latest MCQs and sync your progress. Please connect to Wi-Fi or mobile data and reopen the app.</p>
         </div>
       </div>
     );
   }
 
-  // If online, show the normal app
   return (
     <div className="min-h-screen bg-gray-50">
       <Navbar />
-      
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/login" element={<Login />} />

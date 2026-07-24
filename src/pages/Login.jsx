@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 
 export default function Login() {
   const { login, signup } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const kickedOut = searchParams.get('reason') === 'another_device';
   
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -23,9 +25,8 @@ export default function Login() {
       } else {
         await signup(email, password);
       }
-      navigate('/'); // Go to homepage after login
+      navigate('/');
     } catch (err) {
-      // Make Firebase errors easier to read
       let friendlyError = "Failed to log in. Please check your credentials.";
       if (err.code === 'auth/email-already-in-use') friendlyError = "This email is already registered. Please log in.";
       if (err.code === 'auth/invalid-email') friendlyError = "Please enter a valid email address.";
@@ -48,6 +49,12 @@ export default function Login() {
         {error && (
           <div className="mb-4 p-3 bg-red-50 border border-red-200 text-red-600 rounded-lg text-sm text-center">
             {error}
+          </div>
+        )}
+
+        {kickedOut && (
+          <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 text-yellow-700 rounded-lg text-sm text-center">
+            Your account was logged in on another device. You have been logged out here.
           </div>
         )}
 
