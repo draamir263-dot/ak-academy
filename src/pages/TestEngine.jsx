@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { structuredData } from '../services/questionLoader';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
 // Helper function to shuffle array (Randomize questions)
@@ -26,10 +26,12 @@ export default function TestEngine() {
   const subject = structuredData.find(s => s.name === subjectName);
   const chapter = subject?.chapters.find(c => c.name === chapterName);
   
-  // *** THE FIX ***
-  // We use useState with an initializer function so the questions are selected 
-  // and shuffled ONLY ONCE when the test starts. They will not change when you click options.
-  const [testQuestions] = useState(() => {
+  // *** THE BULLETPROOF FIX ***
+  // We use useRef instead of useState. This locks the questions in place 
+  // permanently when the test starts. They will NEVER change when you click options.
+  const questionsRef = useRef(null);
+
+  if (!questionsRef.current) {
     let pool = chapter ? [...chapter.questions] : [];
     
     // Apply filters based on user selection
@@ -45,14 +47,16 @@ export default function TestEngine() {
       pool = pool.filter(q => progress.favourites.includes(q.id));
     }
 
-    // FALLBACK LOGIC: If the filtered pool is empty (e.g., all questions used), restart with all questions
+    // FALLBACK LOGIC: If the filtered pool is empty, restart with all questions
     if (pool.length === 0 && chapter) {
       pool = [...chapter.questions];
     }
 
-    // Shuffle the pool and take the requested number of questions
-    return shuffleArray(pool).slice(0, parseInt(numQuestions));
-  });
+    // Shuffle the pool and take the requested number of questions ONCE
+    questionsRef.current = shuffleArray(pool).slice(0, parseInt(numQuestions));
+  }
+
+  const testQuestions = questionsRef.current;
 
   // App State
   const [currentIndex, setCurrentIndex] = useState(0);
