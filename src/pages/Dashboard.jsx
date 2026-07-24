@@ -1,17 +1,20 @@
 import { Link } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 import { useProgress } from '../context/ProgressContext';
 
 export default function Dashboard() {
   const { progress } = useProgress();
+  const { isPremium, expiryDate } = useAuth();
 
   // Calculate Stats
   const totalUsed = progress.used.length;
   const totalCorrect = progress.correct.length;
   const totalIncorrect = progress.incorrect.length;
   const totalFavourites = progress.favourites.length;
-  
-  // Calculate Accuracy (prevent dividing by zero)
   const accuracy = totalUsed > 0 ? Math.round((totalCorrect / totalUsed) * 100) : 0;
+
+  // Calculate Days Remaining for Premium
+  const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)) : 0;
 
   return (
     <div className="min-h-screen p-8">
@@ -23,10 +26,36 @@ export default function Dashboard() {
           <p className="text-lg text-gray-500 mt-2">Track your MDCAT preparation progress here.</p>
         </header>
 
+        {/* Premium / Expiry Status Card */}
+        <div className={`rounded-2xl shadow-md border p-6 mb-8 ${isPremium ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+          <div className="flex flex-col md:flex-row justify-between items-center">
+            <div>
+              <h2 className={`text-2xl font-bold ${isPremium ? 'text-green-800' : 'text-red-800'}`}>
+                {isPremium ? "⭐ Premium Account Active" : "🔒 Account Expired"}
+              </h2>
+              {isPremium ? (
+                <p className="text-gray-600 mt-1">Your premium access will expire in:</p>
+              ) : (
+                <p className="text-gray-600 mt-1">Your premium access has ended. Recharge to continue.</p>
+              )}
+            </div>
+            {isPremium && (
+              <div className="text-center mt-4 md:mt-0 bg-white px-6 py-3 rounded-xl shadow-sm border border-green-100">
+                <span className="text-4xl font-extrabold text-green-600">{daysLeft}</span>
+                <p className="text-sm font-semibold text-gray-500">Days Remaining</p>
+              </div>
+            )}
+            {!isPremium && (
+              <Link to="/payment" className="mt-4 md:mt-0 bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700">
+                Recharge Now
+              </Link>
+            )}
+          </div>
+        </div>
+
         {/* Accuracy Circle */}
         <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-8 mb-8 text-center">
           <div className="relative inline-flex items-center justify-center">
-            {/* Simple Circular Progress using SVG */}
             <svg className="w-40 h-40 transform -rotate-90">
               <circle cx="80" cy="80" r="70" stroke="#e5e7eb" strokeWidth="12" fill="none" />
               <circle 
@@ -48,8 +77,7 @@ export default function Dashboard() {
 
         {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-          
-          {/* Used Card */}
+          {/* Total Answered */}
           <div className="bg-blue-50 border border-blue-100 rounded-xl p-6">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-bold text-blue-800">Total Answered</h3>
@@ -59,7 +87,7 @@ export default function Dashboard() {
             <p className="text-sm text-blue-400 mt-1">Questions Attempted</p>
           </div>
 
-          {/* Correct Card */}
+          {/* Correct */}
           <div className="bg-green-50 border border-green-100 rounded-xl p-6">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-bold text-green-800">Correct</h3>
@@ -69,7 +97,7 @@ export default function Dashboard() {
             <p className="text-sm text-green-400 mt-1">Right Answers</p>
           </div>
 
-          {/* Incorrect Card */}
+          {/* Incorrect */}
           <div className="bg-red-50 border border-red-100 rounded-xl p-6">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-bold text-red-800">Incorrect</h3>
@@ -79,7 +107,7 @@ export default function Dashboard() {
             <p className="text-sm text-red-400 mt-1">Wrong Answers</p>
           </div>
 
-          {/* Favourites Card */}
+          {/* Bookmarked */}
           <div className="bg-yellow-50 border border-yellow-100 rounded-xl p-6">
             <div className="flex items-center justify-between mb-2">
               <h3 className="font-bold text-yellow-800">Bookmarked</h3>
@@ -88,10 +116,9 @@ export default function Dashboard() {
             <p className="text-4xl font-extrabold text-yellow-600">{totalFavourites}</p>
             <p className="text-sm text-yellow-400 mt-1">Saved for Later</p>
           </div>
-
         </div>
 
-        {/* Motivational Message / Next Steps */}
+        {/* Motivational Message */}
         <div className="bg-blue-600 rounded-2xl shadow-md p-8 text-center">
           <h2 className="text-2xl font-bold text-white mb-2">Keep Practicing!</h2>
           <p className="text-blue-100 mb-6">The more questions you solve, the higher your accuracy will become. Consistency is the key to cracking MDCAT.</p>
