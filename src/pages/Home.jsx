@@ -1,15 +1,45 @@
 import { Link } from 'react-router-dom';
 import { structuredData } from '../services/questionLoader';
 
+// 10 Motivational Quranic Verses about Hard Work & Knowledge
+const quranVerses = [
+  { arabic: "وَأَن لَّيْسَ لِلْإِنسَانِ إِلَّا مَا سَعَىٰ", english: "And that there is not for man except that [good] for which he strives." },
+  { arabic: "إِنَّ مَعَ الْعُسْرِ يُسْرًا", english: "Indeed, with hardship [will be] ease." },
+  { arabic: "لَا يُكَلِّفُ اللَّهُ نَفْسًا إِلَّا وُسْعَهَا", english: "Allah does not charge a soul except [with that within] its capacity." },
+  { arabic: "إِنَّ اللَّهَ لَا يُغَيِّرُ مَا بِقَوْمٍ حَتَّىٰ يُغَيِّرُوا مَا بِأَنفُسِهِمْ", english: "Indeed, Allah will not change the condition of a people until they change what is in themselves." },
+  { arabic: "وَقُل رَّبِّ زِدْنِي عِلْمًا", english: "And say, My Lord, increase me in knowledge." },
+  { arabic: "يَرْفَعِ اللَّهُ الَّذِينَ آمَنُوا مِنكُمْ وَالَّذِينَ أُوتُوا الْعِلْمَ دَرَجَاتٍ", english: "Allah will raise those who have believed among you and those who were given knowledge, by degrees." },
+  { arabic: "وَفِي ذَٰلِكَ فَلْيَتَنَافَسِ الْمُتَنَافِسُونَ", english: "And for this let the competitors compete." },
+  { arabic: "وَأَن لَّيْسَ لِلْإِنسَانِ إِلَّا مَا سَعَىٰ وَأَنَّ سَعْيَهُ سَوْفَ يُرَىٰ", english: "And that there is not for man except that [good] for which he strives, and that his effort is going to be seen." },
+  { arabic: "اسْتَجِيبُوا لِلَّهِ وَلِلرَّسُولِ إِذَا دَعَاكُمْ لِمَا يُحْيِيكُمْ", english: "Respond to Allah and to the Messenger when he calls you to that which gives you life." },
+  { arabic: "وَالَّذِينَ جَاهَدُوا فِينَا لَنَهْدِيَنَّهُمْ سُبُلَنَا", english: "And those who strive for Us - We will surely guide them to Our ways." }
+];
+
 export default function Home() {
+  // Pick a random verse on every app refresh
+  const randomVerse = quranVerses[Math.floor(Math.random() * quranVerses.length)];
+
   return (
     <div className="min-h-screen bg-blue-900 p-4 md:p-8 text-center">
       
-      {/* Header Section matching the Poster */}
+      {/* Header Section */}
       <header className="mb-10 mt-8">
         <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight">AK Academy</h1>
-        <p className="text-sm md:text-base font-bold text-blue-300 tracking-[0.3em] uppercase mt-3">MDCAT Preparation App</p>
-        <p className="text-xl md:text-2xl font-semibold text-yellow-400 italic mt-4">Make MDCAT on your fingertips.</p>
+        
+        {/* Quranic Verse Section (Shuffles on refresh) */}
+        <div className="mt-6 mb-2 px-4 max-w-xl mx-auto">
+          <p 
+            className="text-2xl md:text-3xl font-bold text-yellow-400 mb-3" 
+            style={{ fontFamily: 'serif', direction: 'rtl' }}
+          >
+            {randomVerse.arabic}
+          </p>
+          <p className="text-sm md:text-base text-blue-200 italic">
+            "{randomVerse.english}"
+          </p>
+        </div>
+
+        <p className="text-xl md:text-2xl font-semibold text-white italic mt-6">Make MDCAT on your fingertips.</p>
       </header>
 
       {/* 50,000+ MCQs Highlight Section */}
