@@ -7,8 +7,10 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // FIX: Increase file size limit to 5MB so it can cache large MCQ files
-      maximumFileSizeToCacheInBytes: 5 * 1024 * 1024,
+      // FIX: This must be inside the 'workbox' object!
+      workbox: {
+        maximumFileSizeToCacheInBytes: 5 * 1024 * 1024 // 5 MB limit
+      },
       includeAssets: ['favicon.ico', 'icon.png'],
       manifest: {
         name: 'AK Academy',
