@@ -41,14 +41,32 @@
         font-weight: 800;
         margin: 0;
       }
-      #loading-screen p {
-        color: #facc15; /* Yellow quote */
+      /* Arabic Dua Styling */
+      #loading-screen .dua-arabic {
+        color: #facc15; /* Yellow */
+        font-family: 'Amiri', 'Traditional Arabic', serif;
+        font-size: 22px;
+        margin-top: 15px;
+        direction: rtl;
+        font-weight: bold;
+      }
+      #loading-screen .dua-english {
+        color: #93c5fd; /* Light blue */
         font-family: sans-serif;
         font-style: italic;
+        font-size: 13px;
+        margin-top: 5px;
+        text-align: center;
+        max-width: 280px;
+      }
+      #loading-screen .quote {
+        color: white;
+        font-family: sans-serif;
         font-size: 14px;
-        margin-top: 10px;
+        margin-top: 20px;
         text-align: center;
         max-width: 250px;
+        opacity: 0.8;
       }
       /* The moving circle */
       .spinner {
@@ -74,7 +92,12 @@
     <div id="loading-screen">
       <img src="/logo.png" alt="AK Academy Logo" />
       <h2>AK Academy</h2>
-      <p>"Success is the sum of small efforts, repeated day in and day out."</p>
+      
+      <!-- Ilm Ki Dua -->
+      <div class="dua-arabic">رَبِّ زِدْنِي عِلْمًا</div>
+      <div class="dua-english">"My Lord, increase me in knowledge."</div>
+      
+      <div class="quote">"Success is the sum of small efforts, repeated day in and day out."</div>
       <div class="spinner"></div>
     </div>
 
