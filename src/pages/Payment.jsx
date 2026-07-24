@@ -57,14 +57,22 @@ export default function Payment() {
           </div>
 
           {/* Bank Details */}
-          <div className="bg-gray-50 p-6 rounded-xl mb-8">
-            <h3 className="font-bold text-gray-800 mb-4">Transfer the amount to:</h3>
-            <div className="space-y-2 text-gray-700">
-              <p><strong>Bank:</strong> Bank Alfalah / JazzCash / EasyPaisa</p>
-              <p><strong>Account Title:</strong> Aamir Khan</p> {/* Change this to your name */}
-              <p><strong>Account Number:</strong> 0300-1234567</p> {/* Change this to your real number */}
-              <p className="text-sm text-red-500 mt-2">*After transferring, enter your Transaction ID below.</p>
+          <div className="bg-gray-50 p-6 rounded-xl mb-8 space-y-4">
+            <h3 className="font-bold text-gray-800 mb-2">Transfer the amount to any of the following:</h3>
+            
+            <div className="border-b border-gray-200 pb-4">
+              <p className="font-semibold text-gray-900">JazzCash / Raast ID</p>
+              <p className="text-gray-700">Title: Aamir uldeen</p>
+              <p className="text-gray-700">Number: 03069747445</p>
             </div>
+
+            <div>
+              <p className="font-semibold text-gray-900">Faysal Bank</p>
+              <p className="text-gray-700">Title: Aamir uddin</p>
+              <p className="text-gray-700">Account Number: 3341383000001976</p>
+            </div>
+
+            <p className="text-sm text-red-500 mt-2">*After transferring, enter your Transaction ID below.</p>
           </div>
 
           {/* Submit Form */}
