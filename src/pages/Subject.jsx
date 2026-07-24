@@ -29,8 +29,9 @@ export default function Subject() {
 
         <div className="space-y-4">
           {subject.chapters.map((chapter, index) => {
-            // LOCK LOGIC: First chapter is free. Others require login + premium.
-            const isLocked = index > 0 && (!currentUser || !isPremium);
+            // LOCK LOGIC: Unlock ONLY if the chapter name contains "demo". 
+            // Everything else requires login + premium.
+            const isLocked = !chapter.name.toLowerCase().includes("demo") && (!currentUser || !isPremium);
 
             return (
               <div key={index} className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex justify-between items-center transition-all ${isLocked ? 'opacity-75' : 'hover:shadow-md'}`}>
