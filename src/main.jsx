@@ -4,6 +4,7 @@ import { BrowserRouter } from 'react-router-dom'
 import App from './App.jsx'
 import { AuthProvider } from './context/AuthContext.jsx'
 import { ProgressProvider } from './context/ProgressContext.jsx'
+import PullToRefresh from './components/PullToRefresh.jsx'
 import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
@@ -11,7 +12,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
     <BrowserRouter>
       <AuthProvider>
         <ProgressProvider>
-          <App />
+          <PullToRefresh>
+            <App />
+          </PullToRefresh>
         </ProgressProvider>
       </AuthProvider>
     </BrowserRouter>
