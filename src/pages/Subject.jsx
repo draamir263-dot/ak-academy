@@ -19,11 +19,14 @@ export default function Subject() {
     );
   }
 
+  // SORTING LOGIC: Bring "Demo" to the top, and sort the rest alphabetically & numerically
   const sortedChapters = [...subject.chapters].sort((a, b) => {
     const aIsDemo = a.name.toLowerCase().includes("demo");
     const bIsDemo = b.name.toLowerCase().includes("demo");
-    if (aIsDemo && !bIsDemo) return -1; 
-    if (!aIsDemo && bIsDemo) return 1;  
+    
+    if (aIsDemo && !bIsDemo) return -1; // a (Demo) comes first
+    if (!aIsDemo && bIsDemo) return 1;  // b (Demo) comes first
+    
     return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
   });
 
@@ -37,35 +40,40 @@ export default function Subject() {
           <p className="text-lg text-blue-300 mt-2">{subject.totalMcqs} Total MCQs | {subject.chapters.length} Chapters</p>
         </header>
 
-        <div className="space-y-4">
+        {/* GRID LAYOUT: 2 columns on mobile, 3 columns on larger screens */}
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
           {sortedChapters.map((chapter, index) => {
             const isLocked = !chapter.name.toLowerCase().includes("demo") && (!currentUser || !isPremium);
 
             return (
-              <div key={index} className={`bg-white rounded-xl shadow-xl border border-blue-800 p-6 flex justify-between items-center transition-all ${isLocked ? 'opacity-80' : 'hover:scale-[1.02]'}`}>
-                <div className="flex items-center gap-3">
-                  {isLocked ? <span className="text-2xl">🔒</span> : <span className="text-2xl">📘</span>}
-                  <div>
-                    <h2 className="text-xl font-bold text-blue-900">{chapter.name}</h2>
-                    <p className="text-sm text-gray-500 mt-1">{chapter.totalMcqs} MCQs available</p>
-                  </div>
+              <div 
+                key={index} 
+                className={`bg-white rounded-xl shadow-lg border border-blue-800 p-4 flex flex-col justify-between transition-all ${isLocked ? 'opacity-80' : 'hover:scale-[1.02]'}`}
+              >
+                <div className="flex items-start gap-2 mb-3">
+                  {isLocked ? <span className="text-lg mt-0.5">🔒</span> : <span className="text-lg mt-0.5">📘</span>}
+                  <h2 className="text-sm font-bold text-blue-900 leading-tight">{chapter.name}</h2>
                 </div>
                 
-                {isLocked ? (
-                  <Link 
-                    to={currentUser ? "/payment" : "/login"} 
-                    className="bg-gray-800 text-white px-6 py-2 rounded-lg font-semibold hover:bg-gray-900 transition-colors text-sm"
-                  >
-                    {currentUser ? "Pay to Unlock" : "Login to Unlock"}
-                  </Link>
-                ) : (
-                  <Link 
-                    to={`/test-builder/${subject.name}/${chapter.name}`} 
-                    className="bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-                  >
-                    Start
-                  </Link>
-                )}
+                <div>
+                  <p className="text-xs text-gray-500 mb-3">{chapter.totalMcqs} MCQs</p>
+                  
+                  {isLocked ? (
+                    <Link 
+                      to={currentUser ? "/payment" : "/login"} 
+                      className="block text-center bg-gray-800 text-white px-2 py-2 rounded-md font-semibold hover:bg-gray-900 transition-colors text-xs"
+                    >
+                      {currentUser ? "Unlock" : "Login"}
+                    </Link>
+                  ) : (
+                    <Link 
+                      to={`/test-builder/${subject.name}/${chapter.name}`} 
+                      className="block text-center bg-blue-600 text-white px-2 py-2 rounded-md font-semibold hover:bg-blue-700 transition-colors text-xs"
+                    >
+                      Start
+                    </Link>
+                  )}
+                </div>
               </div>
             );
           })}
