@@ -1,11 +1,11 @@
 import { createContext, useContext, useEffect, useState } from 'react';
+import { structuredData } from '../services/questionLoader';
 
 const ProgressContext = createContext();
 export const useProgress = () => useContext(ProgressContext);
 
 export const ProgressProvider = ({ children }) => {
   const [progress, setProgress] = useState(() => {
-    // Load saved progress from browser local storage
     const saved = localStorage.getItem('ak_academy_progress');
     return saved ? JSON.parse(saved) : {
       used: [],
@@ -15,12 +15,10 @@ export const ProgressProvider = ({ children }) => {
     };
   });
 
-  // Save to local storage every time progress changes
   useEffect(() => {
     localStorage.setItem('ak_academy_progress', JSON.stringify(progress));
   }, [progress]);
 
-  // Record an answer when a user clicks an option
   const recordAnswer = (questionId, isCorrect) => {
     setProgress(prev => {
       let newCorrect = [...prev.correct];
@@ -41,7 +39,6 @@ export const ProgressProvider = ({ children }) => {
     });
   };
 
-  // Toggle favourite (bookmark) button
   const toggleFavourite = (questionId) => {
     setProgress(prev => {
       const isFav = prev.favourites.includes(questionId);
@@ -54,8 +51,36 @@ export const ProgressProvider = ({ children }) => {
 
   const isFavourite = (questionId) => progress.favourites.includes(questionId);
 
+  // NEW: Reset progress for a specific chapter
+  const resetChapterProgress = (chapterName) => {
+    const chapter = structuredData.flatMap(s => s.chapters).find(c => c.name === chapterName);
+    if (!chapter) return;
+    const idsToRemove = new Set(chapter.questions.map(q => q.id));
+
+    setProgress(prev => ({
+      used: prev.used.filter(id => !idsToRemove.has(id)),
+      correct: prev.correct.filter(id => !idsToRemove.has(id)),
+      incorrect: prev.incorrect.filter(id => !idsToRemove.has(id)),
+      favourites: prev.favourites.filter(id => !idsToRemove.has(id))
+    }));
+  };
+
+  // NEW: Reset progress for an entire subject
+  const resetSubjectProgress = (subjectName) => {
+    const subject = structuredData.find(s => s.name === subjectName);
+    if (!subject) return;
+    const idsToRemove = new Set(subject.chapters.flatMap(c => c.questions.map(q => q.id)));
+
+    setProgress(prev => ({
+      used: prev.used.filter(id => !idsToRemove.has(id)),
+      correct: prev.correct.filter(id => !idsToRemove.has(id)),
+      incorrect: prev.incorrect.filter(id => !idsToRemove.has(id)),
+      favourites: prev.favourites.filter(id => !idsToRemove.has(id))
+    }));
+  };
+
   return (
-    <ProgressContext.Provider value={{ progress, recordAnswer, toggleFavourite, isFavourite }}>
+    <ProgressContext.Provider value={{ progress, recordAnswer, toggleFavourite, isFavourite, resetChapterProgress, resetSubjectProgress }}>
       {children}
     </ProgressContext.Provider>
   );
