@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { structuredData } from '../services/questionLoader';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
 const shuffleArray = (array) => {
@@ -23,9 +23,29 @@ export default function TestEngine() {
   const subject = structuredData.find(s => s.name === subjectName);
   const chapter = subject?.chapters.find(c => c.name === chapterName);
   
-  const [testQuestions] = useState(() => {
+  const [testQuestions, setTestQuestions] = useState([]);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [userAnswers, setUserAnswers] = useState({}); 
+  const [showExplanation, setShowExplanation] = useState(false); 
+
+  // --- RESUME TEST LOGIC ---
+  // On first load, check if we have a saved test for this exact chapter in localStorage
+  useEffect(() => {
+    const savedTest = localStorage.getItem('ak_academy_active_test');
+    if (savedTest) {
+      const parsed = JSON.parse(savedTest);
+      // Ensure it's the exact same test (same subject, chapter, and number of questions)
+      if (parsed.subjectName === subjectName && parsed.chapterName === chapterName && parsed.numQuestions === numQuestions) {
+        setTestQuestions(parsed.testQuestions);
+        setCurrentIndex(parsed.currentIndex);
+        setUserAnswers(parsed.userAnswers);
+        setShowExplanation(!!parsed.userAnswers[parsed.testQuestions[parsed.currentIndex]?.id]);
+        return; // Resume the test!
+      }
+    }
+
+    // If no saved test, generate a new one
     let pool = chapter ? [...chapter.questions] : [];
-    
     if (filter === 'Used') {
       pool = pool.filter(q => progress.used.includes(q.id));
     } else if (filter === 'Unused') {
@@ -42,12 +62,18 @@ export default function TestEngine() {
       pool = [...chapter.questions];
     }
 
-    return shuffleArray(pool).slice(0, parseInt(numQuestions));
-  });
+    setTestQuestions(shuffleArray(pool).slice(0, parseInt(numQuestions)));
+  }, [subjectName, chapterName, numQuestions, chapter, filter, progress]);
 
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState({}); 
-  const [showExplanation, setShowExplanation] = useState(false); 
+  // --- SAVE TEST LOGIC ---
+  // Every time the user moves to a new question or answers, save it to localStorage
+  useEffect(() => {
+    if (testQuestions.length > 0) {
+      localStorage.setItem('ak_academy_active_test', JSON.stringify({
+        subjectName, chapterName, numQuestions, testQuestions, currentIndex, userAnswers
+      }));
+    }
+  }, [testQuestions, currentIndex, userAnswers, subjectName, chapterName, numQuestions]);
 
   if (testQuestions.length === 0) {
     return (
@@ -91,7 +117,15 @@ export default function TestEngine() {
   };
 
   const handleEndTest = () => {
+    // Clear the saved test so it doesn't resume a finished test
+    localStorage.removeItem('ak_academy_active_test');
     navigate('/results', { state: { testQuestions, userAnswers, subjectName, chapterName } });
+  };
+
+  // If they click "Exit Test", also clear the saved test
+  const handleExitTest = () => {
+    localStorage.removeItem('ak_academy_active_test');
+    navigate(`/test-builder/${subjectName}/${chapterName}`);
   };
 
   const getOptionClass = (option) => {
@@ -112,7 +146,7 @@ export default function TestEngine() {
       <div className="max-w-3xl mx-auto">
         
         <div className="flex justify-between items-center mb-6">
-          <Link to={`/test-builder/${subjectName}/${chapterName}`} className="text-yellow-400 text-sm font-medium">&larr; Exit Test</Link>
+          <button onClick={handleExitTest} className="text-yellow-400 text-sm font-medium">&larr; Exit Test</button>
           <button 
             onClick={handleEndTest}
             className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 text-sm"
