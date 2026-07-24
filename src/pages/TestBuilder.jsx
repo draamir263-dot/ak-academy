@@ -11,40 +11,39 @@ export default function TestBuilder() {
   
   const maxQuestions = chapter ? chapter.totalMcqs : 0;
 
-  // DEFAULT FILTER IS NOW 'Unused'
   const [numQuestions, setNumQuestions] = useState(10);
   const [filter, setFilter] = useState('Unused');
   const [timerMode, setTimerMode] = useState('Practice');
 
   const startTest = () => {
-    // Pass the filter to the Test Engine via React Router state
     navigate(`/test-engine/${subjectName}/${chapterName}/${numQuestions}`, { state: { filter } });
   };
 
   if (!chapter) {
     return (
-      <div className="min-h-screen p-8 text-center">
-        <h1 className="text-2xl font-bold text-red-600">Chapter not found!</h1>
-        <Link to="/" className="text-blue-600 underline mt-4 inline-block">Go Home</Link>
+      <div className="min-h-screen bg-blue-900 p-8 text-center flex items-center justify-center">
+        <div>
+          <h1 className="text-2xl font-bold text-red-400">Chapter not found!</h1>
+          <Link to="/" className="text-yellow-400 underline mt-4 inline-block">Go Home</Link>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen bg-blue-900 p-4 md:p-8">
       <div className="max-w-2xl mx-auto">
-        <Link to={`/subject/${subjectName}`} className="text-blue-600 mb-6 inline-block">&larr; Back to {subjectName}</Link>
+        <Link to={`/subject/${subjectName}`} className="text-yellow-400 mb-6 inline-block">&larr; Back to {subjectName}</Link>
         
-        <header className="mb-8">
-          <h1 className="text-3xl font-extrabold text-blue-900">{chapter.name}</h1>
-          <p className="text-lg text-gray-500 mt-2">{maxQuestions} MCQs Available</p>
+        <header className="mb-8 text-center">
+          <h1 className="text-3xl font-extrabold text-white">{chapter.name}</h1>
+          <p className="text-lg text-blue-300 mt-2">{maxQuestions} MCQs Available</p>
         </header>
 
-        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-8 space-y-8">
+        <div className="bg-white rounded-2xl shadow-xl border border-blue-800 p-8 space-y-8">
           
-          {/* Number of Questions */}
           <div>
-            <label className="block text-lg font-bold text-gray-800 mb-3">Number of Questions</label>
+            <label className="block text-lg font-bold text-blue-900 mb-3">Number of Questions</label>
             <div className="flex flex-wrap gap-2">
               {[10, 20, 30, 50, 75, 100].map(num => (
                 <button 
@@ -62,18 +61,17 @@ export default function TestBuilder() {
               max={maxQuestions} 
               value={numQuestions}
               onChange={(e) => setNumQuestions(Math.min(e.target.value, maxQuestions))}
-              className="mt-4 w-32 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="mt-4 w-32 p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-blue-900 font-bold"
             />
             <span className="ml-2 text-sm text-gray-500">Custom (Max: {maxQuestions})</span>
           </div>
 
-          {/* Question Filter */}
           <div>
-            <label className="block text-lg font-bold text-gray-800 mb-3">Question Filter</label>
+            <label className="block text-lg font-bold text-blue-900 mb-3">Question Filter</label>
             <select 
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-blue-900 font-semibold"
             >
               <option value="Mixed">Mixed (All Questions)</option>
               <option value="Unused">Unused Questions (Default)</option>
@@ -84,9 +82,8 @@ export default function TestBuilder() {
             </select>
           </div>
 
-          {/* Timer Mode */}
           <div>
-            <label className="block text-lg font-bold text-gray-800 mb-3">Timer Mode</label>
+            <label className="block text-lg font-bold text-blue-900 mb-3">Timer Mode</label>
             <div className="flex flex-wrap gap-2 mb-4">
               <button 
                 onClick={() => setTimerMode('Practice')}
@@ -103,9 +100,7 @@ export default function TestBuilder() {
             </div>
             
             {timerMode === 'Timed' && (
-              <select 
-                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
-              >
+              <select className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-blue-900 font-semibold">
                 <option value="15">15 Minutes</option>
                 <option value="30">30 Minutes</option>
                 <option value="45">45 Minutes</option>
@@ -116,7 +111,6 @@ export default function TestBuilder() {
             )}
           </div>
 
-          {/* Start Test Button */}
           <button 
             onClick={startTest}
             className="w-full bg-green-600 text-white py-4 rounded-xl font-bold text-lg hover:bg-green-700 transition-colors shadow-sm"

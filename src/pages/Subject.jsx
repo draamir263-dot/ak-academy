@@ -10,47 +10,43 @@ export default function Subject() {
 
   if (!subject) {
     return (
-      <div className="min-h-screen p-8 text-center">
-        <h1 className="text-2xl font-bold text-red-600">Subject not found!</h1>
-        <Link to="/" className="text-blue-600 underline mt-4 inline-block">Go Back Home</Link>
+      <div className="min-h-screen bg-blue-900 p-8 text-center flex items-center justify-center">
+        <div>
+          <h1 className="text-2xl font-bold text-red-400">Subject not found!</h1>
+          <Link to="/" className="text-yellow-400 underline mt-4 inline-block">Go Back Home</Link>
+        </div>
       </div>
     );
   }
 
-  // SORTING LOGIC: Bring "Demo" to the top, and sort the rest alphabetically & numerically
   const sortedChapters = [...subject.chapters].sort((a, b) => {
     const aIsDemo = a.name.toLowerCase().includes("demo");
     const bIsDemo = b.name.toLowerCase().includes("demo");
-    
-    if (aIsDemo && !bIsDemo) return -1; // a (Demo) comes first
-    if (!aIsDemo && bIsDemo) return 1;  // b (Demo) comes first
-    
-    // If neither are Demo, sort them naturally (Chapter 1, Chapter 2, Chapter 10...)
+    if (aIsDemo && !bIsDemo) return -1; 
+    if (!aIsDemo && bIsDemo) return 1;  
     return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
   });
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen bg-blue-900 p-4 md:p-8">
       <div className="max-w-4xl mx-auto">
-        <Link to="/" className="text-blue-600 mb-6 inline-block">&larr; Back to Home</Link>
+        <Link to="/" className="text-yellow-400 mb-6 inline-block">&larr; Back to Home</Link>
         
-        <header className="mb-8">
-          <h1 className="text-4xl font-extrabold text-blue-900">{subject.name}</h1>
-          <p className="text-lg text-gray-500 mt-2">{subject.totalMcqs} Total MCQs | {subject.chapters.length} Chapters</p>
+        <header className="mb-8 text-center">
+          <h1 className="text-4xl font-extrabold text-white">{subject.name}</h1>
+          <p className="text-lg text-blue-300 mt-2">{subject.totalMcqs} Total MCQs | {subject.chapters.length} Chapters</p>
         </header>
 
         <div className="space-y-4">
-          {/* We map over sortedChapters instead of subject.chapters */}
           {sortedChapters.map((chapter, index) => {
-            // LOCK LOGIC: Unlock ONLY if the chapter name contains "demo". 
             const isLocked = !chapter.name.toLowerCase().includes("demo") && (!currentUser || !isPremium);
 
             return (
-              <div key={index} className={`bg-white rounded-xl shadow-sm border border-gray-100 p-6 flex justify-between items-center transition-all ${isLocked ? 'opacity-75' : 'hover:shadow-md'}`}>
+              <div key={index} className={`bg-white rounded-xl shadow-xl border border-blue-800 p-6 flex justify-between items-center transition-all ${isLocked ? 'opacity-80' : 'hover:scale-[1.02]'}`}>
                 <div className="flex items-center gap-3">
-                  {isLocked && <span className="text-2xl">🔒</span>}
+                  {isLocked ? <span className="text-2xl">🔒</span> : <span className="text-2xl">📘</span>}
                   <div>
-                    <h2 className="text-xl font-bold text-gray-800">{chapter.name}</h2>
+                    <h2 className="text-xl font-bold text-blue-900">{chapter.name}</h2>
                     <p className="text-sm text-gray-500 mt-1">{chapter.totalMcqs} MCQs available</p>
                   </div>
                 </div>
