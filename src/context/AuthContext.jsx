@@ -51,33 +51,12 @@ export const AuthProvider = ({ children }) => {
   async function submitPayment(trxId, plan) {
     if (!currentUser) return;
     
-    // 1. Save the payment request to Firebase
+    // Save the payment request to Firebase
     await setDoc(doc(db, 'users', currentUser.uid), {
       trxId: trxId,
       plan: plan,
       paymentStatus: "pending"
     }, { merge: true });
-
-    // 2. Send Instant Telegram Notification to Admin
-    const TELEGRAM_BOT_TOKEN = "8829544471:AAEs0obYy7g36a5tRAUwfFqPcjcTDJ8hZ90"; 
-    const TELEGRAM_CHAT_ID = "6007421279"; 
-    
-    const planText = plan === '6_months' ? '6 Months (5,000 PKR)' : '1 Year (10,000 PKR)';
-    const message = `🔔 *New Payment Request!*\n\n*Student:* ${currentUser.email}\n*Plan:* ${planText}\n*Trx ID:* ${trxId}\n\nApprove them in the Admin Dashboard.`;
-
-    try {
-      await fetch(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          chat_id: TELEGRAM_CHAT_ID,
-          text: message,
-          parse_mode: "Markdown"
-        })
-      });
-    } catch (err) {
-      console.log("Telegram notification failed: ", err);
-    }
   }
 
   useEffect(() => {

@@ -18,7 +18,7 @@ export default function Payment() {
     
     try {
       await submitPayment(trxId, plan);
-      setMessage('Payment submitted! Please wait 1-12 hours for admin approval. You will be logged out automatically.');
+      setMessage('Payment submitted successfully! Please wait up to 24 hours for admin verification. You will be logged out automatically.');
       setTrxId('');
       
       // Automatically log them out after 5 seconds so they know they have to wait
