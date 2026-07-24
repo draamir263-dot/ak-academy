@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { db } from '../services/firebase';
-import { collection, getDocs, doc, updateDoc } from 'firebase/firestore';
+import { collection, onSnapshot, doc, updateDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { Link } from 'react-router-dom';
 
@@ -9,26 +9,36 @@ export default function Admin() {
   const [allUsers, setAllUsers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [showNotification, setShowNotification] = useState(false);
   
-  // Tab state: 'pending' or 'all'
   const [activeTab, setActiveTab] = useState('pending');
+  const previousPendingCount = useRef(0);
 
-  // Fetch all users from database
+  // REAL-TIME LISTENER: Updates instantly when a student submits a payment
   useEffect(() => {
-    async function fetchUsers() {
-      try {
-        const querySnapshot = await getDocs(collection(db, 'users'));
-        const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-        setAllUsers(usersList);
-      } catch (err) {
-        console.error("Error fetching users: ", err);
+    const unsubscribe = onSnapshot(collection(db, 'users'), (querySnapshot) => {
+      const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      setAllUsers(usersList);
+      
+      const pendingUsers = usersList.filter(u => u.paymentStatus === 'pending');
+      
+      // NOTIFICATION LOGIC: If the number of pending requests increases, show a popup!
+      if (pendingUsers.length > previousPendingCount.current && previousPendingCount.current !== 0) {
+        setShowNotification(true);
+        setTimeout(() => setShowNotification(false), 5000); // Hide after 5 seconds
       }
+      previousPendingCount.current = pendingUsers.length;
+      
       setLoading(false);
-    }
-    fetchUsers();
-  }, [message]);
+    }, (err) => {
+      console.error("Error fetching users: ", err);
+      setLoading(false);
+    });
 
-  // Handle Approve Button Click
+    // Cleanup the listener when you leave the page
+    return () => unsubscribe();
+  }, []);
+
   const handleApprove = async (userId, plan) => {
     setMessage('');
     try {
@@ -52,7 +62,6 @@ export default function Admin() {
     }
   };
 
-  // Handle Cancel Access Button Click
   const handleCancelAccess = async (userId, email) => {
     setMessage('');
     if (window.confirm(`Are you sure you want to cancel premium access for ${email}?`)) {
@@ -69,7 +78,6 @@ export default function Admin() {
     }
   };
 
-  // SECURITY CHECK
   const adminEmail = "draamir308@gmail.com"; 
 
   if (!currentUser || currentUser.email?.toLowerCase() !== adminEmail) {
@@ -82,23 +90,33 @@ export default function Admin() {
     );
   }
 
-  // Filter users based on active tab
   const pendingUsers = allUsers.filter(u => u.paymentStatus === 'pending');
   const premiumUsers = allUsers.filter(u => u.isPremium === true);
   const otherUsers = allUsers.filter(u => u.isPremium !== true && u.paymentStatus !== 'pending');
 
   return (
-    <div className="min-h-screen p-8">
+    <div className="min-h-screen p-8 relative">
       <div className="max-w-4xl mx-auto">
         <Link to="/" className="text-blue-600 mb-6 inline-block">&larr; Back to Home</Link>
         
         <header className="mb-8">
           <h1 className="text-4xl font-extrabold text-blue-900">Admin Dashboard</h1>
-          <p className="text-lg text-gray-500 mt-2">Manage student accounts and payments.</p>
+          <p className="text-lg text-gray-500 mt-2">Manage student accounts and payments in real-time.</p>
         </header>
 
+        {/* Real-time Notification Popup */}
+        {showNotification && (
+          <div className="fixed top-20 right-8 bg-green-600 text-white p-4 rounded-xl shadow-2xl animate-bounce z-50 flex items-center gap-3">
+            <span className="text-2xl">🔔</span>
+            <div>
+              <p className="font-bold">New Payment Request!</p>
+              <p className="text-sm">A student just submitted their Transaction ID.</p>
+            </div>
+          </div>
+        )}
+
         {message && (
-          <div className="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 rounded-lg font-semibold">
+          <div className="mb-6 p-4 bg-blue-50 border border-blue-200 text-blue-700 rounded-lg font-semibold">
             {message}
           </div>
         )}
@@ -123,15 +141,14 @@ export default function Admin() {
           {loading ? (
             <p className="text-gray-500">Loading...</p>
           ) : activeTab === 'pending' ? (
-            /* PENDING PAYMENTS TAB */
             <>
               <h2 className="text-xl font-bold text-gray-800 mb-4">Pending Payments</h2>
               {pendingUsers.length === 0 ? (
-                <p className="text-gray-500 italic">No pending payments right now.</p>
+                <p className="text-gray-500 italic">No pending payments right now. Keep this page open to get instant notifications!</p>
               ) : (
                 <div className="space-y-4">
                   {pendingUsers.map(user => (
-                    <div key={user.id} className="border border-gray-200 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                    <div key={user.id} className="border border-gray-200 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 bg-yellow-50">
                       <div>
                         <p className="font-bold text-gray-800">{user.email}</p>
                         <p className="text-sm text-gray-500 mt-1">
@@ -153,15 +170,12 @@ export default function Admin() {
               )}
             </>
           ) : (
-            /* ALL STUDENTS TAB */
             <>
               <h2 className="text-xl font-bold text-gray-800 mb-4">All Registered Students</h2>
               {allUsers.length === 0 ? (
                 <p className="text-gray-500 italic">No students registered yet.</p>
               ) : (
                 <div className="space-y-4">
-                  
-                  {/* Active Premium Users */}
                   {premiumUsers.length > 0 && (
                     <div className="mb-6">
                       <h3 className="text-sm font-bold text-green-600 uppercase mb-2">Premium Active</h3>
@@ -189,7 +203,6 @@ export default function Admin() {
                     </div>
                   )}
 
-                  {/* Expired / Canceled Users */}
                   {otherUsers.length > 0 && (
                     <div>
                       <h3 className="text-sm font-bold text-gray-500 uppercase mb-2">Inactive / Expired</h3>
@@ -215,7 +228,6 @@ export default function Admin() {
                       </div>
                     </div>
                   )}
-
                 </div>
               )}
             </>
