@@ -17,7 +17,6 @@ export default function Navbar() {
   const userName = currentUser?.email ? currentUser.email.split('@')[0] : 'Account';
 
   return (
-    {/* pt-[env(safe-area-inset-top)] IS THE MAGIC FIX THAT PUSHES IT DOWN */}
     <nav className="bg-blue-900 shadow-sm border-b border-blue-800 sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
