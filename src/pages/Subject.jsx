@@ -17,14 +17,16 @@ export default function Subject() {
     );
   }
 
-  // SORTING LOGIC: Bring chapters with "Demo" in the name to the top
+  // SORTING LOGIC: Bring "Demo" to the top, and sort the rest alphabetically & numerically
   const sortedChapters = [...subject.chapters].sort((a, b) => {
     const aIsDemo = a.name.toLowerCase().includes("demo");
     const bIsDemo = b.name.toLowerCase().includes("demo");
     
-    if (aIsDemo && !bIsDemo) return -1; // a comes first
-    if (!aIsDemo && bIsDemo) return 1;  // b comes first
-    return 0; // keep original order for the rest
+    if (aIsDemo && !bIsDemo) return -1; // a (Demo) comes first
+    if (!aIsDemo && bIsDemo) return 1;  // b (Demo) comes first
+    
+    // If neither are Demo, sort them naturally (Chapter 1, Chapter 2, Chapter 10...)
+    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
   });
 
   return (
