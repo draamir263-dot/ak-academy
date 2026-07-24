@@ -17,6 +17,16 @@ export default function Subject() {
     );
   }
 
+  // SORTING LOGIC: Bring chapters with "Demo" in the name to the top
+  const sortedChapters = [...subject.chapters].sort((a, b) => {
+    const aIsDemo = a.name.toLowerCase().includes("demo");
+    const bIsDemo = b.name.toLowerCase().includes("demo");
+    
+    if (aIsDemo && !bIsDemo) return -1; // a comes first
+    if (!aIsDemo && bIsDemo) return 1;  // b comes first
+    return 0; // keep original order for the rest
+  });
+
   return (
     <div className="min-h-screen p-8">
       <div className="max-w-4xl mx-auto">
@@ -28,9 +38,9 @@ export default function Subject() {
         </header>
 
         <div className="space-y-4">
-          {subject.chapters.map((chapter, index) => {
+          {/* We map over sortedChapters instead of subject.chapters */}
+          {sortedChapters.map((chapter, index) => {
             // LOCK LOGIC: Unlock ONLY if the chapter name contains "demo". 
-            // Everything else requires login + premium.
             const isLocked = !chapter.name.toLowerCase().includes("demo") && (!currentUser || !isPremium);
 
             return (
