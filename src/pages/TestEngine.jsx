@@ -28,24 +28,19 @@ export default function TestEngine() {
   const [userAnswers, setUserAnswers] = useState({}); 
   const [showExplanation, setShowExplanation] = useState(false); 
 
-  // --- RESUME TEST LOGIC ---
-  // We use an empty dependency array [] so this ONLY runs ONCE when the test starts.
-  // It will NOT run again when you answer a question (which updates progress).
   useEffect(() => {
     const savedTest = localStorage.getItem('ak_academy_active_test');
     if (savedTest) {
       const parsed = JSON.parse(savedTest);
-      // Ensure it's the exact same test (same subject, chapter, and number of questions)
       if (parsed.subjectName === subjectName && parsed.chapterName === chapterName && parsed.numQuestions === numQuestions) {
         setTestQuestions(parsed.testQuestions);
         setCurrentIndex(parsed.currentIndex);
         setUserAnswers(parsed.userAnswers);
         setShowExplanation(!!parsed.userAnswers[parsed.testQuestions[parsed.currentIndex]?.id]);
-        return; // Resume the test!
+        return;
       }
     }
 
-    // If no saved test, generate a new one
     let pool = chapter ? [...chapter.questions] : [];
     if (filter === 'Used') {
       pool = pool.filter(q => progress.used.includes(q.id));
@@ -65,10 +60,8 @@ export default function TestEngine() {
 
     setTestQuestions(shuffleArray(pool).slice(0, parseInt(numQuestions)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // <--- THIS IS THE FIX
+  }, []);
 
-  // --- SAVE TEST LOGIC ---
-  // Every time the user moves to a new question or answers, save it to localStorage
   useEffect(() => {
     if (testQuestions.length > 0) {
       localStorage.setItem('ak_academy_active_test', JSON.stringify({
@@ -119,15 +112,15 @@ export default function TestEngine() {
   };
 
   const handleEndTest = () => {
-    // Clear the saved test so it doesn't resume a finished test
     localStorage.removeItem('ak_academy_active_test');
-    navigate('/results', { state: { testQuestions, userAnswers, subjectName, chapterName } });
+    // replace: true prevents the back button from going back into the test
+    navigate('/results', { replace: true, state: { testQuestions, userAnswers, subjectName, chapterName } });
   };
 
-  // If they click "Exit Test", also clear the saved test
   const handleExitTest = () => {
     localStorage.removeItem('ak_academy_active_test');
-    navigate(`/test-builder/${subjectName}/${chapterName}`);
+    // replace: true prevents the back button from going back into the test
+    navigate(`/test-builder/${subjectName}/${chapterName}`, { replace: true });
   };
 
   const getOptionClass = (option) => {
