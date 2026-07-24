@@ -4,7 +4,6 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     
-    <!-- Title -->
     <title>AK Academy</title>
 
     <!-- Stop APK from caching old data -->
@@ -13,20 +12,72 @@
     <meta http-equiv="Expires" content="0" />
     
     <link rel="manifest" href="/manifest.webmanifest" />
+
+    <style>
+      /* The Loading Screen Styles */
+      #loading-screen {
+        position: fixed;
+        top: 0; left: 0;
+        width: 100%; height: 100%;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        background-color: #1e3a8a; /* Deep blue background */
+        z-index: 99999;
+        transition: opacity 0.5s ease;
+      }
+      #loading-screen img {
+        width: 120px;
+        height: 120px;
+        border-radius: 20px;
+        margin-bottom: 25px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      }
+      #loading-screen h2 {
+        color: white;
+        font-family: sans-serif;
+        font-size: 28px;
+        font-weight: 800;
+        margin: 0;
+      }
+      #loading-screen p {
+        color: #facc15; /* Yellow quote */
+        font-family: sans-serif;
+        font-style: italic;
+        font-size: 14px;
+        margin-top: 10px;
+        text-align: center;
+        max-width: 250px;
+      }
+      /* The moving circle */
+      .spinner {
+        margin-top: 30px;
+        border: 4px solid rgba(255, 255, 255, 0.2);
+        border-top: 4px solid #facc15; /* Yellow spinner */
+        border-radius: 50%;
+        width: 40px;
+        height: 40px;
+        animation: spin 1s linear infinite;
+      }
+      @keyframes spin {
+        0% { transform: rotate(0deg); }
+        100% { transform: rotate(360deg); }
+      }
+    </style>
   </head>
   <body>
-    <div id="root">
-      <!-- LOADING SCREEN / SPLASH SCREEN -->
-      <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #1e3a8a; z-index: 9999;">
-        <img src="/logo.png" alt="AK Academy Logo" style="width: 120px; height: 120px; margin-bottom: 20px; border-radius: 20px;" />
-        <h2 style="color: white; font-family: sans-serif; font-size: 24px; font-weight: bold;">AK Academy</h2>
-        <p style="color: #93c5fd; font-family: sans-serif; margin-top: 5px;">Make MDCAT on your fingertips.</p>
-        <div style="margin-top: 30px; border: 4px solid rgba(255,255,255,0.3); border-top: 4px solid white; border-radius: 50%; width: 40px; height: 40px; animation: spin 1s linear infinite;"></div>
-      </div>
-      <style>
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-      </style>
+    <!-- React App Mounts Here -->
+    <div id="root"></div>
+
+    <!-- The Loading Screen (Stays until React hides it) -->
+    <div id="loading-screen">
+      <img src="/logo.png" alt="AK Academy Logo" />
+      <h2>AK Academy</h2>
+      <p>"Success is the sum of small efforts, repeated day in and day out."</p>
+      <div class="spinner"></div>
     </div>
+
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>
