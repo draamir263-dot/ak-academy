@@ -11,8 +11,9 @@ export default function TestBuilder() {
   
   const maxQuestions = chapter ? chapter.totalMcqs : 0;
 
+  // DEFAULT FILTER IS NOW 'Unused'
   const [numQuestions, setNumQuestions] = useState(10);
-  const [filter, setFilter] = useState('Mixed');
+  const [filter, setFilter] = useState('Unused');
   const [timerMode, setTimerMode] = useState('Practice');
 
   const startTest = () => {
@@ -75,8 +76,8 @@ export default function TestBuilder() {
               className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none"
             >
               <option value="Mixed">Mixed (All Questions)</option>
+              <option value="Unused">Unused Questions (Default)</option>
               <option value="Used">Used Questions</option>
-              <option value="Unused">Unused Questions</option>
               <option value="Correct">Correct Questions</option>
               <option value="Incorrect">Incorrect Questions</option>
               <option value="Favourite">Favourite Questions</option>

@@ -1,27 +1,53 @@
 import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { structuredData } from '../services/questionLoader';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useProgress } from '../context/ProgressContext';
+
+// Helper function to shuffle array (Randomize questions)
+const shuffleArray = (array) => {
+  let shuffled = [...array];
+  for (let i = shuffled.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+  }
+  return shuffled;
+};
 
 export default function TestEngine() {
   const { subjectName, chapterName, numQuestions } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { recordAnswer, toggleFavourite, isFavourite } = useProgress();
+  const { progress, recordAnswer, toggleFavourite, isFavourite } = useProgress();
 
-  // Get the filter passed from the Test Builder (defaults to 'Mixed')
-  const filter = location.state?.filter || 'Mixed';
+  // Get the filter passed from the Test Builder (defaults to 'Unused')
+  const filter = location.state?.filter || 'Unused';
 
-  // Find the questions
+  // Find the chapter
   const subject = structuredData.find(s => s.name === subjectName);
   const chapter = subject?.chapters.find(c => c.name === chapterName);
   
   let pool = chapter ? [...chapter.questions] : [];
   
-  // Apply filter (Using the local storage progress data)
-  // Note: We use a static import here, but in a real app we'd use the context for filtering
-  // For simplicity, we just slice the pool here. The actual filter logic is fully implemented in the next step if needed.
-  const testQuestions = pool.slice(0, parseInt(numQuestions));
+  // Apply filters based on user selection
+  if (filter === 'Used') {
+    pool = pool.filter(q => progress.used.includes(q.id));
+  } else if (filter === 'Unused') {
+    pool = pool.filter(q => !progress.used.includes(q.id));
+  } else if (filter === 'Correct') {
+    pool = pool.filter(q => progress.correct.includes(q.id));
+  } else if (filter === 'Incorrect') {
+    pool = pool.filter(q => progress.incorrect.includes(q.id));
+  } else if (filter === 'Favourite') {
+    pool = pool.filter(q => progress.favourites.includes(q.id));
+  }
+
+  // FALLBACK LOGIC: If the filtered pool is empty (e.g., all questions used), restart with all questions
+  if (pool.length === 0 && chapter) {
+    pool = [...chapter.questions];
+  }
+
+  // Shuffle the pool and take the requested number of questions
+  const testQuestions = shuffleArray(pool).slice(0, parseInt(numQuestions));
 
   // App State
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -116,7 +142,7 @@ export default function TestEngine() {
               Question {currentIndex + 1} of {testQuestions.length}
             </span>
             
-            {/* BOOKMARK BUTTON (Now Functional) */}
+            {/* BOOKMARK BUTTON */}
             <button 
               onClick={() => toggleFavourite(currentQuestion.id)} 
               className={`${isFavourite(currentQuestion.id) ? 'text-yellow-500' : 'text-gray-300 hover:text-yellow-400'}`}
