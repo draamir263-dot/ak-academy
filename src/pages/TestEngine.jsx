@@ -26,28 +26,33 @@ export default function TestEngine() {
   const subject = structuredData.find(s => s.name === subjectName);
   const chapter = subject?.chapters.find(c => c.name === chapterName);
   
-  let pool = chapter ? [...chapter.questions] : [];
-  
-  // Apply filters based on user selection
-  if (filter === 'Used') {
-    pool = pool.filter(q => progress.used.includes(q.id));
-  } else if (filter === 'Unused') {
-    pool = pool.filter(q => !progress.used.includes(q.id));
-  } else if (filter === 'Correct') {
-    pool = pool.filter(q => progress.correct.includes(q.id));
-  } else if (filter === 'Incorrect') {
-    pool = pool.filter(q => progress.incorrect.includes(q.id));
-  } else if (filter === 'Favourite') {
-    pool = pool.filter(q => progress.favourites.includes(q.id));
-  }
+  // *** THE FIX ***
+  // We use useState with an initializer function so the questions are selected 
+  // and shuffled ONLY ONCE when the test starts. They will not change when you click options.
+  const [testQuestions] = useState(() => {
+    let pool = chapter ? [...chapter.questions] : [];
+    
+    // Apply filters based on user selection
+    if (filter === 'Used') {
+      pool = pool.filter(q => progress.used.includes(q.id));
+    } else if (filter === 'Unused') {
+      pool = pool.filter(q => !progress.used.includes(q.id));
+    } else if (filter === 'Correct') {
+      pool = pool.filter(q => progress.correct.includes(q.id));
+    } else if (filter === 'Incorrect') {
+      pool = pool.filter(q => progress.incorrect.includes(q.id));
+    } else if (filter === 'Favourite') {
+      pool = pool.filter(q => progress.favourites.includes(q.id));
+    }
 
-  // FALLBACK LOGIC: If the filtered pool is empty (e.g., all questions used), restart with all questions
-  if (pool.length === 0 && chapter) {
-    pool = [...chapter.questions];
-  }
+    // FALLBACK LOGIC: If the filtered pool is empty (e.g., all questions used), restart with all questions
+    if (pool.length === 0 && chapter) {
+      pool = [...chapter.questions];
+    }
 
-  // Shuffle the pool and take the requested number of questions
-  const testQuestions = shuffleArray(pool).slice(0, parseInt(numQuestions));
+    // Shuffle the pool and take the requested number of questions
+    return shuffleArray(pool).slice(0, parseInt(numQuestions));
+  });
 
   // App State
   const [currentIndex, setCurrentIndex] = useState(0);
