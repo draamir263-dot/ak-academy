@@ -29,7 +29,8 @@ export default function TestEngine() {
   const [showExplanation, setShowExplanation] = useState(false); 
 
   // --- RESUME TEST LOGIC ---
-  // On first load, check if we have a saved test for this exact chapter in localStorage
+  // We use an empty dependency array [] so this ONLY runs ONCE when the test starts.
+  // It will NOT run again when you answer a question (which updates progress).
   useEffect(() => {
     const savedTest = localStorage.getItem('ak_academy_active_test');
     if (savedTest) {
@@ -63,7 +64,8 @@ export default function TestEngine() {
     }
 
     setTestQuestions(shuffleArray(pool).slice(0, parseInt(numQuestions)));
-  }, [subjectName, chapterName, numQuestions, chapter, filter, progress]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // <--- THIS IS THE FIX
 
   // --- SAVE TEST LOGIC ---
   // Every time the user moves to a new question or answers, save it to localStorage
