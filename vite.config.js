@@ -7,8 +7,6 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      // FIX: Increase limit to 20 MB so you can scale past 50,000 MCQs
-      maximumFileSizeToCacheInBytes: 20 * 1024 * 1024, 
       includeAssets: ['favicon.ico', 'icon.png'],
       manifest: {
         name: 'AK Academy',
@@ -35,8 +33,8 @@ export default defineConfig({
           }
         ]
       },
-      workbench: {
-        // This must be inside the 'workbench' object!
+      // FIX: This must be "workbox" (not workbench)
+      workbox: {
         maximumFileSizeToCacheInBytes: 20 * 1024 * 1024 // 20 MB limit
       }
     })
