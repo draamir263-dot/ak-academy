@@ -52,9 +52,9 @@ export default function TestEngine() {
       pool = chapter ? [...chapter.questions] : [];
     }
     
-    // Filter by Subject Category if selected
+    // Filter by Subject Category accurately using 'q.subject'
     if (paperSubject !== 'All') {
-      pool = pool.filter(q => q.category === paperSubject);
+      pool = pool.filter(q => q.subject === paperSubject);
     }
 
     // Existing Filter Logic
@@ -70,9 +70,8 @@ export default function TestEngine() {
       pool = pool.filter(q => progress.favourites.includes(q.id));
     }
 
-    if (pool.length === 0 && subject) {
-      pool = subject.chapters.flatMap(c => c.questions);
-    }
+    // NOTE: Removed the fallback logic that loaded all questions when pool was empty. 
+    // It was causing Biology to show up when Chemistry was empty.
 
     setTestQuestions(shuffleArray(pool).slice(0, parseInt(numQuestions)));
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -124,7 +123,7 @@ export default function TestEngine() {
   const handlePrevious = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
-      setShowExplanation(!!userAnswers[testQuestions[currentIndex - 1].id]);
+      setShowExplanation(!!userAnswers[testQuestions[currentIndex - 1].id]); 
     }
   };
 

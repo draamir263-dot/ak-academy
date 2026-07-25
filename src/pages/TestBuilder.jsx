@@ -14,12 +14,16 @@ export default function TestBuilder() {
   const [numQuestions, setNumQuestions] = useState(10);
   const [filter, setFilter] = useState('Unused');
   const [timerMode, setTimerMode] = useState('Practice');
-  const [paperSubject, setPaperSubject] = useState('All'); // NEW: Subject Category state
+  const [paperSubject, setPaperSubject] = useState('All'); 
+
+  // Check if the current folder is a Past Paper folder
+  const isPastPaper = subjectName.toLowerCase().includes('past');
 
   const calculateMaxQuestions = () => {
     if (!chapter) return 0;
     return chapter.questions.filter(q => {
-      if (paperSubject !== 'All' && q.category !== paperSubject) return false; // NEW: Filter by category
+      // Filter by subject accurately using the 'subject' key from JSON
+      if (paperSubject !== 'All' && q.subject !== paperSubject) return false; 
       
       if (filter === 'Mixed') return true;
       if (filter === 'Used') return progress.used.includes(q.id);
@@ -38,6 +42,13 @@ export default function TestBuilder() {
       setNumQuestions(maxQuestions > 0 ? maxQuestions : 1);
     }
   }, [filter, maxQuestions, paperSubject]);
+
+  // Reset subject filter if user navigates away from Past Papers
+  useEffect(() => {
+    if (!isPastPaper) {
+      setPaperSubject('All');
+    }
+  }, [isPastPaper]);
 
   const handleNumQuestionsClick = (num) => {
     setNumQuestions(Math.min(num, maxQuestions));
@@ -77,22 +88,24 @@ export default function TestBuilder() {
 
         <div className="bg-white rounded-2xl shadow-xl border border-blue-800 p-8 space-y-8">
           
-          {/* NEW: Subject Category Filter */}
-          <div>
-            <label className="block text-lg font-bold text-blue-900 mb-3">Subject Category</label>
-            <select 
-              value={paperSubject}
-              onChange={(e) => setPaperSubject(e.target.value)}
-              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-blue-900 font-semibold"
-            >
-              <option value="All">All Subjects (Full Paper)</option>
-              <option value="Biology">Biology Only</option>
-              <option value="Chemistry">Chemistry Only</option>
-              <option value="Physics">Physics Only</option>
-              <option value="English">English Only</option>
-              <option value="Logical Reasoning">Logical Reasoning Only</option>
-            </select>
-          </div>
+          {/* Subject Category Filter - ONLY APPEARS FOR PAST PAPERS */}
+          {isPastPaper && (
+            <div>
+              <label className="block text-lg font-bold text-blue-900 mb-3">Subject Category</label>
+              <select 
+                value={paperSubject}
+                onChange={(e) => setPaperSubject(e.target.value)}
+                className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-blue-900 font-semibold"
+              >
+                <option value="All">All Subjects (Full Paper)</option>
+                <option value="Biology">Biology Only</option>
+                <option value="Chemistry">Chemistry Only</option>
+                <option value="Physics">Physics Only</option>
+                <option value="English">English Only</option>
+                <option value="Logical Reasoning">Logical Reasoning Only</option>
+              </select>
+            </div>
+          )}
 
           {/* Question Filter */}
           <div>
