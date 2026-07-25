@@ -45,36 +45,40 @@ export default function Home() {
         </header>
 
         {/* Subject Grid - 2 columns on mobile, 3 columns on laptop */}
-        {/* Removed the 50,000+ section so boxes appear directly without scrolling */}
+        {/* Bulletproof rendering: prevents crash if JSON is broken */}
         <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 max-w-6xl mx-auto">
-          {structuredData.map((subject) => (
-            <div 
-              key={subject.name} 
-              className="bg-white rounded-xl shadow-xl border border-blue-800 p-4 sm:p-6 flex flex-col justify-between hover:scale-105 transition-transform duration-300"
-            >
-              <div>
-                <h2 className="text-lg sm:text-2xl font-bold text-blue-900 mb-2 sm:mb-4">{subject.name}</h2>
-                <div className="flex justify-around gap-2 mb-4 sm:mb-6 bg-blue-50 py-3 sm:py-4 rounded-xl">
-                  <div>
-                    <p className="text-xl sm:text-3xl font-extrabold text-blue-600">{subject.totalMcqs}</p>
-                    <p className="text-[10px] sm:text-xs text-gray-500 font-semibold uppercase mt-1">Total MCQs</p>
-                  </div>
-                  <div className="border-l border-gray-200"></div>
-                  <div>
-                    <p className="text-xl sm:text-3xl font-extrabold text-blue-600">{subject.chapters.length}</p>
-                    <p className="text-[10px] sm:text-xs text-gray-500 font-semibold uppercase mt-1">Chapters</p>
+          {structuredData && structuredData.length > 0 ? (
+            structuredData.map((subject) => (
+              <div 
+                key={subject.name} 
+                className="bg-white rounded-xl shadow-xl border border-blue-800 p-4 sm:p-6 flex flex-col justify-between hover:scale-105 transition-transform duration-300"
+              >
+                <div>
+                  <h2 className="text-lg sm:text-2xl font-bold text-blue-900 mb-2 sm:mb-4">{subject.name}</h2>
+                  <div className="flex justify-around gap-2 mb-4 sm:mb-6 bg-blue-50 py-3 sm:py-4 rounded-xl">
+                    <div>
+                      <p className="text-xl sm:text-3xl font-extrabold text-blue-600">{subject.totalMcqs}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500 font-semibold uppercase mt-1">Total MCQs</p>
+                    </div>
+                    <div className="border-l border-gray-200"></div>
+                    <div>
+                      <p className="text-xl sm:text-3xl font-extrabold text-blue-600">{subject.chapters.length}</p>
+                      <p className="text-[10px] sm:text-xs text-gray-500 font-semibold uppercase mt-1">Chapters</p>
+                    </div>
                   </div>
                 </div>
+                
+                <Link 
+                  to={`/subject/${subject.name}`} 
+                  className="w-full bg-blue-600 text-white py-2 sm:py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors text-center text-sm sm:text-lg shadow-md"
+                >
+                  Start Practice
+                </Link>
               </div>
-              
-              <Link 
-                to={`/subject/${subject.name}`} 
-                className="w-full bg-blue-600 text-white py-2 sm:py-3 rounded-lg font-bold hover:bg-blue-700 transition-colors text-center text-sm sm:text-lg shadow-md"
-              >
-                Start Practice
-              </Link>
-            </div>
-          ))}
+            ))
+          ) : (
+            <p className="text-white col-span-full text-center py-10">Loading subjects... If this stays, check your JSON files for errors.</p>
+          )}
         </div>
       </div>
     </PullToRefresh>
