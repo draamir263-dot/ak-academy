@@ -12,34 +12,62 @@ const shuffleArray = (array) => {
   return shuffled;
 };
 
-// --- BULLETPROOF AUTO-CATEGORIZATION LOGIC ---
-const getAutoCategory = (q) => {
-  const subjectField = (q.subject || q.category || '').toLowerCase();
+// --- AI-STYLE ADVANCED AUTO-CATEGORIZATION ---
+const getAdvancedAutoCategory = (q) => {
+  const fullText = [
+    q.chapter, q.subject, q.question, 
+    q.optionA, q.optionB, q.optionC, q.optionD, 
+    q.explanation, q.explanationA, q.explanationB, q.explanationC, q.explanationD, 
+    q.summary
+  ].join(' ').toLowerCase();
+
+  const keywords = {
+    'Physics': ['physic', 'force', 'velocity', 'energy', 'momentum', 'circuit', 'optics', 'wave', 'motion', 'gravity', 'friction', 'torque', 'magnet', 'electric', 'charge', 'mass', 'acceleration', 'lens', 'mirror', 'heat', 'temperature', 'quantum', 'nuclear', 'projectile', 'fluid', 'pressure', 'newton', 'einstein', 'volt', 'ampere', 'ohm', 'faraday', 'kinetic', 'potential', 'resistor', 'capacitor', 'inductor', 'mechanics', 'dynamics'],
+    'Chemistry': ['chem', 'mole', 'bond', 'reaction', 'acid', 'organic', 'base', 'salt', 'atom', 'molecule', 'electron', 'proton', 'neutron', 'periodic', 'element', 'compound', 'oxidation', 'reduction', 'titration', 'catalyst', 'halogen', 'alkali', 'valency', 'isotope', 'entropy', 'enthalpy', 'ph', 'buffer', 'hydrocarbon', 'functional group'],
+    'Biology': ['bio', 'cell', 'genetic', 'anatom', 'plant', 'organism', 'tissue', 'organ', 'blood', 'dna', 'rna', 'protein', 'enzyme', 'photosynthesis', 'respiration', 'ecosystem', 'evolution', 'bacteria', 'virus', 'mitosis', 'meiosis', 'membrane', 'nucleus', 'chromosome', 'taxonomy', 'physiology'],
+    'English': ['english', 'tense', 'preposition', 'verb', 'grammar', 'sentence', 'noun', 'pronoun', 'adjective', 'adverb', 'punctuation', 'synonym', 'antonym', 'analogy', 'vocab', 'passive', 'active', 'clause', 'phrase', 'idiom', 'voice'],
+    'Logical Reasoning': ['logical', 'deductive', 'inductive reasoning', 'syllogism', 'reasoning', 'argument', 'premise', 'conclusion', 'fallacy', 'assumption', 'deduce', 'infer', 'statement', 'truth value', 'conditional']
+  };
+
+  const scores = { 'Physics': 0, 'Chemistry': 0, 'Biology': 0, 'English': 0, 'Logical Reasoning': 0 };
   
-  if (subjectField.includes('bio')) return 'Biology';
-  if (subjectField.includes('chem')) return 'Chemistry';
-  if (subjectField.includes('phys')) return 'Physics';
-  if (subjectField.includes('eng')) return 'English';
-  if (subjectField.includes('log') || subjectField.includes('reason')) return 'Logical Reasoning';
+  for (const [subject, words] of Object.entries(keywords)) {
+    words.forEach(word => {
+      const regex = new RegExp(word, 'g');
+      const matches = fullText.match(regex);
+      if (matches) scores[subject] += matches.length;
+    });
+  }
+
+  let originalSubject = null;
+  if (q.subject) {
+    const sLower = q.subject.toLowerCase();
+    if (sLower.includes('bio')) originalSubject = 'Biology';
+    else if (sLower.includes('chem')) originalSubject = 'Chemistry';
+    else if (sLower.includes('phys')) originalSubject = 'Physics';
+    else if (sLower.includes('eng')) originalSubject = 'English';
+    else if (sLower.includes('log') || sLower.includes('reason')) originalSubject = 'Logical Reasoning';
+  }
   
-  const textToSearch = `${q.chapter || ''} ${q.question || ''} ${q.summary || ''}`.toLowerCase();
+  if (originalSubject) {
+    scores[originalSubject] += 2;
+  }
+
+  let maxScore = 0;
+  let bestCategory = originalSubject || 'Uncategorized';
+
+  for (const [subject, score] of Object.entries(scores)) {
+    if (score > maxScore) {
+      maxScore = score;
+      bestCategory = subject;
+    }
+  }
+
+  if (maxScore > 2) {
+    return bestCategory;
+  }
   
-  const physicsKeywords = ['physic', 'force', 'velocity', 'energy', 'momentum', 'circuit', 'optics', 'wave', 'motion', 'gravity', 'friction', 'torque', 'magnet', 'electric', 'charge', 'mass', 'acceleration', 'lens', 'mirror', 'heat', 'temperature', 'quantum', 'nuclear', 'projectile', 'fluid', 'pressure', 'newton', 'einstein', 'volt', 'ampere', 'ohm', 'faraday', 'kinetic', 'potential', 'resistor', 'capacitor', 'inductor'];
-  if (physicsKeywords.some(keyword => textToSearch.includes(keyword))) return 'Physics';
-  
-  const bioKeywords = ['bio', 'cell', 'genetic', 'anatom', 'plant', 'organism', 'tissue', 'organ', 'blood', 'dna', 'rna', 'protein', 'enzyme', 'photosynthesis', 'respiration', 'ecosystem', 'evolution', 'bacteria', 'virus', 'mitosis', 'meiosis'];
-  if (bioKeywords.some(keyword => textToSearch.includes(keyword))) return 'Biology';
-  
-  const chemKeywords = ['chem', 'mole', 'bond', 'reaction', 'acid', 'organic', 'base', 'salt', 'atom', 'molecule', 'electron', 'proton', 'neutron', 'periodic', 'element', 'compound', 'oxidation', 'reduction', 'titration', 'catalyst', 'halogen', 'alkali'];
-  if (chemKeywords.some(keyword => textToSearch.includes(keyword))) return 'Chemistry';
-  
-  const engKeywords = ['english', 'tense', 'preposition', 'verb', 'grammar', 'sentence', 'noun', 'pronoun', 'adjective', 'adverb', 'punctuation', 'synonym', 'antonym', 'analogy', 'vocab', 'passive', 'active'];
-  if (engKeywords.some(keyword => textToSearch.includes(keyword))) return 'English';
-  
-  const lrKeywords = ['logical', 'deductive', 'inductive reasoning', 'syllogism', 'reasoning', 'argument', 'premise', 'conclusion', 'fallacy', 'assumption'];
-  if (lrKeywords.some(keyword => textToSearch.includes(keyword))) return 'Logical Reasoning';
-  
-  return 'Uncategorized';
+  return bestCategory;
 };
 
 export default function TestEngine() {
@@ -81,7 +109,7 @@ export default function TestEngine() {
     }
     
     if (paperSubject !== 'All') {
-      pool = pool.filter(q => getAutoCategory(q) === paperSubject);
+      pool = pool.filter(q => getAdvancedAutoCategory(q) === paperSubject);
     }
 
     if (filter === 'Used') {

@@ -3,41 +3,69 @@ import { structuredData } from '../services/questionLoader';
 import { useState, useEffect } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
-// --- BULLETPROOF AUTO-CATEGORIZATION LOGIC ---
-const getAutoCategory = (q) => {
-  // 1. Check explicit subject/category fields case-insensitively
-  const subjectField = (q.subject || q.category || '').toLowerCase();
+// --- AI-STYLE ADVANCED AUTO-CATEGORIZATION ---
+const getAdvancedAutoCategory = (q) => {
+  // 1. Gather ALL text from the MCQ to analyze
+  const fullText = [
+    q.chapter, q.subject, q.question, 
+    q.optionA, q.optionB, q.optionC, q.optionD, 
+    q.explanation, q.explanationA, q.explanationB, q.explanationC, q.explanationD, 
+    q.summary
+  ].join(' ').toLowerCase();
+
+  // 2. Define comprehensive keyword lists for each subject
+  const keywords = {
+    'Physics': ['physic', 'force', 'velocity', 'energy', 'momentum', 'circuit', 'optics', 'wave', 'motion', 'gravity', 'friction', 'torque', 'magnet', 'electric', 'charge', 'mass', 'acceleration', 'lens', 'mirror', 'heat', 'temperature', 'quantum', 'nuclear', 'projectile', 'fluid', 'pressure', 'newton', 'einstein', 'volt', 'ampere', 'ohm', 'faraday', 'kinetic', 'potential', 'resistor', 'capacitor', 'inductor', 'mechanics', 'dynamics'],
+    'Chemistry': ['chem', 'mole', 'bond', 'reaction', 'acid', 'organic', 'base', 'salt', 'atom', 'molecule', 'electron', 'proton', 'neutron', 'periodic', 'element', 'compound', 'oxidation', 'reduction', 'titration', 'catalyst', 'halogen', 'alkali', 'valency', 'isotope', 'entropy', 'enthalpy', 'ph', 'buffer', 'hydrocarbon', 'functional group'],
+    'Biology': ['bio', 'cell', 'genetic', 'anatom', 'plant', 'organism', 'tissue', 'organ', 'blood', 'dna', 'rna', 'protein', 'enzyme', 'photosynthesis', 'respiration', 'ecosystem', 'evolution', 'bacteria', 'virus', 'mitosis', 'meiosis', 'membrane', 'nucleus', 'chromosome', 'taxonomy', 'physiology'],
+    'English': ['english', 'tense', 'preposition', 'verb', 'grammar', 'sentence', 'noun', 'pronoun', 'adjective', 'adverb', 'punctuation', 'synonym', 'antonym', 'analogy', 'vocab', 'passive', 'active', 'clause', 'phrase', 'idiom', 'voice'],
+    'Logical Reasoning': ['logical', 'deductive', 'inductive reasoning', 'syllogism', 'reasoning', 'argument', 'premise', 'conclusion', 'fallacy', 'assumption', 'deduce', 'infer', 'statement', 'truth value', 'conditional']
+  };
+
+  // 3. Calculate a score for each subject based on keyword frequency
+  const scores = { 'Physics': 0, 'Chemistry': 0, 'Biology': 0, 'English': 0, 'Logical Reasoning': 0 };
   
-  if (subjectField.includes('bio')) return 'Biology';
-  if (subjectField.includes('chem')) return 'Chemistry';
-  if (subjectField.includes('phys')) return 'Physics';
-  if (subjectField.includes('eng')) return 'English';
-  if (subjectField.includes('log') || subjectField.includes('reason')) return 'Logical Reasoning';
+  for (const [subject, words] of Object.entries(keywords)) {
+    words.forEach(word => {
+      // Count how many times the word appears
+      const regex = new RegExp(word, 'g');
+      const matches = fullText.match(regex);
+      if (matches) scores[subject] += matches.length;
+    });
+  }
+
+  // 4. Respect the original JSON subject, but only as a 2-point baseline
+  let originalSubject = null;
+  if (q.subject) {
+    const sLower = q.subject.toLowerCase();
+    if (sLower.includes('bio')) originalSubject = 'Biology';
+    else if (sLower.includes('chem')) originalSubject = 'Chemistry';
+    else if (sLower.includes('phys')) originalSubject = 'Physics';
+    else if (sLower.includes('eng')) originalSubject = 'English';
+    else if (sLower.includes('log') || sLower.includes('reason')) originalSubject = 'Logical Reasoning';
+  }
   
-  // 2. Fallback to text analysis if subject field is missing or unrecognized
-  const textToSearch = `${q.chapter || ''} ${q.question || ''} ${q.summary || ''}`.toLowerCase();
+  if (originalSubject) {
+    scores[originalSubject] += 2; // Baseline advantage for the JSON tag
+  }
+
+  // 5. Find the subject with the highest score
+  let maxScore = 0;
+  let bestCategory = originalSubject || 'Uncategorized';
+
+  for (const [subject, score] of Object.entries(scores)) {
+    if (score > maxScore) {
+      maxScore = score;
+      bestCategory = subject;
+    }
+  }
+
+  // If the text has strong evidence (score > 2), it overrides the JSON subject
+  if (maxScore > 2) {
+    return bestCategory;
+  }
   
-  // Physics (Checked FIRST and given a massive keyword list to prevent misclassification)
-  const physicsKeywords = ['physic', 'force', 'velocity', 'energy', 'momentum', 'circuit', 'optics', 'wave', 'motion', 'gravity', 'friction', 'torque', 'magnet', 'electric', 'charge', 'mass', 'acceleration', 'lens', 'mirror', 'heat', 'temperature', 'quantum', 'nuclear', 'projectile', 'fluid', 'pressure', 'newton', 'einstein', 'volt', 'ampere', 'ohm', 'faraday', 'kinetic', 'potential', 'resistor', 'capacitor', 'inductor'];
-  if (physicsKeywords.some(keyword => textToSearch.includes(keyword))) return 'Physics';
-  
-  // Biology
-  const bioKeywords = ['bio', 'cell', 'genetic', 'anatom', 'plant', 'organism', 'tissue', 'organ', 'blood', 'dna', 'rna', 'protein', 'enzyme', 'photosynthesis', 'respiration', 'ecosystem', 'evolution', 'bacteria', 'virus', 'mitosis', 'meiosis'];
-  if (bioKeywords.some(keyword => textToSearch.includes(keyword))) return 'Biology';
-  
-  // Chemistry
-  const chemKeywords = ['chem', 'mole', 'bond', 'reaction', 'acid', 'organic', 'base', 'salt', 'atom', 'molecule', 'electron', 'proton', 'neutron', 'periodic', 'element', 'compound', 'oxidation', 'reduction', 'titration', 'catalyst', 'halogen', 'alkali'];
-  if (chemKeywords.some(keyword => textToSearch.includes(keyword))) return 'Chemistry';
-  
-  // English
-  const engKeywords = ['english', 'tense', 'preposition', 'verb', 'grammar', 'sentence', 'noun', 'pronoun', 'adjective', 'adverb', 'punctuation', 'synonym', 'antonym', 'analogy', 'vocab', 'passive', 'active'];
-  if (engKeywords.some(keyword => textToSearch.includes(keyword))) return 'English';
-  
-  // Logical Reasoning (Removed 'series' and 'induction' to prevent Physics overlap)
-  const lrKeywords = ['logical', 'deductive', 'inductive reasoning', 'syllogism', 'reasoning', 'argument', 'premise', 'conclusion', 'fallacy', 'assumption'];
-  if (lrKeywords.some(keyword => textToSearch.includes(keyword))) return 'Logical Reasoning';
-  
-  return 'Uncategorized';
+  return bestCategory;
 };
 
 export default function TestBuilder() {
@@ -59,7 +87,7 @@ export default function TestBuilder() {
     if (!chapter || !chapter.questions) return 0;
     return chapter.questions.filter(q => {
       if (paperSubject !== 'All') {
-        const qCategory = getAutoCategory(q);
+        const qCategory = getAdvancedAutoCategory(q);
         if (qCategory !== paperSubject) return false; 
       }
       
@@ -129,7 +157,7 @@ export default function TestBuilder() {
           
           {isPastPaper && (
             <div>
-              <label className="block text-lg font-bold text-blue-900 mb-3">Subject Category (Auto-Detected)</label>
+              <label className="block text-lg font-bold text-blue-900 mb-3">Subject Category (Smart AI Detection)</label>
               <select 
                 value={paperSubject}
                 onChange={(e) => setPaperSubject(e.target.value)}
