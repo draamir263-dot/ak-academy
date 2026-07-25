@@ -20,9 +20,10 @@ export default function TestEngine() {
 
   const filter = location.state?.filter || 'Unused';
   const paperSubject = location.state?.paperSubject || 'All';
+  const selectedTopic = location.state?.selectedTopic || chapterName;
 
   const subject = structuredData.find(s => s.name === subjectName);
-  const chapter = subject?.chapters.find(c => c.name === chapterName);
+  const chapter = subject?.chapters.find(c => c.name === selectedTopic);
   
   const [testQuestions, setTestQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -43,9 +44,15 @@ export default function TestEngine() {
       }
     }
 
-    let pool = chapter ? [...chapter.questions] : [];
+    // Determine the pool of questions based on selectedTopic
+    let pool = [];
+    if (selectedTopic === 'All') {
+      pool = subject ? subject.chapters.flatMap(c => c.questions) : [];
+    } else {
+      pool = chapter ? [...chapter.questions] : [];
+    }
     
-    // NEW: Filter by Subject Category if selected
+    // Filter by Subject Category if selected
     if (paperSubject !== 'All') {
       pool = pool.filter(q => q.category === paperSubject);
     }
@@ -63,8 +70,8 @@ export default function TestEngine() {
       pool = pool.filter(q => progress.favourites.includes(q.id));
     }
 
-    if (pool.length === 0 && chapter) {
-      pool = [...chapter.questions];
+    if (pool.length === 0 && subject) {
+      pool = subject.chapters.flatMap(c => c.questions);
     }
 
     setTestQuestions(shuffleArray(pool).slice(0, parseInt(numQuestions)));
