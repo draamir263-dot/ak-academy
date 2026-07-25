@@ -22,33 +22,28 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-blue-900 p-4 md:p-8 text-center">
       
-      {/* Header Section */}
-      <header className="mb-10 mt-8">
-        <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight">AK Academy</h1>
+      {/* Compact Header Section */}
+      <header className="mb-6 mt-4">
+        <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight">AK Academy</h1>
         
         {/* Quranic Verse Section (Shuffles on refresh) */}
-        <div className="mt-6 mb-2 px-4 max-w-xl mx-auto">
+        <div className="mt-3 mb-2 px-4 max-w-xl mx-auto">
           <p 
-            className="text-2xl md:text-3xl font-bold text-yellow-400 mb-3" 
+            className="text-lg md:text-2xl font-bold text-yellow-400 mb-1" 
             style={{ fontFamily: 'serif', direction: 'rtl' }}
           >
             {randomVerse.arabic}
           </p>
-          <p className="text-sm md:text-base text-blue-200 italic">
+          <p className="text-xs md:text-sm text-blue-200 italic">
             "{randomVerse.english}"
           </p>
         </div>
 
-        <p className="text-xl md:text-2xl font-semibold text-white italic mt-6">Make MDCAT on your fingertips.</p>
+        <p className="text-base md:text-xl font-semibold text-white italic mt-2">Make MDCAT on your fingertips.</p>
       </header>
 
-      {/* 50,000+ MCQs Highlight Section */}
-      <div className="mb-10">
-        <h2 className="text-5xl md:text-6xl font-extrabold text-white">50,000+</h2>
-        <p className="text-lg md:text-xl text-blue-200 mt-3 font-medium">High-Yield MCQs with Detailed Explanations</p>
-      </div>
-
       {/* Subject Grid - 2 columns on mobile, 3 columns on laptop */}
+      {/* Removed the 50,000+ section so boxes appear directly without scrolling */}
       <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-6 max-w-6xl mx-auto">
         {structuredData.map((subject) => (
           <div 
