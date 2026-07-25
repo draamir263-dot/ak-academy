@@ -19,6 +19,7 @@ export default function TestEngine() {
   const { progress, recordAnswer, toggleFavourite, isFavourite } = useProgress();
 
   const filter = location.state?.filter || 'Unused';
+  const paperSubject = location.state?.paperSubject || 'All';
 
   const subject = structuredData.find(s => s.name === subjectName);
   const chapter = subject?.chapters.find(c => c.name === chapterName);
@@ -28,11 +29,12 @@ export default function TestEngine() {
   const [userAnswers, setUserAnswers] = useState({}); 
   const [showExplanation, setShowExplanation] = useState(false); 
 
+  // --- RESUME TEST LOGIC ---
   useEffect(() => {
     const savedTest = localStorage.getItem('ak_academy_active_test');
     if (savedTest) {
       const parsed = JSON.parse(savedTest);
-      if (parsed.subjectName === subjectName && parsed.chapterName === chapterName && parsed.numQuestions === numQuestions) {
+      if (parsed.subjectName === subjectName && parsed.chapterName === chapterName && parsed.numQuestions === numQuestions && parsed.paperSubject === paperSubject && parsed.filter === filter) {
         setTestQuestions(parsed.testQuestions);
         setCurrentIndex(parsed.currentIndex);
         setUserAnswers(parsed.userAnswers);
@@ -42,6 +44,13 @@ export default function TestEngine() {
     }
 
     let pool = chapter ? [...chapter.questions] : [];
+    
+    // NEW: Filter by Subject Category if selected
+    if (paperSubject !== 'All') {
+      pool = pool.filter(q => q.category === paperSubject);
+    }
+
+    // Existing Filter Logic
     if (filter === 'Used') {
       pool = pool.filter(q => progress.used.includes(q.id));
     } else if (filter === 'Unused') {
@@ -62,13 +71,14 @@ export default function TestEngine() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // --- SAVE TEST LOGIC ---
   useEffect(() => {
     if (testQuestions.length > 0) {
       localStorage.setItem('ak_academy_active_test', JSON.stringify({
-        subjectName, chapterName, numQuestions, testQuestions, currentIndex, userAnswers
+        subjectName, chapterName, numQuestions, paperSubject, filter, testQuestions, currentIndex, userAnswers
       }));
     }
-  }, [testQuestions, currentIndex, userAnswers, subjectName, chapterName, numQuestions]);
+  }, [testQuestions, currentIndex, userAnswers, subjectName, chapterName, numQuestions, paperSubject, filter]);
 
   if (testQuestions.length === 0) {
     return (
@@ -113,13 +123,11 @@ export default function TestEngine() {
 
   const handleEndTest = () => {
     localStorage.removeItem('ak_academy_active_test');
-    // replace: true prevents the back button from going back into the test
     navigate('/results', { replace: true, state: { testQuestions, userAnswers, subjectName, chapterName } });
   };
 
   const handleExitTest = () => {
     localStorage.removeItem('ak_academy_active_test');
-    // replace: true prevents the back button from going back into the test
     navigate(`/test-builder/${subjectName}/${chapterName}`, { replace: true });
   };
 

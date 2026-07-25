@@ -6,7 +6,7 @@ import { useProgress } from '../context/ProgressContext';
 export default function TestBuilder() {
   const { subjectName, chapterName } = useParams();
   const navigate = useNavigate();
-  const { progress } = useProgress(); // Get user's progress data
+  const { progress } = useProgress();
   
   const subject = structuredData.find(s => s.name === subjectName);
   const chapter = subject?.chapters.find(c => c.name === chapterName);
@@ -14,14 +14,14 @@ export default function TestBuilder() {
   const [numQuestions, setNumQuestions] = useState(10);
   const [filter, setFilter] = useState('Unused');
   const [timerMode, setTimerMode] = useState('Practice');
+  const [paperSubject, setPaperSubject] = useState('All'); // NEW: Subject Category state
 
-  // --- NEW: Dynamically calculate the maximum available questions based on the filter ---
   const calculateMaxQuestions = () => {
     if (!chapter) return 0;
-    if (filter === 'Mixed') return chapter.totalMcqs;
-    
-    // Filter the chapter's questions based on the user's progress
     return chapter.questions.filter(q => {
+      if (paperSubject !== 'All' && q.category !== paperSubject) return false; // NEW: Filter by category
+      
+      if (filter === 'Mixed') return true;
       if (filter === 'Used') return progress.used.includes(q.id);
       if (filter === 'Unused') return !progress.used.includes(q.id);
       if (filter === 'Correct') return progress.correct.includes(q.id);
@@ -33,31 +33,25 @@ export default function TestBuilder() {
 
   const maxQuestions = calculateMaxQuestions();
 
-  // --- NEW: If the user switches filters and their selected number is too high, clamp it down ---
   useEffect(() => {
     if (numQuestions > maxQuestions) {
       setNumQuestions(maxQuestions > 0 ? maxQuestions : 1);
     }
-  }, [filter, maxQuestions]); // Runs whenever filter or maxQuestions changes
+  }, [filter, maxQuestions, paperSubject]);
 
   const handleNumQuestionsClick = (num) => {
-    // If they click a predefined button, don't exceed the max available
     setNumQuestions(Math.min(num, maxQuestions));
   };
 
   const handleCustomInputChange = (e) => {
     const val = e.target.value;
-    // Prevent typing a number higher than the max available
-    if (val === '') {
-      setNumQuestions('');
-    } else {
-      setNumQuestions(Math.min(parseInt(val), maxQuestions));
-    }
+    if (val === '') setNumQuestions('');
+    else setNumQuestions(Math.min(parseInt(val), maxQuestions));
   };
 
   const startTest = () => {
-    if (maxQuestions === 0) return; // Prevent starting if no questions match
-    navigate(`/test-engine/${subjectName}/${chapterName}/${numQuestions}`, { state: { filter } });
+    if (maxQuestions === 0) return;
+    navigate(`/test-engine/${subjectName}/${chapterName}/${numQuestions}`, { state: { filter, paperSubject } });
   };
 
   if (!chapter) {
@@ -83,7 +77,24 @@ export default function TestBuilder() {
 
         <div className="bg-white rounded-2xl shadow-xl border border-blue-800 p-8 space-y-8">
           
-          {/* Question Filter (Moved up because it affects the max number) */}
+          {/* NEW: Subject Category Filter */}
+          <div>
+            <label className="block text-lg font-bold text-blue-900 mb-3">Subject Category</label>
+            <select 
+              value={paperSubject}
+              onChange={(e) => setPaperSubject(e.target.value)}
+              className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-blue-900 font-semibold"
+            >
+              <option value="All">All Subjects (Full Paper)</option>
+              <option value="Biology">Biology Only</option>
+              <option value="Chemistry">Chemistry Only</option>
+              <option value="Physics">Physics Only</option>
+              <option value="English">English Only</option>
+              <option value="Logical Reasoning">Logical Reasoning Only</option>
+            </select>
+          </div>
+
+          {/* Question Filter */}
           <div>
             <label className="block text-lg font-bold text-blue-900 mb-3">Question Filter</label>
             <select 
@@ -104,18 +115,13 @@ export default function TestBuilder() {
           <div>
             <label className="block text-lg font-bold text-blue-900 mb-3">
               Number of Questions
-              {/* Dynamic display of available questions */}
-              <span className="ml-2 text-sm font-medium text-gray-500">
-                ({maxQuestions} available for this filter)
-              </span>
+              <span className="ml-2 text-sm font-medium text-gray-500">({maxQuestions} available for this filter)</span>
             </label>
-            
             <div className="flex flex-wrap gap-2">
               {[10, 20, 30, 50, 75, 100].map(num => (
                 <button 
                   key={num}
                   onClick={() => handleNumQuestionsClick(num)}
-                  // Highlight if selected, disable if it exceeds maxQuestions
                   className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
                     numQuestions === num ? 'bg-blue-600 text-white' : 
                     num > maxQuestions ? 'bg-gray-100 text-gray-400 cursor-not-allowed' : 
@@ -127,7 +133,6 @@ export default function TestBuilder() {
                 </button>
               ))}
             </div>
-            
             <input 
               type="number" 
               min="1" 
@@ -156,7 +161,6 @@ export default function TestBuilder() {
                 Timed Mode
               </button>
             </div>
-            
             {timerMode === 'Timed' && (
               <select className="w-full p-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:outline-none text-blue-900 font-semibold">
                 <option value="15">15 Minutes</option>
@@ -169,7 +173,7 @@ export default function TestBuilder() {
             )}
           </div>
 
-          {/* Start Test Button / Warning Message */}
+          {/* Start Test Button */}
           {maxQuestions === 0 ? (
             <div className="w-full bg-red-100 text-red-700 py-4 rounded-xl font-bold text-lg text-center border border-red-200">
               No questions match this filter yet!
@@ -182,7 +186,6 @@ export default function TestBuilder() {
               Start Test
             </button>
           )}
-
         </div>
       </div>
     </div>
