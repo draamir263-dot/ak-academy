@@ -3,34 +3,39 @@ import { structuredData } from '../services/questionLoader';
 import { useState, useEffect } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
-// --- AUTO-CATEGORIZATION LOGIC ---
-// This function reads the question and automatically assigns a subject category
+// --- BULLETPROOF AUTO-CATEGORIZATION LOGIC ---
 const getAutoCategory = (q) => {
-  const validSubjects = ['Biology', 'Chemistry', 'Physics', 'English', 'Logical Reasoning'];
+  // 1. Check explicit subject/category fields case-insensitively
+  const subjectField = (q.subject || q.category || '').toLowerCase();
   
-  // 1. If the subject is already perfectly spelled, use it
-  if (q.subject && validSubjects.includes(q.subject)) {
-    return q.subject;
-  }
-
-  // 2. If not, read the chapter, subject, and question text to guess the category
-  const textToSearch = `${q.subject || ''} ${q.chapter || ''} ${q.question || ''} ${q.summary || ''}`.toLowerCase();
+  if (subjectField.includes('bio')) return 'Biology';
+  if (subjectField.includes('chem')) return 'Chemistry';
+  if (subjectField.includes('phys')) return 'Physics';
+  if (subjectField.includes('eng')) return 'English';
+  if (subjectField.includes('log') || subjectField.includes('reason')) return 'Logical Reasoning';
   
-  if (textToSearch.includes('bio') || textToSearch.includes('cell') || textToSearch.includes('genetic') || textToSearch.includes('anatom') || textToSearch.includes('plant') || textToSearch.includes('organism')) {
-    return 'Biology';
-  }
-  if (textToSearch.includes('chem') || textToSearch.includes('mole') || textToSearch.includes('bond') || textToSearch.includes('reaction') || textToSearch.includes('acid') || textToSearch.includes('organic')) {
-    return 'Chemistry';
-  }
-  if (textToSearch.includes('physic') || textToSearch.includes('force') || textToSearch.includes('velocity') || textToSearch.includes('energy') || textToSearch.includes('momentum') || textToSearch.includes('circuit') || textToSearch.includes('optics')) {
-    return 'Physics';
-  }
-  if (textToSearch.includes('english') || textToSearch.includes('tense') || textToSearch.includes('preposition') || textToSearch.includes('verb') || textToSearch.includes('grammar') || textToSearch.includes('sentence')) {
-    return 'English';
-  }
-  if (textToSearch.includes('logical') || textToSearch.includes('series') || textToSearch.includes('deduction') || textToSearch.includes('induction') || textToSearch.includes('argument') || textToSearch.includes('reasoning')) {
-    return 'Logical Reasoning';
-  }
+  // 2. Fallback to text analysis if subject field is missing or unrecognized
+  const textToSearch = `${q.chapter || ''} ${q.question || ''} ${q.summary || ''}`.toLowerCase();
+  
+  // Physics (Checked FIRST and given a massive keyword list to prevent misclassification)
+  const physicsKeywords = ['physic', 'force', 'velocity', 'energy', 'momentum', 'circuit', 'optics', 'wave', 'motion', 'gravity', 'friction', 'torque', 'magnet', 'electric', 'charge', 'mass', 'acceleration', 'lens', 'mirror', 'heat', 'temperature', 'quantum', 'nuclear', 'projectile', 'fluid', 'pressure', 'newton', 'einstein', 'volt', 'ampere', 'ohm', 'faraday', 'kinetic', 'potential', 'resistor', 'capacitor', 'inductor'];
+  if (physicsKeywords.some(keyword => textToSearch.includes(keyword))) return 'Physics';
+  
+  // Biology
+  const bioKeywords = ['bio', 'cell', 'genetic', 'anatom', 'plant', 'organism', 'tissue', 'organ', 'blood', 'dna', 'rna', 'protein', 'enzyme', 'photosynthesis', 'respiration', 'ecosystem', 'evolution', 'bacteria', 'virus', 'mitosis', 'meiosis'];
+  if (bioKeywords.some(keyword => textToSearch.includes(keyword))) return 'Biology';
+  
+  // Chemistry
+  const chemKeywords = ['chem', 'mole', 'bond', 'reaction', 'acid', 'organic', 'base', 'salt', 'atom', 'molecule', 'electron', 'proton', 'neutron', 'periodic', 'element', 'compound', 'oxidation', 'reduction', 'titration', 'catalyst', 'halogen', 'alkali'];
+  if (chemKeywords.some(keyword => textToSearch.includes(keyword))) return 'Chemistry';
+  
+  // English
+  const engKeywords = ['english', 'tense', 'preposition', 'verb', 'grammar', 'sentence', 'noun', 'pronoun', 'adjective', 'adverb', 'punctuation', 'synonym', 'antonym', 'analogy', 'vocab', 'passive', 'active'];
+  if (engKeywords.some(keyword => textToSearch.includes(keyword))) return 'English';
+  
+  // Logical Reasoning (Removed 'series' and 'induction' to prevent Physics overlap)
+  const lrKeywords = ['logical', 'deductive', 'inductive reasoning', 'syllogism', 'reasoning', 'argument', 'premise', 'conclusion', 'fallacy', 'assumption'];
+  if (lrKeywords.some(keyword => textToSearch.includes(keyword))) return 'Logical Reasoning';
   
   return 'Uncategorized';
 };
@@ -48,13 +53,11 @@ export default function TestBuilder() {
   const [timerMode, setTimerMode] = useState('Practice');
   const [paperSubject, setPaperSubject] = useState('All'); 
 
-  // Check if the current folder is a Past Paper folder
   const isPastPaper = subjectName?.toLowerCase().includes('past');
 
   const calculateMaxQuestions = () => {
     if (!chapter || !chapter.questions) return 0;
     return chapter.questions.filter(q => {
-      // Use Auto-Categorization for filtering
       if (paperSubject !== 'All') {
         const qCategory = getAutoCategory(q);
         if (qCategory !== paperSubject) return false; 
@@ -124,7 +127,6 @@ export default function TestBuilder() {
 
         <div className="bg-white rounded-2xl shadow-xl border border-blue-800 p-8 space-y-8">
           
-          {/* Subject Category Filter - ONLY APPEARS FOR PAST PAPERS */}
           {isPastPaper && (
             <div>
               <label className="block text-lg font-bold text-blue-900 mb-3">Subject Category (Auto-Detected)</label>
@@ -143,7 +145,6 @@ export default function TestBuilder() {
             </div>
           )}
 
-          {/* Question Filter */}
           <div>
             <label className="block text-lg font-bold text-blue-900 mb-3">Question Filter</label>
             <select 
@@ -160,7 +161,6 @@ export default function TestBuilder() {
             </select>
           </div>
 
-          {/* Number of Questions */}
           <div>
             <label className="block text-lg font-bold text-blue-900 mb-3">
               Number of Questions
@@ -193,7 +193,6 @@ export default function TestBuilder() {
             <span className="ml-2 text-sm text-gray-500">Custom (Max: {maxQuestions})</span>
           </div>
 
-          {/* Timer Mode */}
           <div>
             <label className="block text-lg font-bold text-blue-900 mb-3">Timer Mode</label>
             <div className="flex flex-wrap gap-2 mb-4">
@@ -222,7 +221,6 @@ export default function TestBuilder() {
             )}
           </div>
 
-          {/* Start Test Button */}
           {maxQuestions === 0 ? (
             <div className="w-full bg-red-100 text-red-700 py-4 rounded-xl font-bold text-lg text-center border border-red-200">
               No questions match this filter yet!

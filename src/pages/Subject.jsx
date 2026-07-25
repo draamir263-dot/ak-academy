@@ -19,6 +19,9 @@ export default function Subject() {
     );
   }
 
+  // Calculate total MCQs dynamically if the property is missing in the JSON
+  const totalMcqsCount = subject.totalMcqs || subject.chapters.reduce((acc, ch) => acc + (ch.questions?.length || 0), 0);
+
   // SORTING LOGIC: Bring "Demo" to the top, and sort the rest alphabetically & numerically
   const sortedChapters = [...subject.chapters].sort((a, b) => {
     const aIsDemo = a.name.toLowerCase().includes("demo");
@@ -37,13 +40,15 @@ export default function Subject() {
         
         <header className="mb-8 text-center">
           <h1 className="text-4xl font-extrabold text-white">{subject.name}</h1>
-          <p className="text-lg text-blue-300 mt-2">{subject.totalMcqs} Total MCQs | {subject.chapters.length} Chapters</p>
+          <p className="text-lg text-blue-300 mt-2">{totalMcqsCount} Total MCQs | {subject.chapters.length} Chapters</p>
         </header>
 
         {/* GRID LAYOUT: 2 columns on mobile, 3 columns on larger screens */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4">
           {sortedChapters.map((chapter, index) => {
             const isLocked = !chapter.name.toLowerCase().includes("demo") && (!currentUser || !isPremium);
+            // Dynamic chapter MCQ count fallback
+            const chapterMcqCount = chapter.totalMcqs || chapter.questions?.length || 0;
 
             return (
               <div 
@@ -56,7 +61,7 @@ export default function Subject() {
                 </div>
                 
                 <div>
-                  <p className="text-xs text-gray-500 mb-3">{chapter.totalMcqs} MCQs</p>
+                  <p className="text-xs text-gray-500 mb-3">{chapterMcqCount} MCQs</p>
                   
                   {isLocked ? (
                     <Link 

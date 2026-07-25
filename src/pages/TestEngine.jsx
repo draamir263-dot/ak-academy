@@ -12,31 +12,32 @@ const shuffleArray = (array) => {
   return shuffled;
 };
 
-// --- AUTO-CATEGORIZATION LOGIC ---
+// --- BULLETPROOF AUTO-CATEGORIZATION LOGIC ---
 const getAutoCategory = (q) => {
-  const validSubjects = ['Biology', 'Chemistry', 'Physics', 'English', 'Logical Reasoning'];
+  const subjectField = (q.subject || q.category || '').toLowerCase();
   
-  if (q.subject && validSubjects.includes(q.subject)) {
-    return q.subject;
-  }
-
-  const textToSearch = `${q.subject || ''} ${q.chapter || ''} ${q.question || ''} ${q.summary || ''}`.toLowerCase();
+  if (subjectField.includes('bio')) return 'Biology';
+  if (subjectField.includes('chem')) return 'Chemistry';
+  if (subjectField.includes('phys')) return 'Physics';
+  if (subjectField.includes('eng')) return 'English';
+  if (subjectField.includes('log') || subjectField.includes('reason')) return 'Logical Reasoning';
   
-  if (textToSearch.includes('bio') || textToSearch.includes('cell') || textToSearch.includes('genetic') || textToSearch.includes('anatom') || textToSearch.includes('plant') || textToSearch.includes('organism')) {
-    return 'Biology';
-  }
-  if (textToSearch.includes('chem') || textToSearch.includes('mole') || textToSearch.includes('bond') || textToSearch.includes('reaction') || textToSearch.includes('acid') || textToSearch.includes('organic')) {
-    return 'Chemistry';
-  }
-  if (textToSearch.includes('physic') || textToSearch.includes('force') || textToSearch.includes('velocity') || textToSearch.includes('energy') || textToSearch.includes('momentum') || textToSearch.includes('circuit') || textToSearch.includes('optics')) {
-    return 'Physics';
-  }
-  if (textToSearch.includes('english') || textToSearch.includes('tense') || textToSearch.includes('preposition') || textToSearch.includes('verb') || textToSearch.includes('grammar') || textToSearch.includes('sentence')) {
-    return 'English';
-  }
-  if (textToSearch.includes('logical') || textToSearch.includes('series') || textToSearch.includes('deduction') || textToSearch.includes('induction') || textToSearch.includes('argument') || textToSearch.includes('reasoning')) {
-    return 'Logical Reasoning';
-  }
+  const textToSearch = `${q.chapter || ''} ${q.question || ''} ${q.summary || ''}`.toLowerCase();
+  
+  const physicsKeywords = ['physic', 'force', 'velocity', 'energy', 'momentum', 'circuit', 'optics', 'wave', 'motion', 'gravity', 'friction', 'torque', 'magnet', 'electric', 'charge', 'mass', 'acceleration', 'lens', 'mirror', 'heat', 'temperature', 'quantum', 'nuclear', 'projectile', 'fluid', 'pressure', 'newton', 'einstein', 'volt', 'ampere', 'ohm', 'faraday', 'kinetic', 'potential', 'resistor', 'capacitor', 'inductor'];
+  if (physicsKeywords.some(keyword => textToSearch.includes(keyword))) return 'Physics';
+  
+  const bioKeywords = ['bio', 'cell', 'genetic', 'anatom', 'plant', 'organism', 'tissue', 'organ', 'blood', 'dna', 'rna', 'protein', 'enzyme', 'photosynthesis', 'respiration', 'ecosystem', 'evolution', 'bacteria', 'virus', 'mitosis', 'meiosis'];
+  if (bioKeywords.some(keyword => textToSearch.includes(keyword))) return 'Biology';
+  
+  const chemKeywords = ['chem', 'mole', 'bond', 'reaction', 'acid', 'organic', 'base', 'salt', 'atom', 'molecule', 'electron', 'proton', 'neutron', 'periodic', 'element', 'compound', 'oxidation', 'reduction', 'titration', 'catalyst', 'halogen', 'alkali'];
+  if (chemKeywords.some(keyword => textToSearch.includes(keyword))) return 'Chemistry';
+  
+  const engKeywords = ['english', 'tense', 'preposition', 'verb', 'grammar', 'sentence', 'noun', 'pronoun', 'adjective', 'adverb', 'punctuation', 'synonym', 'antonym', 'analogy', 'vocab', 'passive', 'active'];
+  if (engKeywords.some(keyword => textToSearch.includes(keyword))) return 'English';
+  
+  const lrKeywords = ['logical', 'deductive', 'inductive reasoning', 'syllogism', 'reasoning', 'argument', 'premise', 'conclusion', 'fallacy', 'assumption'];
+  if (lrKeywords.some(keyword => textToSearch.includes(keyword))) return 'Logical Reasoning';
   
   return 'Uncategorized';
 };
@@ -59,7 +60,6 @@ export default function TestEngine() {
   const [userAnswers, setUserAnswers] = useState({}); 
   const [showExplanation, setShowExplanation] = useState(false); 
 
-  // --- RESUME TEST LOGIC ---
   useEffect(() => {
     const savedTest = localStorage.getItem('ak_academy_active_test');
     if (savedTest) {
@@ -73,7 +73,6 @@ export default function TestEngine() {
       }
     }
 
-    // Determine the pool of questions based on selectedTopic
     let pool = [];
     if (selectedTopic === 'All') {
       pool = subject ? subject.chapters.flatMap(c => c.questions) : [];
@@ -81,12 +80,10 @@ export default function TestEngine() {
       pool = chapter ? [...chapter.questions] : [];
     }
     
-    // Filter by Subject Category accurately using Auto-Categorization
     if (paperSubject !== 'All') {
       pool = pool.filter(q => getAutoCategory(q) === paperSubject);
     }
 
-    // Existing Filter Logic
     if (filter === 'Used') {
       pool = pool.filter(q => progress.used.includes(q.id));
     } else if (filter === 'Unused') {
@@ -103,7 +100,6 @@ export default function TestEngine() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // --- SAVE TEST LOGIC ---
   useEffect(() => {
     if (testQuestions.length > 0) {
       localStorage.setItem('ak_academy_active_test', JSON.stringify({
