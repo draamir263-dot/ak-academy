@@ -12,6 +12,35 @@ const shuffleArray = (array) => {
   return shuffled;
 };
 
+// --- AUTO-CATEGORIZATION LOGIC ---
+const getAutoCategory = (q) => {
+  const validSubjects = ['Biology', 'Chemistry', 'Physics', 'English', 'Logical Reasoning'];
+  
+  if (q.subject && validSubjects.includes(q.subject)) {
+    return q.subject;
+  }
+
+  const textToSearch = `${q.subject || ''} ${q.chapter || ''} ${q.question || ''} ${q.summary || ''}`.toLowerCase();
+  
+  if (textToSearch.includes('bio') || textToSearch.includes('cell') || textToSearch.includes('genetic') || textToSearch.includes('anatom') || textToSearch.includes('plant') || textToSearch.includes('organism')) {
+    return 'Biology';
+  }
+  if (textToSearch.includes('chem') || textToSearch.includes('mole') || textToSearch.includes('bond') || textToSearch.includes('reaction') || textToSearch.includes('acid') || textToSearch.includes('organic')) {
+    return 'Chemistry';
+  }
+  if (textToSearch.includes('physic') || textToSearch.includes('force') || textToSearch.includes('velocity') || textToSearch.includes('energy') || textToSearch.includes('momentum') || textToSearch.includes('circuit') || textToSearch.includes('optics')) {
+    return 'Physics';
+  }
+  if (textToSearch.includes('english') || textToSearch.includes('tense') || textToSearch.includes('preposition') || textToSearch.includes('verb') || textToSearch.includes('grammar') || textToSearch.includes('sentence')) {
+    return 'English';
+  }
+  if (textToSearch.includes('logical') || textToSearch.includes('series') || textToSearch.includes('deduction') || textToSearch.includes('induction') || textToSearch.includes('argument') || textToSearch.includes('reasoning')) {
+    return 'Logical Reasoning';
+  }
+  
+  return 'Uncategorized';
+};
+
 export default function TestEngine() {
   const { subjectName, chapterName, numQuestions } = useParams();
   const location = useLocation();
@@ -52,9 +81,9 @@ export default function TestEngine() {
       pool = chapter ? [...chapter.questions] : [];
     }
     
-    // Filter by Subject Category accurately using 'q.subject'
+    // Filter by Subject Category accurately using Auto-Categorization
     if (paperSubject !== 'All') {
-      pool = pool.filter(q => q.subject === paperSubject);
+      pool = pool.filter(q => getAutoCategory(q) === paperSubject);
     }
 
     // Existing Filter Logic
@@ -70,10 +99,7 @@ export default function TestEngine() {
       pool = pool.filter(q => progress.favourites.includes(q.id));
     }
 
-    // NOTE: Removed the fallback logic that loaded all questions when pool was empty. 
-    // It was causing Biology to show up when Chemistry was empty.
-
-    setTestQuestions(shuffleArray(pool).slice(0, parseInt(numQuestions)));
+    setTestQuestions(shuffleArray(pool).slice(0, parseInt(numQuestions) || 0));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -91,7 +117,7 @@ export default function TestEngine() {
       <div className="min-h-screen bg-blue-900 p-8 text-center flex items-center justify-center">
         <div>
           <h1 className="text-2xl font-bold text-red-400">No questions found for this filter!</h1>
-          <Link to="/" className="text-yellow-400 underline mt-4 inline-block">Go Home</Link>
+          <Link to={`/test-builder/${subjectName}/${chapterName}`} className="text-yellow-400 underline mt-4 inline-block">Go Back</Link>
         </div>
       </div>
     );

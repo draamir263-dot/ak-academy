@@ -3,6 +3,38 @@ import { structuredData } from '../services/questionLoader';
 import { useState, useEffect } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
+// --- AUTO-CATEGORIZATION LOGIC ---
+// This function reads the question and automatically assigns a subject category
+const getAutoCategory = (q) => {
+  const validSubjects = ['Biology', 'Chemistry', 'Physics', 'English', 'Logical Reasoning'];
+  
+  // 1. If the subject is already perfectly spelled, use it
+  if (q.subject && validSubjects.includes(q.subject)) {
+    return q.subject;
+  }
+
+  // 2. If not, read the chapter, subject, and question text to guess the category
+  const textToSearch = `${q.subject || ''} ${q.chapter || ''} ${q.question || ''} ${q.summary || ''}`.toLowerCase();
+  
+  if (textToSearch.includes('bio') || textToSearch.includes('cell') || textToSearch.includes('genetic') || textToSearch.includes('anatom') || textToSearch.includes('plant') || textToSearch.includes('organism')) {
+    return 'Biology';
+  }
+  if (textToSearch.includes('chem') || textToSearch.includes('mole') || textToSearch.includes('bond') || textToSearch.includes('reaction') || textToSearch.includes('acid') || textToSearch.includes('organic')) {
+    return 'Chemistry';
+  }
+  if (textToSearch.includes('physic') || textToSearch.includes('force') || textToSearch.includes('velocity') || textToSearch.includes('energy') || textToSearch.includes('momentum') || textToSearch.includes('circuit') || textToSearch.includes('optics')) {
+    return 'Physics';
+  }
+  if (textToSearch.includes('english') || textToSearch.includes('tense') || textToSearch.includes('preposition') || textToSearch.includes('verb') || textToSearch.includes('grammar') || textToSearch.includes('sentence')) {
+    return 'English';
+  }
+  if (textToSearch.includes('logical') || textToSearch.includes('series') || textToSearch.includes('deduction') || textToSearch.includes('induction') || textToSearch.includes('argument') || textToSearch.includes('reasoning')) {
+    return 'Logical Reasoning';
+  }
+  
+  return 'Uncategorized';
+};
+
 export default function TestBuilder() {
   const { subjectName, chapterName } = useParams();
   const navigate = useNavigate();
@@ -17,13 +49,16 @@ export default function TestBuilder() {
   const [paperSubject, setPaperSubject] = useState('All'); 
 
   // Check if the current folder is a Past Paper folder
-  const isPastPaper = subjectName.toLowerCase().includes('past');
+  const isPastPaper = subjectName?.toLowerCase().includes('past');
 
   const calculateMaxQuestions = () => {
-    if (!chapter) return 0;
+    if (!chapter || !chapter.questions) return 0;
     return chapter.questions.filter(q => {
-      // Filter by subject accurately using the 'subject' key from JSON
-      if (paperSubject !== 'All' && q.subject !== paperSubject) return false; 
+      // Use Auto-Categorization for filtering
+      if (paperSubject !== 'All') {
+        const qCategory = getAutoCategory(q);
+        if (qCategory !== paperSubject) return false; 
+      }
       
       if (filter === 'Mixed') return true;
       if (filter === 'Used') return progress.used.includes(q.id);
@@ -38,12 +73,13 @@ export default function TestBuilder() {
   const maxQuestions = calculateMaxQuestions();
 
   useEffect(() => {
-    if (numQuestions > maxQuestions) {
-      setNumQuestions(maxQuestions > 0 ? maxQuestions : 1);
+    if (maxQuestions === 0) {
+      setNumQuestions(0);
+    } else if (numQuestions > maxQuestions || numQuestions === 0) {
+      setNumQuestions(maxQuestions);
     }
-  }, [filter, maxQuestions, paperSubject]);
+  }, [filter, maxQuestions, paperSubject, numQuestions]);
 
-  // Reset subject filter if user navigates away from Past Papers
   useEffect(() => {
     if (!isPastPaper) {
       setPaperSubject('All');
@@ -83,7 +119,7 @@ export default function TestBuilder() {
         
         <header className="mb-8 text-center">
           <h1 className="text-3xl font-extrabold text-white">{chapter.name}</h1>
-          <p className="text-lg text-blue-300 mt-2">{chapter.totalMcqs} Total MCQs in Chapter</p>
+          <p className="text-lg text-blue-300 mt-2">{chapter.questions?.length || 0} Total MCQs in Chapter</p>
         </header>
 
         <div className="bg-white rounded-2xl shadow-xl border border-blue-800 p-8 space-y-8">
@@ -91,7 +127,7 @@ export default function TestBuilder() {
           {/* Subject Category Filter - ONLY APPEARS FOR PAST PAPERS */}
           {isPastPaper && (
             <div>
-              <label className="block text-lg font-bold text-blue-900 mb-3">Subject Category</label>
+              <label className="block text-lg font-bold text-blue-900 mb-3">Subject Category (Auto-Detected)</label>
               <select 
                 value={paperSubject}
                 onChange={(e) => setPaperSubject(e.target.value)}
