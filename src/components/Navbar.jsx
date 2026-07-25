@@ -10,7 +10,7 @@ export default function Navbar() {
   const handleLogout = async () => {
     await logout();
     setShowDropdown(false);
-    navigate('/');
+    navigate('/', { replace: true });
   };
 
   const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)) : 0;
@@ -21,22 +21,19 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           
-          {/* Logo / Home Link */}
-          <Link to="/" className="flex items-center space-x-2">
+          <Link to="/" replace className="flex items-center space-x-2">
             <span className="text-2xl">🩺</span>
             <span className="font-extrabold text-xl text-white hidden sm:block">AK Academy</span>
           </Link>
 
-          {/* Navigation Links */}
           <div className="flex items-center space-x-2 sm:space-x-4 md:space-x-6">
-            <Link to="/" className="text-blue-200 hover:text-white px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            <Link to="/" replace className="text-blue-200 hover:text-white px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Home
             </Link>
-            <Link to="/dashboard" className="text-blue-200 hover:text-white px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors">
+            <Link to="/dashboard" replace className="text-blue-200 hover:text-white px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Dashboard
             </Link>
             
-            {/* SECRET ADMIN BUTTON */}
             {currentUser && currentUser.email?.toLowerCase() === "draamir308@gmail.com" && (
               <Link 
                 to="/admin" 
@@ -46,7 +43,6 @@ export default function Navbar() {
               </Link>
             )}
             
-            {/* PROFILE DROPDOWN */}
             {currentUser ? (
               <div className="relative">
                 <button 
@@ -55,12 +51,11 @@ export default function Navbar() {
                 >
                   <span className="w-6 h-6 bg-white text-blue-900 rounded-full flex items-center justify-center text-xs uppercase">
                     {userName.charAt(0)}
-                  </span>
+                </span>
                   <span className="hidden sm:block capitalize">{userName}</span>
                   <span className="text-xs">▼</span>
                 </button>
 
-                {/* Dropdown Menu */}
                 {showDropdown && (
                   <div className="absolute right-0 mt-2 w-72 bg-white rounded-xl shadow-2xl border border-gray-100 p-4 z-50">
                     <p className="text-xs text-gray-400 font-semibold uppercase">Logged in as</p>
