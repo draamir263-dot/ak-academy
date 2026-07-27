@@ -134,7 +134,7 @@ export default function Home() {
         .aurora-btn:hover { box-shadow: 0 8px 22px rgba(69,104,220,0.5); transform: translateY(-1px); }
       `}</style>
 
-      <div className="relative min-h-screen aurora-bg overflow-hidden p-2 md:p-5 text-center">
+      <div className="relative min-h-screen aurora-bg overflow-hidden flex flex-col justify-center p-3 md:p-6 text-center">
         {/* Floating aurora blobs (decorative, behind content) */}
         <div className="aurora-blob b1" />
         <div className="aurora-blob b2" />
@@ -142,32 +142,32 @@ export default function Home() {
         <div className="aurora-blob b4" />
 
         {/* Content sits above the blobs */}
-        <div className="relative z-10">
+        <div className="relative z-10 w-full">
 
           {/* Header Section */}
-          <header className="mb-3 mt-2">
-            <div className="w-9 h-9 mx-auto mb-2 rounded-xl flex items-center justify-center text-white aurora-badge">
-              <div className="w-4 h-4">{logoIcon}</div>
+          <header className="mb-5 mt-2">
+            <div className="w-11 h-11 mx-auto mb-3 rounded-xl flex items-center justify-center text-white aurora-badge">
+              <div className="w-5 h-5">{logoIcon}</div>
             </div>
 
-            <h1 className="text-xl md:text-3xl font-extrabold tracking-tight aurora-title">AK Academy</h1>
+            <h1 className="text-2xl md:text-4xl font-extrabold tracking-tight aurora-title">AK Academy</h1>
 
             {/* Quranic Verse Section (Shuffles on refresh) */}
-            <div className="mt-2 mb-1 px-4 max-w-xl mx-auto">
-              <div className="aurora-versebox rounded-xl px-3 py-2">
+            <div className="mt-3 mb-2 px-4 max-w-xl mx-auto">
+              <div className="aurora-versebox rounded-xl px-4 py-3">
                 <p
-                  className="text-sm md:text-lg font-bold mb-0.5"
+                  className="text-base md:text-xl font-bold mb-1"
                   style={{ fontFamily: 'serif', direction: 'rtl', color: '#ffe9a8', textShadow: '0 2px 12px rgba(255,214,120,0.35)' }}
                 >
                   {randomVerse.arabic}
                 </p>
-                <p className="text-[10px] md:text-xs italic" style={{ color: '#eee9ff' }}>
+                <p className="text-xs md:text-sm italic" style={{ color: '#eee9ff' }}>
                   "{randomVerse.english}"
                 </p>
               </div>
             </div>
 
-            <p className="flex items-center justify-center gap-1.5 text-xs md:text-base font-semibold text-white italic mt-1.5">
+            <p className="flex items-center justify-center gap-2 text-sm md:text-lg font-semibold text-white italic mt-2">
               <span style={{ color: '#ffe9a8' }}>✦</span>
               Make MDCAT on your fingertips.
               <span style={{ color: '#ffe9a8' }}>✦</span>
@@ -176,38 +176,38 @@ export default function Home() {
 
           {/* Subject Grid - 2 columns on mobile, 3 columns on laptop */}
           {/* Bulletproof rendering: prevents crash if JSON is broken */}
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-2 sm:gap-3 max-w-6xl mx-auto">
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-5 max-w-6xl mx-auto">
             {structuredData && structuredData.length > 0 ? (
               structuredData.map((subject) => (
                 <div
                   key={subject.name}
-                  className="aurora-card rounded-xl p-2.5 sm:p-4 flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300"
+                  className="aurora-card rounded-2xl p-3.5 sm:p-5 flex flex-col justify-between hover:-translate-y-1 transition-transform duration-300"
                 >
                   <div>
-                    <div className="w-7 h-7 sm:w-9 sm:h-9 mx-auto mb-1.5 sm:mb-2 rounded-lg flex items-center justify-center text-white aurora-badge">
-                      <div className="w-3.5 h-3.5 sm:w-4 sm:h-4">{subjectIcons[subject.name] || fallbackIcon}</div>
+                    <div className="w-9 h-9 sm:w-11 sm:h-11 mx-auto mb-2 sm:mb-3 rounded-lg flex items-center justify-center text-white aurora-badge">
+                      <div className="w-4 h-4 sm:w-5 sm:h-5">{subjectIcons[subject.name] || fallbackIcon}</div>
                     </div>
-                    <h2 className="text-xs sm:text-lg font-bold text-white mb-1.5 sm:mb-2.5" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
+                    <h2 className="text-sm sm:text-xl font-bold text-white mb-2 sm:mb-3.5" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
                       {subject.name}
                     </h2>
                     <div
-                      className="flex justify-around gap-1 mb-2 sm:mb-3 py-1.5 sm:py-2.5 rounded-lg"
+                      className="flex justify-around gap-1.5 mb-2.5 sm:mb-4 py-2 sm:py-3.5 rounded-xl"
                       style={{ background: 'rgba(255,255,255,0.16)', border: '1px solid rgba(255,255,255,0.18)' }}
                     >
                       <div>
-                        <p className="text-sm sm:text-2xl font-extrabold text-white" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+                        <p className="text-lg sm:text-2xl font-extrabold text-white" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
                           {subject.totalMcqs}
                         </p>
-                        <p className="text-[7px] sm:text-[10px] font-semibold uppercase mt-0.5" style={{ color: '#eee9ff', opacity: 0.85 }}>
+                        <p className="text-[8px] sm:text-[11px] font-semibold uppercase mt-0.5" style={{ color: '#eee9ff', opacity: 0.85 }}>
                           Total MCQs
                         </p>
                       </div>
                       <div style={{ borderLeft: '1px solid rgba(255,255,255,0.25)' }}></div>
                       <div>
-                        <p className="text-sm sm:text-2xl font-extrabold text-white" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
+                        <p className="text-lg sm:text-2xl font-extrabold text-white" style={{ textShadow: '0 2px 8px rgba(0,0,0,0.2)' }}>
                           {subject.chapters.length}
                         </p>
-                        <p className="text-[7px] sm:text-[10px] font-semibold uppercase mt-0.5" style={{ color: '#eee9ff', opacity: 0.85 }}>
+                        <p className="text-[8px] sm:text-[11px] font-semibold uppercase mt-0.5" style={{ color: '#eee9ff', opacity: 0.85 }}>
                           Chapters
                         </p>
                       </div>
@@ -216,7 +216,7 @@ export default function Home() {
 
                   <Link
                     to={`/subject/${subject.name}`}
-                    className="aurora-btn w-full py-1.5 sm:py-2.5 rounded-lg font-bold text-center text-[11px] sm:text-base"
+                    className="aurora-btn w-full py-2 sm:py-3 rounded-lg font-bold text-center text-xs sm:text-lg"
                     style={{ color: '#3a1c71' }}
                   >
                     Start Practice
