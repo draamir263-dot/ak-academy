@@ -138,28 +138,11 @@ export default function TestEngine() {
 
   if (testQuestions.length === 0) {
     return (
-      <div className="min-h-screen aurora-bg p-8 text-center flex items-center justify-center relative overflow-hidden">
-        <div className="aurora-blob b1" />
-        <div className="aurora-blob b2" />
-        <div className="relative z-10">
-          <h1 className="text-2xl font-bold text-red-300">No questions found for this filter!</h1>
-          <Link to={`/test-builder/${subjectName}/${chapterName}`} className="text-yellow-200 underline mt-4 inline-block">Go Back</Link>
+      <div className="min-h-screen bg-blue-900 p-8 text-center flex items-center justify-center">
+        <div>
+          <h1 className="text-2xl font-bold text-red-400">No questions found for this filter!</h1>
+          <Link to={`/test-builder/${subjectName}/${chapterName}`} className="text-yellow-400 underline mt-4 inline-block">Go Back</Link>
         </div>
-        <style>{`
-          @keyframes auroraShift {
-            0%   { background-position: 0% 30%; }
-            50%  { background-position: 100% 70%; }
-            100% { background-position: 0% 30%; }
-          }
-          .aurora-bg {
-            background: linear-gradient(135deg, #1b0f42 0%, #3a1c71 28%, #4568dc 58%, #0fb8ad 88%, #35e0c4 100%);
-            background-size: 260% 260%;
-            animation: auroraShift 16s ease-in-out infinite;
-          }
-          .aurora-blob { position: absolute; border-radius: 9999px; filter: blur(60px); pointer-events: none; }
-          .aurora-blob.b1 { width: 320px; height: 320px; top: -60px; left: -80px; background: radial-gradient(circle, rgba(255,138,216,0.5), transparent 70%); }
-          .aurora-blob.b2 { width: 380px; height: 380px; top: 160px; right: -120px; background: radial-gradient(circle, rgba(90,224,255,0.45), transparent 70%); }
-        `}</style>
       </div>
     );
   }
@@ -206,161 +189,53 @@ export default function TestEngine() {
 
   const getOptionClass = (option) => {
     if (!selectedOption) {
-      return "aurora-opt";
+      return "bg-white border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-800";
     }
     if (option === currentQuestion.correctAnswer) {
-      return "aurora-opt-correct"; 
+      return "bg-green-50 border-green-500 text-green-800 font-semibold"; 
     }
     if (option === selectedOption) {
-      return "aurora-opt-wrong"; 
+      return "bg-red-50 border-red-500 text-red-800 font-semibold"; 
     }
-    return "aurora-opt-disabled"; 
+    return "bg-white border-gray-200 text-gray-400 opacity-60"; 
   };
 
   return (
-    <div className="relative min-h-screen aurora-bg overflow-hidden p-3 md:p-6">
-      {/* Glass Aurora theme — animated gradient + floating blurred color blobs */}
-      <style>{`
-        @keyframes auroraShift {
-          0%   { background-position: 0% 30%; }
-          50%  { background-position: 100% 70%; }
-          100% { background-position: 0% 30%; }
-        }
-        @keyframes floatA { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(18px,26px) scale(1.08); } }
-        @keyframes floatB { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-22px,18px) scale(0.94); } }
-        @keyframes floatC { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(14px,-20px) scale(1.05); } }
-        .aurora-bg {
-          background: linear-gradient(135deg, #1b0f42 0%, #3a1c71 28%, #4568dc 58%, #0fb8ad 88%, #35e0c4 100%);
-          background-size: 260% 260%;
-          animation: auroraShift 16s ease-in-out infinite;
-        }
-        .aurora-blob { position: absolute; border-radius: 9999px; filter: blur(60px); pointer-events: none; }
-        .aurora-blob.b1 { width: 320px; height: 320px; top: -60px; left: -80px; background: radial-gradient(circle, rgba(255,138,216,0.5), transparent 70%); animation: floatA 13s ease-in-out infinite; }
-        .aurora-blob.b2 { width: 380px; height: 380px; top: 160px; right: -120px; background: radial-gradient(circle, rgba(90,224,255,0.45), transparent 70%); animation: floatB 17s ease-in-out infinite; }
-        .aurora-blob.b3 { width: 340px; height: 340px; bottom: 40px; left: -100px; background: radial-gradient(circle, rgba(255,214,120,0.35), transparent 70%); animation: floatC 15s ease-in-out infinite; }
-        .aurora-blob.b4 { width: 300px; height: 300px; bottom: -100px; right: -60px; background: radial-gradient(circle, rgba(151,255,214,0.35), transparent 70%); animation: floatA 19s ease-in-out infinite reverse; }
-        .aurora-card {
-          background: linear-gradient(160deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
-          backdrop-filter: blur(18px) saturate(160%);
-          -webkit-backdrop-filter: blur(18px) saturate(160%);
-          border: 1px solid rgba(255,255,255,0.28);
-          box-shadow: 0 12px 34px rgba(15,8,45,0.28), inset 0 1px 0 rgba(255,255,255,0.3);
-        }
-        .aurora-back {
-          background: rgba(255,255,255,0.12);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255,255,255,0.25);
-          color: #ffffff;
-          transition: background .2s ease, transform .2s ease;
-        }
-        .aurora-back:hover { background: rgba(255,255,255,0.22); transform: translateX(-2px); }
-        .aurora-btn-danger {
-          background: linear-gradient(135deg, #ff5f6d, #ff9966);
-          color: #ffffff;
-          border: 1px solid rgba(255,255,255,0.3);
-          box-shadow: 0 6px 18px rgba(255,95,109,0.35);
-          transition: all .2s ease;
-        }
-        .aurora-btn-danger:hover { box-shadow: 0 8px 22px rgba(255,95,109,0.5); transform: translateY(-1px); }
-        .aurora-progress { background: rgba(255,255,255,0.2); }
-        .aurora-progress-fill { background: linear-gradient(90deg, #ffe9a8, #35e0c4); box-shadow: 0 0 12px rgba(255,233,168,0.5); }
-        .aurora-opt {
-          background: rgba(255,255,255,0.12);
-          border: 1px solid rgba(255,255,255,0.25);
-          color: #ffffff;
-          transition: all .2s ease;
-        }
-        .aurora-opt:hover { background: rgba(255,255,255,0.22); border-color: rgba(255,255,255,0.5); }
-        .aurora-opt-correct {
-          background: rgba(46, 204, 113, 0.25);
-          border: 1px solid rgba(46, 204, 113, 0.7);
-          color: #ffffff;
-          font-weight: bold;
-        }
-        .aurora-opt-wrong {
-          background: rgba(231, 76, 60, 0.25);
-          border: 1px solid rgba(231, 76, 60, 0.7);
-          color: #ffffff;
-          font-weight: bold;
-        }
-        .aurora-opt-disabled {
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.1);
-          color: rgba(255,255,255,0.4);
-        }
-        .aurora-exp-box {
-          background: rgba(255,255,255,0.08);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255,255,255,0.2);
-          border-left: 4px solid #ffe9a8;
-        }
-        .aurora-exp-opt-correct { background: rgba(46, 204, 113, 0.15); border: 1px solid rgba(46, 204, 113, 0.3); }
-        .aurora-exp-opt-wrong { background: rgba(231, 76, 60, 0.15); border: 1px solid rgba(231, 76, 60, 0.3); }
-        .aurora-exp-summary { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.2); }
-        .aurora-chip {
-          background: rgba(255,255,255,0.12);
-          border: 1px solid rgba(255,255,255,0.25);
-          color: #ffffff;
-          transition: all .2s ease;
-        }
-        .aurora-chip:hover { background: rgba(255,255,255,0.22); }
-        .aurora-btn {
-          background: linear-gradient(135deg, #ffffff, #f1eaff);
-          box-shadow: 0 6px 18px rgba(69,104,220,0.35);
-          color: #3a1c71;
-          transition: all .2s ease;
-        }
-        .aurora-btn:hover { box-shadow: 0 8px 22px rgba(69,104,220,0.5); transform: translateY(-1px); }
-        .aurora-btn-start {
-          background: linear-gradient(135deg, #0fb8ad, #35e0c4);
-          color: #102a43;
-          box-shadow: 0 6px 18px rgba(15,184,173,0.4);
-          transition: all .2s ease;
-        }
-        .aurora-btn-start:hover { box-shadow: 0 8px 22px rgba(15,184,173,0.6); transform: translateY(-1px); }
-      `}</style>
-
-      {/* Floating aurora blobs (decorative, behind content) */}
-      <div className="aurora-blob b1" />
-      <div className="aurora-blob b2" />
-      <div className="aurora-blob b3" />
-      <div className="aurora-blob b4" />
-
-      {/* Content sits above the blobs */}
-      <div className="relative z-10 max-w-3xl mx-auto">
+    <div className="min-h-screen bg-blue-900 p-4 md:p-8">
+      <div className="max-w-3xl mx-auto">
         
         <div className="flex justify-between items-center mb-6">
-          <button onClick={handleExitTest} className="aurora-back px-4 py-2 rounded-lg font-semibold text-sm">&larr; Exit Test</button>
+          <button onClick={handleExitTest} className="text-yellow-400 text-sm font-medium">&larr; Exit Test</button>
           <button 
             onClick={handleEndTest}
-            className="aurora-btn-danger px-4 py-2 rounded-lg font-semibold text-sm"
+            className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 text-sm"
           >
             End Test
           </button>
         </div>
 
-        <div className="w-full aurora-progress rounded-full h-2.5 mb-6">
+        <div className="w-full bg-blue-700 rounded-full h-2.5 mb-6">
           <div 
-            className="aurora-progress-fill h-2.5 rounded-full transition-all duration-300" 
+            className="bg-yellow-400 h-2.5 rounded-full transition-all duration-300" 
             style={{ width: `${((currentIndex + 1) / testQuestions.length) * 100}%` }}
           ></div>
         </div>
 
-        <div className="aurora-card rounded-2xl p-6 md:p-8">
+        <div className="bg-white rounded-2xl shadow-xl border border-blue-800 p-6 md:p-8">
           <div className="flex justify-between items-start mb-4">
-            <span className="text-sm font-bold text-gray-300">
+            <span className="text-sm font-bold text-gray-400">
               Question {currentIndex + 1} of {testQuestions.length}
             </span>
             
             <button 
               onClick={() => toggleFavourite(currentQuestion.id)} 
-              className={`${isFavourite(currentQuestion.id) ? 'text-yellow-300' : 'text-gray-400 hover:text-yellow-300'}`}
+              className={`${isFavourite(currentQuestion.id) ? 'text-yellow-500' : 'text-gray-300 hover:text-yellow-400'}`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={isFavourite(currentQuestion.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={isFavourite(currentQuestion.id) ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
             </button>
           </div>
 
-          <h1 className="text-xl md:text-2xl font-bold text-white mb-6 leading-relaxed" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
+          <h1 className="text-xl md:text-2xl font-bold text-blue-900 mb-6 leading-relaxed">
             {currentQuestion.question}
           </h1>
 
@@ -370,9 +245,9 @@ export default function TestEngine() {
                 key={option}
                 onClick={() => handleSelectOption(option)}
                 disabled={!!selectedOption}
-                className={`w-full text-left p-4 rounded-xl border transition-all flex items-center ${getOptionClass(option)}`}
+                className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center ${getOptionClass(option)}`}
               >
-                <span className="w-8 h-8 flex items-center justify-center rounded-full text-sm font-bold mr-4" style={{ background: 'rgba(255,255,255,0.2)' }}>
+                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 font-bold mr-4">
                   {option}
                 </span>
                 <span>{currentQuestion[`option${option}`]}</span>
@@ -381,29 +256,29 @@ export default function TestEngine() {
           </div>
 
           {showExplanation && (
-            <div className="aurora-exp-box mt-6 p-5 rounded-xl space-y-4">
+            <div className="mt-6 p-5 bg-blue-50 border-l-4 border-blue-500 rounded-r-xl space-y-4">
               <div>
-                <h3 className="font-bold text-yellow-200 mb-1">Explanation</h3>
-                <p className="text-gray-200">{currentQuestion.explanation}</p>
+                <h3 className="font-bold text-blue-900 mb-1">Explanation</h3>
+                <p className="text-gray-700">{currentQuestion.explanation}</p>
               </div>
               
-              <div className="border-t border-white/20 pt-3 space-y-3">
-                <h4 className="font-semibold text-gray-300 text-sm">Option Breakdown:</h4>
+              <div className="border-t border-blue-200 pt-3 space-y-3">
+                <h4 className="font-semibold text-gray-700 text-sm">Option Breakdown:</h4>
                 {['A', 'B', 'C', 'D'].map(opt => (
-                  <div key={opt} className={`p-3 rounded-lg ${opt === currentQuestion.correctAnswer ? 'aurora-exp-opt-correct' : 'aurora-exp-opt-wrong'}`}>
-                    <p className={`font-bold text-sm ${opt === currentQuestion.correctAnswer ? 'text-green-300' : 'text-red-300'}`}>
+                  <div key={opt} className={`p-3 rounded-lg ${opt === currentQuestion.correctAnswer ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
+                    <p className={`font-bold text-sm ${opt === currentQuestion.correctAnswer ? 'text-green-800' : 'text-red-800'}`}>
                       {opt}. {currentQuestion[`option${opt}`]} {opt === currentQuestion.correctAnswer ? '(Correct)' : ''}
                     </p>
-                    <p className="text-gray-400 text-sm mt-1">
+                    <p className="text-gray-600 text-sm mt-1">
                       {currentQuestion[`explanation${opt}`] || "No specific explanation provided for this option."}
                     </p>
                   </div>
                 ))}
               </div>
 
-              <div className="aurora-exp-summary p-3 rounded-lg">
-                <p className="text-sm font-semibold text-gray-400">Summary:</p>
-                <p className="text-sm text-gray-200">{currentQuestion.summary}</p>
+              <div className="bg-white p-3 rounded-lg border border-gray-100">
+                <p className="text-sm font-semibold text-gray-500">Summary:</p>
+                <p className="text-sm text-gray-700">{currentQuestion.summary}</p>
               </div>
             </div>
           )}
@@ -413,7 +288,7 @@ export default function TestEngine() {
           <button 
             onClick={handlePrevious}
             disabled={currentIndex === 0}
-            className="aurora-chip px-6 py-3 rounded-lg font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
+            className="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
           >
             &larr; Previous
           </button>
@@ -421,14 +296,14 @@ export default function TestEngine() {
           {currentIndex < testQuestions.length - 1 ? (
             <button 
               onClick={handleNext}
-              className="aurora-btn px-6 py-3 rounded-lg font-semibold"
+              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700"
             >
               Next &rarr;
             </button>
           ) : (
             <button 
               onClick={handleEndTest}
-              className="aurora-btn-start px-6 py-3 rounded-lg font-semibold"
+              className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700"
             >
               Finish Test
             </button>
@@ -438,4 +313,4 @@ export default function TestEngine() {
       </div>
     </div>
   );
-}
+} 

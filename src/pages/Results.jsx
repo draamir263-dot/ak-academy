@@ -11,28 +11,9 @@ export default function Results() {
   // If someone tries to visit /results directly without taking a test, send them home
   if (testQuestions.length === 0) {
     return (
-      <div className="min-h-screen aurora-bg p-8 text-center flex items-center justify-center relative overflow-hidden">
-        <div className="aurora-blob b1" />
-        <div className="aurora-blob b2" />
-        <div className="relative z-10">
-          <h1 className="text-2xl font-bold text-red-300">No test data found!</h1>
-          <Link to="/" className="text-yellow-200 underline mt-4 inline-block">Go Home</Link>
-        </div>
-        <style>{`
-          @keyframes auroraShift {
-            0%   { background-position: 0% 30%; }
-            50%  { background-position: 100% 70%; }
-            100% { background-position: 0% 30%; }
-          }
-          .aurora-bg {
-            background: linear-gradient(135deg, #1b0f42 0%, #3a1c71 28%, #4568dc 58%, #0fb8ad 88%, #35e0c4 100%);
-            background-size: 260% 260%;
-            animation: auroraShift 16s ease-in-out infinite;
-          }
-          .aurora-blob { position: absolute; border-radius: 9999px; filter: blur(60px); pointer-events: none; }
-          .aurora-blob.b1 { width: 320px; height: 320px; top: -60px; left: -80px; background: radial-gradient(circle, rgba(255,138,216,0.5), transparent 70%); }
-          .aurora-blob.b2 { width: 380px; height: 380px; top: 160px; right: -120px; background: radial-gradient(circle, rgba(90,224,255,0.45), transparent 70%); }
-        `}</style>
+      <div className="min-h-screen p-8 text-center">
+        <h1 className="text-2xl font-bold text-red-600">No test data found!</h1>
+        <Link to="/" className="text-blue-600 underline mt-4 inline-block">Go Home</Link>
       </div>
     );
   }
@@ -69,123 +50,41 @@ export default function Results() {
   });
 
   return (
-    <div className="relative min-h-screen aurora-bg overflow-hidden p-3 md:p-6">
-      {/* Glass Aurora theme — animated gradient + floating blurred color blobs */}
-      <style>{`
-        @keyframes auroraShift {
-          0%   { background-position: 0% 30%; }
-          50%  { background-position: 100% 70%; }
-          100% { background-position: 0% 30%; }
-        }
-        @keyframes floatA { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(18px,26px) scale(1.08); } }
-        @keyframes floatB { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-22px,18px) scale(0.94); } }
-        @keyframes floatC { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(14px,-20px) scale(1.05); } }
-        .aurora-bg {
-          background: linear-gradient(135deg, #1b0f42 0%, #3a1c71 28%, #4568dc 58%, #0fb8ad 88%, #35e0c4 100%);
-          background-size: 260% 260%;
-          animation: auroraShift 16s ease-in-out infinite;
-        }
-        .aurora-blob { position: absolute; border-radius: 9999px; filter: blur(60px); pointer-events: none; }
-        .aurora-blob.b1 { width: 320px; height: 320px; top: -60px; left: -80px; background: radial-gradient(circle, rgba(255,138,216,0.5), transparent 70%); animation: floatA 13s ease-in-out infinite; }
-        .aurora-blob.b2 { width: 380px; height: 380px; top: 160px; right: -120px; background: radial-gradient(circle, rgba(90,224,255,0.45), transparent 70%); animation: floatB 17s ease-in-out infinite; }
-        .aurora-blob.b3 { width: 340px; height: 340px; bottom: 40px; left: -100px; background: radial-gradient(circle, rgba(255,214,120,0.35), transparent 70%); animation: floatC 15s ease-in-out infinite; }
-        .aurora-blob.b4 { width: 300px; height: 300px; bottom: -100px; right: -60px; background: radial-gradient(circle, rgba(151,255,214,0.35), transparent 70%); animation: floatA 19s ease-in-out infinite reverse; }
-        .aurora-card {
-          background: linear-gradient(160deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06));
-          backdrop-filter: blur(18px) saturate(160%);
-          -webkit-backdrop-filter: blur(18px) saturate(160%);
-          border: 1px solid rgba(255,255,255,0.28);
-          box-shadow: 0 12px 34px rgba(15,8,45,0.28), inset 0 1px 0 rgba(255,255,255,0.3);
-        }
-        .aurora-title {
-          background: linear-gradient(90deg, #ffffff, #ffe9ff 40%, #d8f2ff);
-          -webkit-background-clip: text;
-          background-clip: text;
-          color: transparent;
-          text-shadow: 0 8px 40px rgba(69,104,220,0.4);
-        }
-        .aurora-stat-blue { background: rgba(69, 104, 220, 0.2); border: 1px solid rgba(69, 104, 220, 0.4); }
-        .aurora-stat-green { background: rgba(46, 204, 113, 0.2); border: 1px solid rgba(46, 204, 113, 0.4); }
-        .aurora-stat-red { background: rgba(231, 76, 60, 0.2); border: 1px solid rgba(231, 76, 60, 0.4); }
-        .aurora-stat-gray { background: rgba(255, 255, 255, 0.08); border: 1px solid rgba(255, 255, 255, 0.15); }
-        .aurora-btn {
-          background: linear-gradient(135deg, #ffffff, #f1eaff);
-          box-shadow: 0 6px 18px rgba(69,104,220,0.35);
-          color: #3a1c71;
-          transition: all .2s ease;
-        }
-        .aurora-btn:hover { box-shadow: 0 8px 22px rgba(69,104,220,0.5); transform: translateY(-1px); }
-        .aurora-chip {
-          background: rgba(255,255,255,0.12);
-          border: 1px solid rgba(255,255,255,0.25);
-          color: #ffffff;
-          transition: all .2s ease;
-        }
-        .aurora-chip:hover { background: rgba(255,255,255,0.22); }
-        .aurora-chip-active {
-          background: linear-gradient(135deg, #ffffff, #f1eaff);
-          color: #3a1c71;
-          border: 1px solid transparent;
-          box-shadow: 0 4px 12px rgba(69,104,220,0.3);
-        }
-        .aurora-review-card {
-          background: rgba(255,255,255,0.05);
-          border: 1px solid rgba(255,255,255,0.12);
-        }
-        .aurora-opt-default { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); color: #eee9ff; }
-        .aurora-opt-correct { background: rgba(46, 204, 113, 0.2); border: 1px solid rgba(46, 204, 113, 0.5); color: #ffffff; font-weight: bold; }
-        .aurora-opt-wrong { background: rgba(231, 76, 60, 0.2); border: 1px solid rgba(231, 76, 60, 0.5); color: #ffffff; font-weight: bold; }
-        .aurora-exp-box {
-          background: rgba(255,255,255,0.08);
-          backdrop-filter: blur(10px);
-          border: 1px solid rgba(255,255,255,0.2);
-          border-left: 4px solid #ffe9a8;
-        }
-      `}</style>
-
-      {/* Floating aurora blobs (decorative, behind content) */}
-      <div className="aurora-blob b1" />
-      <div className="aurora-blob b2" />
-      <div className="aurora-blob b3" />
-      <div className="aurora-blob b4" />
-
-      {/* Content sits above the blobs */}
-      <div className="relative z-10 max-w-4xl mx-auto">
+    <div className="min-h-screen p-4 md:p-8">
+      <div className="max-w-4xl mx-auto">
         
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight aurora-title">Test Results</h1>
-          <p className="text-sm md:text-lg font-semibold italic mt-2" style={{ color: '#ffe9a8' }}>
-            ✦ {subjectName} - {chapterName} ✦
-          </p>
+          <h1 className="text-4xl font-extrabold text-blue-900">Test Results</h1>
+          <p className="text-lg text-gray-500 mt-2">{subjectName} - {chapterName}</p>
         </div>
 
         {/* Score Card */}
-        <div className="aurora-card rounded-2xl p-6 sm:p-8 mb-8">
+        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-8 mb-8">
           <div className="flex flex-col md:flex-row justify-around items-center gap-6 mb-8">
             <div className="text-center">
-              <div className={`text-6xl font-extrabold ${percentage >= 50 ? 'text-green-300' : 'text-red-300'}`} style={{ textShadow: '0 4px 12px rgba(0,0,0,0.2)' }}>
+              <div className={`text-6xl font-extrabold ${percentage >= 50 ? 'text-green-500' : 'text-red-500'}`}>
                 {percentage}%
               </div>
-              <p className="text-gray-300 font-semibold mt-2">Overall Score</p>
+              <p className="text-gray-500 font-semibold mt-2">Overall Score</p>
             </div>
             
             <div className="grid grid-cols-2 gap-4 w-full md:w-auto">
-              <div className="aurora-stat-blue p-4 rounded-xl text-center">
-                <p className="text-3xl font-bold text-white">{total}</p>
-                <p className="text-sm text-gray-300 mt-1">Total</p>
+              <div className="bg-blue-50 p-4 rounded-xl text-center">
+                <p className="text-3xl font-bold text-blue-600">{total}</p>
+                <p className="text-sm text-gray-500">Total</p>
               </div>
-              <div className="aurora-stat-green p-4 rounded-xl text-center">
-                <p className="text-3xl font-bold text-green-300">{correct}</p>
-                <p className="text-sm text-gray-300 mt-1">Correct</p>
+              <div className="bg-green-50 p-4 rounded-xl text-center">
+                <p className="text-3xl font-bold text-green-600">{correct}</p>
+                <p className="text-sm text-gray-500">Correct</p>
               </div>
-              <div className="aurora-stat-red p-4 rounded-xl text-center">
-                <p className="text-3xl font-bold text-red-300">{incorrect}</p>
-                <p className="text-sm text-gray-300 mt-1">Incorrect</p>
+              <div className="bg-red-50 p-4 rounded-xl text-center">
+                <p className="text-3xl font-bold text-red-600">{incorrect}</p>
+                <p className="text-sm text-gray-500">Incorrect</p>
               </div>
-              <div className="aurora-stat-gray p-4 rounded-xl text-center">
-                <p className="text-3xl font-bold text-gray-200">{skipped}</p>
-                <p className="text-sm text-gray-300 mt-1">Skipped</p>
+              <div className="bg-gray-100 p-4 rounded-xl text-center">
+                <p className="text-3xl font-bold text-gray-500">{skipped}</p>
+                <p className="text-sm text-gray-500">Skipped</p>
               </div>
             </div>
           </div>
@@ -193,13 +92,13 @@ export default function Results() {
           <div className="flex flex-col md:flex-row gap-4">
             <button 
               onClick={() => navigate(`/subject/${subjectName}`)}
-              className="aurora-btn flex-1 py-3 rounded-lg font-semibold transition-colors"
+              className="flex-1 bg-blue-600 text-white py-3 rounded-lg font-semibold hover:bg-blue-700"
             >
               Back to Chapters
             </button>
             <button 
               onClick={() => navigate('/')}
-              className="aurora-chip flex-1 py-3 rounded-lg font-semibold"
+              className="flex-1 bg-gray-200 text-gray-700 py-3 rounded-lg font-semibold hover:bg-gray-300"
             >
               Go Home
             </button>
@@ -207,35 +106,15 @@ export default function Results() {
         </div>
 
         {/* Review Section */}
-        <div className="aurora-card rounded-2xl p-6 mb-6">
-          <h2 className="text-2xl font-bold text-white mb-4" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Review Questions</h2>
+        <div className="bg-white rounded-2xl shadow-md border border-gray-100 p-6 mb-6">
+          <h2 className="text-2xl font-bold text-gray-800 mb-4">Review Questions</h2>
           
           {/* Filter Buttons */}
           <div className="flex flex-wrap gap-2 mb-6">
-            <button 
-              onClick={() => setFilter('all')} 
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${filter === 'all' ? 'aurora-chip-active' : 'aurora-chip'}`}
-            >
-              All ({total})
-            </button>
-            <button 
-              onClick={() => setFilter('correct')} 
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${filter === 'correct' ? 'aurora-chip-active' : 'aurora-chip'}`}
-            >
-              Correct ({correct})
-            </button>
-            <button 
-              onClick={() => setFilter('incorrect')} 
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${filter === 'incorrect' ? 'aurora-chip-active' : 'aurora-chip'}`}
-            >
-              Incorrect ({incorrect})
-            </button>
-            <button 
-              onClick={() => setFilter('skipped')} 
-              className={`px-4 py-2 rounded-lg font-semibold transition-all ${filter === 'skipped' ? 'aurora-chip-active' : 'aurora-chip'}`}
-            >
-              Skipped ({skipped})
-            </button>
+            <button onClick={() => setFilter('all')} className={`px-4 py-2 rounded-lg font-semibold ${filter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-100 text-gray-700'}`}>All ({total})</button>
+            <button onClick={() => setFilter('correct')} className={`px-4 py-2 rounded-lg font-semibold ${filter === 'correct' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-700'}`}>Correct ({correct})</button>
+            <button onClick={() => setFilter('incorrect')} className={`px-4 py-2 rounded-lg font-semibold ${filter === 'incorrect' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700'}`}>Incorrect ({incorrect})</button>
+            <button onClick={() => setFilter('skipped')} className={`px-4 py-2 rounded-lg font-semibold ${filter === 'skipped' ? 'bg-gray-600 text-white' : 'bg-gray-100 text-gray-700'}`}>Skipped ({skipped})</button>
           </div>
 
           {/* Question List */}
@@ -243,30 +122,26 @@ export default function Results() {
             {filteredQuestions.map((q, index) => {
               const userAnswer = userAnswers[q.id];
               return (
-                <div key={q.id} className="aurora-review-card rounded-xl p-5">
-                  <p className="font-bold text-white mb-4" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
-                    {index + 1}. {q.question}
-                  </p>
+                <div key={q.id} className="border border-gray-200 rounded-xl p-5">
+                  <p className="font-bold text-gray-800 mb-4">{index + 1}. {q.question}</p>
                   <div className="space-y-2 mb-4">
                     {['A', 'B', 'C', 'D'].map(opt => {
-                      let bgClass = "aurora-opt-default";
-                      if (opt === q.correctAnswer) bgClass = "aurora-opt-correct";
-                      else if (opt === userAnswer) bgClass = "aurora-opt-wrong";
+                      let bgClass = "bg-white border-gray-200 text-gray-600";
+                      if (opt === q.correctAnswer) bgClass = "bg-green-50 border-green-500 text-green-800 font-semibold";
+                      else if (opt === userAnswer) bgClass = "bg-red-50 border-red-500 text-red-800 font-semibold";
                       
                       return (
-                        <div key={opt} className={`p-3 rounded-lg flex items-center ${bgClass}`}>
-                          <span className="w-6 h-6 flex items-center justify-center rounded-full text-sm font-bold mr-3" style={{ background: 'rgba(255,255,255,0.2)' }}>
-                            {opt}
-                          </span>
+                        <div key={opt} className={`p-3 rounded-lg border-2 flex items-center ${bgClass}`}>
+                          <span className="w-6 h-6 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 font-bold mr-3 text-sm">{opt}</span>
                           {q[`option${opt}`]}
                         </div>
                       );
                     })}
                   </div>
                   
-                  <div className="aurora-exp-box p-4 rounded-lg">
-                    <p className="text-sm text-gray-200"><strong className="text-yellow-200">Explanation:</strong> {q.explanation}</p>
-                    <p className="text-sm text-gray-400 mt-2"><strong className="text-yellow-200">Summary:</strong> {q.summary}</p>
+                  <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
+                    <p className="text-sm text-gray-700"><strong>Explanation:</strong> {q.explanation}</p>
+                    <p className="text-sm text-gray-500 mt-2"><strong>Summary:</strong> {q.summary}</p>
                   </div>
                 </div>
               );
