@@ -87,13 +87,12 @@ export default function TestEngine() {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [userAnswers, setUserAnswers] = useState({}); 
   const [showExplanation, setShowExplanation] = useState(false); 
-  const [difficulty, setDifficulty] = useState(location.state?.difficulty || 'All');
 
   useEffect(() => {
     const savedTest = localStorage.getItem('ak_academy_active_test');
     if (savedTest) {
       const parsed = JSON.parse(savedTest);
-      if (parsed.subjectName === subjectName && parsed.chapterName === chapterName && parsed.numQuestions === numQuestions && parsed.paperSubject === paperSubject && parsed.filter === filter && parsed.difficulty === difficulty) {
+      if (parsed.subjectName === subjectName && parsed.chapterName === chapterName && parsed.numQuestions === numQuestions && parsed.paperSubject === paperSubject && parsed.filter === filter) {
         setTestQuestions(parsed.testQuestions);
         setCurrentIndex(parsed.currentIndex);
         setUserAnswers(parsed.userAnswers);
@@ -109,10 +108,6 @@ export default function TestEngine() {
       pool = chapter ? [...chapter.questions] : [];
     }
     
-    if (difficulty !== 'All') {
-      pool = pool.filter(q => q.difficulty && q.difficulty.toLowerCase() === difficulty.toLowerCase());
-    }
-
     if (paperSubject !== 'All') {
       pool = pool.filter(q => getAdvancedAutoCategory(q) === paperSubject);
     }
@@ -130,19 +125,16 @@ export default function TestEngine() {
     }
 
     setTestQuestions(shuffleArray(pool).slice(0, parseInt(numQuestions) || 0));
-    setCurrentIndex(0);
-    setUserAnswers({});
-    setShowExplanation(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [difficulty]);
+  }, []);
 
   useEffect(() => {
     if (testQuestions.length > 0) {
       localStorage.setItem('ak_academy_active_test', JSON.stringify({
-        subjectName, chapterName, numQuestions, paperSubject, filter, difficulty, testQuestions, currentIndex, userAnswers
+        subjectName, chapterName, numQuestions, paperSubject, filter, testQuestions, currentIndex, userAnswers
       }));
     }
-  }, [testQuestions, currentIndex, userAnswers, subjectName, chapterName, numQuestions, paperSubject, filter, difficulty]);
+  }, [testQuestions, currentIndex, userAnswers, subjectName, chapterName, numQuestions, paperSubject, filter]);
 
   if (testQuestions.length === 0) {
     return (
@@ -220,23 +212,6 @@ export default function TestEngine() {
           >
             End Test
           </button>
-        </div>
-
-        {/* Difficulty Selector Option Added Here */}
-        <div className="flex justify-center gap-2 mb-4">
-          {['All', 'Easy', 'Medium', 'Hard'].map((level) => (
-            <button
-              key={level}
-              onClick={() => setDifficulty(level)}
-              className={`px-4 py-1.5 rounded-full text-xs font-bold transition-colors ${
-                difficulty === level
-                  ? 'bg-yellow-400 text-blue-900'
-                  : 'bg-blue-700 text-blue-100 hover:bg-blue-600'
-              }`}
-            >
-              {level}
-            </button>
-          ))}
         </div>
 
         <div className="w-full bg-blue-700 rounded-full h-2.5 mb-6">
@@ -338,4 +313,4 @@ export default function TestEngine() {
       </div>
     </div>
   );
-}
+} 

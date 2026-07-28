@@ -80,12 +80,17 @@ export default function TestBuilder() {
   const [filter, setFilter] = useState('Unused');
   const [timerMode, setTimerMode] = useState('Practice');
   const [paperSubject, setPaperSubject] = useState('All'); 
+  const [difficulty, setDifficulty] = useState('All'); 
 
   const isPastPaper = subjectName?.toLowerCase().includes('past');
 
   const calculateMaxQuestions = () => {
     if (!chapter || !chapter.questions) return 0;
     return chapter.questions.filter(q => {
+      if (difficulty !== 'All') {
+        if (!q.difficulty || q.difficulty.toLowerCase() !== difficulty.toLowerCase()) return false;
+      }
+
       if (paperSubject !== 'All') {
         const qCategory = getAdvancedAutoCategory(q);
         if (qCategory !== paperSubject) return false; 
@@ -109,7 +114,7 @@ export default function TestBuilder() {
     } else if (numQuestions > maxQuestions || numQuestions === 0) {
       setNumQuestions(maxQuestions);
     }
-  }, [filter, maxQuestions, paperSubject, numQuestions]);
+  }, [filter, maxQuestions, paperSubject, numQuestions, difficulty]);
 
   useEffect(() => {
     if (!isPastPaper) {
@@ -137,7 +142,7 @@ export default function TestBuilder() {
 
   const startTest = () => {
     if (maxQuestions === 0 || !numQuestions || numQuestions < 1) return;
-    navigate(`/test-engine/${subjectName}/${chapterName}/${numQuestions}`, { state: { filter, paperSubject } });
+    navigate(`/test-engine/${subjectName}/${chapterName}/${numQuestions}`, { state: { filter, paperSubject, difficulty } });
   };
 
   if (!chapter) {
@@ -310,6 +315,24 @@ export default function TestBuilder() {
               <option value="Incorrect">Incorrect Questions</option>
               <option value="Favourite">Favourite Questions</option>
             </select>
+          </div>
+
+          {/* Difficulty Level Selector Added Here */}
+          <div>
+            <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Difficulty Level</label>
+            <div className="flex flex-wrap gap-2">
+              {['All', 'Easy', 'Medium', 'Hard'].map((level) => (
+                <button 
+                  key={level}
+                  onClick={() => setDifficulty(level)}
+                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                    difficulty === level ? 'aurora-chip-active' : 'aurora-chip'
+                  }`}
+                >
+                  {level === 'All' ? 'All Levels' : level}
+                </button>
+              ))}
+            </div>
           </div>
 
           <div>
