@@ -13,9 +13,9 @@ const getAdvancedAutoCategory = (q) => {
   ].join(' ').toLowerCase();
 
   const keywords = {
-    'Physics': ['physic', 'force', 'velocity', 'energy', 'momentum', 'circuit', 'optics', 'wave', 'motion', 'gravity', 'friction', 'torque', 'magnet', 'electric', 'charge', 'mass', 'acceleration', 'lens', 'mirror', 'heat', 'temperature', 'quantum', 'nuclear', 'projectile', 'fluid', 'pressure', 'newton', 'einstein', 'volt', 'ampere', 'ohm', 'faraday', 'kinetic', 'potential', 'resistor', 'capacitor', 'inductor', 'mechanics', 'dynamics'],
-    'Chemistry': ['chem', 'mole', 'bond', 'reaction', 'acid', 'organic', 'base', 'salt', 'atom', 'molecule', 'electron', 'proton', 'neutron', 'periodic', 'element', 'compound', 'oxidation', 'reduction', 'titration', 'catalyst', 'halogen', 'alkali', 'valency', 'isotope', 'entropy', 'enthalpy', 'ph', 'buffer', 'hydrocarbon', 'functional group'],
-    'Biology': ['bio', 'cell', 'genetic', 'anatom', 'plant', 'organism', 'tissue', 'organ', 'blood', 'dna', 'rna', 'protein', 'enzyme', 'photosynthesis', 'respiration', 'ecosystem', 'evolution', 'bacteria', 'virus', 'mitosis', 'meiosis', 'membrane', 'nucleus', 'chromosome', 'taxonomy', 'physiology'],
+    'Physics': ['velocity', 'momentum', 'circuit', 'optics', 'gravity', 'friction', 'torque', 'magnet', 'acceleration', 'quantum', 'nuclear', 'projectile', 'fluid', 'pressure', 'newton', 'einstein', 'volt', 'ampere', 'ohm', 'faraday', 'resistor', 'capacitor', 'inductor', 'mechanics', 'dynamics', 'lens', 'mirror', 'thermodynamics', 'kinematics'],
+    'Chemistry': ['mole', 'titration', 'catalyst', 'halogen', 'alkali', 'valency', 'isotope', 'entropy', 'enthalpy', 'buffer', 'hydrocarbon', 'functional group', 'periodic', 'oxidation', 'reduction', 'electrolysis', 'alkane', 'alkene', 'alkyne', 'benzene', 'aldehyde', 'ketone', 'carboxylic', 'ester', 'polymer'],
+    'Biology': ['bio', 'cell', 'genetic', 'anatom', 'plant', 'organism', 'tissue', 'organ', 'blood', 'dna', 'rna', 'protein', 'enzyme', 'photosynthesis', 'respiration', 'ecosystem', 'evolution', 'bacteria', 'virus', 'mitosis', 'meiosis', 'membrane', 'nucleus', 'chromosome', 'taxonomy', 'physiology', 'sperm', 'ovum', 'fertilization', 'kidney', 'neuron', 'muscle', 'hormone', 'vaccine', 'antibody', 'antigen'],
     'English': ['english', 'tense', 'preposition', 'verb', 'grammar', 'sentence', 'noun', 'pronoun', 'adjective', 'adverb', 'punctuation', 'synonym', 'antonym', 'analogy', 'vocab', 'passive', 'active', 'clause', 'phrase', 'idiom', 'voice'],
     'Logical Reasoning': ['logical', 'deductive', 'inductive reasoning', 'syllogism', 'reasoning', 'argument', 'premise', 'conclusion', 'fallacy', 'assumption', 'deduce', 'infer', 'statement', 'truth value', 'conditional']
   };
@@ -45,17 +45,9 @@ const getAdvancedAutoCategory = (q) => {
 
 // --- PRIORITIZED CATEGORY GETTER ---
 const getQuestionCategory = (q) => {
-  // 1. STRICTLY prioritize the explicit 'subject' field
+  // 1. STRICTLY use the explicit 'subject' field if it exists
   if (q.subject && q.subject.trim() !== '') {
-    const sLower = q.subject.toLowerCase();
-    if (sLower.includes('bio')) return 'Biology';
-    if (sLower.includes('chem')) return 'Chemistry';
-    if (sLower.includes('phys')) return 'Physics';
-    if (sLower.includes('eng')) return 'English';
-    if (sLower.includes('log') || sLower.includes('reason')) return 'Logical Reasoning';
-    
-    // If it has a subject but doesn't match the standard 5, return it as is
-    return q.subject; 
+    return q.subject.trim();
   }
   
   // 2. Fallback: Scan the whole MCQ text ONLY IF the subject field is missing or empty
@@ -71,7 +63,7 @@ export default function TestBuilder() {
   const chapter = subject?.chapters.find(c => c.name === chapterName);
 
   const [numQuestions, setNumQuestions] = useState(10);
-  const [filter, setFilter] = useState('Unused');
+  const [filter, setFilter] = useState('Mixed'); // Defaults to Mixed so all questions show
   const [timerMode, setTimerMode] = useState('Practice');
   const [paperSubject, setPaperSubject] = useState('All'); 
   const [difficulty, setDifficulty] = useState('All'); 
@@ -87,7 +79,7 @@ export default function TestBuilder() {
       }
 
       if (paperSubject !== 'All') {
-        // Use the prioritized getter function
+        // Direct string match against the subject field
         const qCategory = getQuestionCategory(q);
         if (qCategory !== paperSubject) return false; 
       }
@@ -302,7 +294,7 @@ export default function TestBuilder() {
               className="aurora-input w-full p-2.5 rounded-lg focus:outline-none"
             >
               <option value="Mixed">Mixed (All Questions)</option>
-              <option value="Unused">Unused Questions (Default)</option>
+              <option value="Unused">Unused Questions</option>
               <option value="Used">Used Questions</option>
               <option value="Correct">Correct Questions</option>
               <option value="Incorrect">Incorrect Questions</option>
