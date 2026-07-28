@@ -3,7 +3,7 @@ import { structuredData } from '../services/questionLoader';
 import { useState, useEffect } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
-// --- SUBJECT CATEGORIZATION HELPER (Fallback) ---
+// --- SUBJECT CATEGORIZATION HELPER (Fallback Only) ---
 const getAdvancedAutoCategory = (q) => {
   const fullText = [
     q.chapter, q.subject, q.question, 
@@ -30,22 +30,8 @@ const getAdvancedAutoCategory = (q) => {
     });
   }
 
-  let originalSubject = null;
-  if (q.subject) {
-    const sLower = q.subject.toLowerCase();
-    if (sLower.includes('bio')) originalSubject = 'Biology';
-    else if (sLower.includes('chem')) originalSubject = 'Chemistry';
-    else if (sLower.includes('phys')) originalSubject = 'Physics';
-    else if (sLower.includes('eng')) originalSubject = 'English';
-    else if (sLower.includes('log') || sLower.includes('reason')) originalSubject = 'Logical Reasoning';
-  }
-  
-  if (originalSubject) {
-    scores[originalSubject] += 2;
-  }
-
   let maxScore = 0;
-  let bestCategory = originalSubject || 'Uncategorized';
+  let bestCategory = 'Uncategorized';
 
   for (const [subject, score] of Object.entries(scores)) {
     if (score > maxScore) {
@@ -54,11 +40,26 @@ const getAdvancedAutoCategory = (q) => {
     }
   }
 
-  if (maxScore > 2) {
-    return bestCategory;
+  return bestCategory;
+};
+
+// --- PRIORITIZED CATEGORY GETTER ---
+const getQuestionCategory = (q) => {
+  // 1. STRICTLY prioritize the explicit 'subject' field
+  if (q.subject && q.subject.trim() !== '') {
+    const sLower = q.subject.toLowerCase();
+    if (sLower.includes('bio')) return 'Biology';
+    if (sLower.includes('chem')) return 'Chemistry';
+    if (sLower.includes('phys')) return 'Physics';
+    if (sLower.includes('eng')) return 'English';
+    if (sLower.includes('log') || sLower.includes('reason')) return 'Logical Reasoning';
+    
+    // If it has a subject but doesn't match the standard 5, return it as is
+    return q.subject; 
   }
   
-  return bestCategory;
+  // 2. Fallback: Scan the whole MCQ text ONLY IF the subject field is missing or empty
+  return getAdvancedAutoCategory(q);
 };
 
 export default function TestBuilder() {
@@ -86,25 +87,9 @@ export default function TestBuilder() {
       }
 
       if (paperSubject !== 'All') {
-        // 1. Try to map the subject directly from the question's subject property
-        let mappedSubject = null;
-        if (q.subject) {
-          const sLower = q.subject.toLowerCase();
-          if (sLower.includes('bio')) mappedSubject = 'Biology';
-          else if (sLower.includes('chem')) mappedSubject = 'Chemistry';
-          else if (sLower.includes('phys')) mappedSubject = 'Physics';
-          else if (sLower.includes('eng')) mappedSubject = 'English';
-          else if (sLower.includes('log') || sLower.includes('reason')) mappedSubject = 'Logical Reasoning';
-        }
-
-        // 2. If subject is available, prioritize it (do not scan the whole MCQ)
-        if (mappedSubject) {
-          if (mappedSubject !== paperSubject) return false;
-        } else {
-          // 3. If subject is NOT available, fall back to scanning the whole MCQ text
-          const scannedCategory = getAdvancedAutoCategory(q);
-          if (scannedCategory !== paperSubject) return false;
-        }
+        // Use the prioritized getter function
+        const qCategory = getQuestionCategory(q);
+        if (qCategory !== paperSubject) return false; 
       }
       
       if (filter === 'Mixed') return true;
