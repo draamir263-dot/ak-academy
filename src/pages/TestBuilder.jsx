@@ -59,26 +59,25 @@ export default function TestBuilder() {
   // Resolve each question's subject exactly ONCE per chapter (not on every filter
   // change / render). Questions with an explicit 'subject' field are resolved
   // instantly; the full-text scanner only runs for questions missing it.
-  const questionSubjectMap = useMemo(() => {
-    const map = new Map();
-    if (chapter?.questions) {
-      for (const q of chapter.questions) {
-        map.set(q.id, getQuestionSubject(q));
-      }
-    }
-    return map;
+  // Stored POSITIONALLY (parallel array, same order as chapter.questions) rather
+  // than keyed by q.id, since question IDs are not guaranteed to be unique across
+  // an entire Past Paper / Guess Paper chapter (e.g. multiple subject sections can
+  // reuse the same numbering) — keying by id would silently overwrite entries.
+  const questionSubjects = useMemo(() => {
+    if (!chapter?.questions) return [];
+    return chapter.questions.map(getQuestionSubject);
   }, [chapter]);
 
   const calculateMaxQuestions = () => {
     if (!chapter || !chapter.questions) return 0;
-    return chapter.questions.filter(q => {
+    return chapter.questions.filter((q, idx) => {
       if (difficulty !== 'All') {
         if (!q.difficulty || q.difficulty.toLowerCase() !== difficulty.toLowerCase()) return false;
       }
 
       if (paperSubject !== 'All') {
-        // Use the pre-computed, priority-respecting subject map (no re-scanning).
-        const qSubject = questionSubjectMap.get(q.id);
+        // Use the pre-computed, priority-respecting subject list (no re-scanning).
+        const qSubject = questionSubjects[idx];
         // Direct string match against the dropdown selection
         if (qSubject !== paperSubject) return false; 
       }
