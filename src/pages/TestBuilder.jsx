@@ -3,66 +3,36 @@ import { structuredData } from '../services/questionLoader';
 import { useState, useEffect } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
-// --- SUBJECT CATEGORIZATION HELPER (Fallback Only) ---
-const getAdvancedAutoCategory = (q) => {
-  const fullText = [
-    q.chapter, q.subject, q.question, 
-    q.optionA, q.optionB, q.optionC, q.optionD, 
-    q.explanation, q.explanationA, q.explanationB, q.explanationC, q.explanationD, 
-    q.summary
-  ].join(' ').toLowerCase();
-
-  const keywords = {
-    'Physics': ['velocity', 'momentum', 'circuit', 'optics', 'gravity', 'friction', 'torque', 'magnet', 'acceleration', 'quantum', 'nuclear', 'projectile', 'fluid', 'pressure', 'newton', 'einstein', 'volt', 'ampere', 'ohm', 'faraday', 'resistor', 'capacitor', 'inductor', 'mechanics', 'dynamics', 'lens', 'mirror', 'thermodynamics', 'kinematics'],
-    'Chemistry': ['mole', 'titration', 'catalyst', 'halogen', 'alkali', 'valency', 'isotope', 'entropy', 'enthalpy', 'buffer', 'hydrocarbon', 'functional group', 'periodic', 'oxidation', 'reduction', 'electrolysis', 'alkane', 'alkene', 'alkyne', 'benzene', 'aldehyde', 'ketone', 'carboxylic', 'ester', 'polymer'],
-    'Biology': ['bio', 'cell', 'genetic', 'anatom', 'plant', 'organism', 'tissue', 'organ', 'blood', 'dna', 'rna', 'protein', 'enzyme', 'photosynthesis', 'respiration', 'ecosystem', 'evolution', 'bacteria', 'virus', 'mitosis', 'meiosis', 'membrane', 'nucleus', 'chromosome', 'taxonomy', 'physiology', 'sperm', 'ovum', 'fertilization', 'kidney', 'neuron', 'muscle', 'hormone', 'vaccine', 'antibody', 'antigen'],
-    'English': ['english', 'tense', 'preposition', 'verb', 'grammar', 'sentence', 'noun', 'pronoun', 'adjective', 'adverb', 'punctuation', 'synonym', 'antonym', 'analogy', 'vocab', 'passive', 'active', 'clause', 'phrase', 'idiom', 'voice'],
-    'Logical Reasoning': ['logical', 'deductive', 'inductive reasoning', 'syllogism', 'reasoning', 'argument', 'premise', 'conclusion', 'fallacy', 'assumption', 'deduce', 'infer', 'statement', 'truth value', 'conditional']
-  };
-
-  const scores = { 'Physics': 0, 'Chemistry': 0, 'Biology': 0, 'English': 0, 'Logical Reasoning': 0 };
+// --- REFINED FALLBACK SCANNER (Only used if 'subject' field is completely missing) ---
+const getQuestionSubjectFromText = (q) => {
+  const text = `${q.question} ${q.optionA} ${q.optionB} ${q.optionC} ${q.optionD} ${q.explanation}`.toLowerCase();
   
-  for (const [subject, words] of Object.entries(keywords)) {
-    words.forEach(word => {
-      const regex = new RegExp(word, 'g');
-      const matches = fullText.match(regex);
-      if (matches) scores[subject] += matches.length;
-    });
-  }
+  if (text.includes('photosynthesis') || text.includes('mitosis') || text.includes('dna') || text.includes('rna') || text.includes('enzyme') || text.includes('bacteria') || text.includes('virus') || text.includes('ecosystem')) return 'Biology';
+  if (text.includes('periodic') || text.includes('mole') || text.includes('oxidation') || text.includes('alkane') || text.includes('titration') || text.includes('catalyst')) return 'Chemistry';
+  if (text.includes('velocity') || text.includes('momentum') || text.includes('newton') || text.includes('circuit') || text.includes('kinematics') || text.includes('projectile')) return 'Physics';
+  if (text.includes('tense') || text.includes('preposition') || text.includes('synonym') || text.includes('grammar') || text.includes('antonym')) return 'English';
+  if (text.includes('syllogism') || text.includes('deductive') || text.includes('logical') || text.includes('premise')) return 'Logical Reasoning';
 
-  let maxScore = 0;
-  let bestCategory = 'Uncategorized';
-
-  for (const [subject, score] of Object.entries(scores)) {
-    if (score > maxScore) {
-      maxScore = score;
-      bestCategory = subject;
-    }
-  }
-
-  return bestCategory;
+  return 'Uncategorized';
 };
 
-// --- PRIORITIZED CATEGORY GETTER ---
-const getQuestionCategory = (q, chapter, subject) => {
-  // 1. STRICTLY prioritize explicit 'subject' fields from the question, chapter, or subject object
-  let rawSubject = q.subject || chapter?.subject || subject?.name || '';
-  
-  if (rawSubject && rawSubject.toString().trim() !== '') {
-    const sLower = rawSubject.toString().toLowerCase();
-    // Map any case variation to the exact standard string used in the dropdown
-    if (sLower.includes('bio')) return 'Biology';
-    if (sLower.includes('chem')) return 'Chemistry';
-    if (sLower.includes('phys')) return 'Physics';
-    if (sLower.includes('eng')) return 'English';
-    if (sLower.includes('log') || sLower.includes('reason')) return 'Logical Reasoning';
+// --- PRIORITIZED SUBJECT GETTER ---
+const getQuestionSubject = (q) => {
+  // 1. STRICTLY prioritize the explicit 'subject' field if it exists
+  if (q.subject && q.subject.toString().trim() !== '') {
+    const s = q.subject.toString().toLowerCase().trim();
+    if (s.includes('bio')) return 'Biology';
+    if (s.includes('chem')) return 'Chemistry';
+    if (s.includes('phys')) return 'Physics';
+    if (s.includes('eng')) return 'English';
+    if (s.includes('log') || s.includes('reason')) return 'Logical Reasoning';
     
-    // If it has a subject but doesn't match the standard 5, return it as is
-    return rawSubject.toString().trim(); 
+    // If it has a subject but doesn't match standard 5, return it as is
+    return q.subject.toString().trim();
   }
   
-  // 2. Fallback: Scan the whole MCQ text ONLY IF the subject field is missing everywhere
-  return getAdvancedAutoCategory(q);
+  // 2. Fallback: Scan text ONLY if subject is missing
+  return getQuestionSubjectFromText(q);
 };
 
 export default function TestBuilder() {
@@ -74,7 +44,7 @@ export default function TestBuilder() {
   const chapter = subject?.chapters.find(c => c.name === chapterName);
 
   const [numQuestions, setNumQuestions] = useState(10);
-  const [filter, setFilter] = useState('Mixed');
+  const [filter, setFilter] = useState('Mixed'); // Defaults to Mixed to show all
   const [timerMode, setTimerMode] = useState('Practice');
   const [paperSubject, setPaperSubject] = useState('All'); 
   const [difficulty, setDifficulty] = useState('All'); 
@@ -91,9 +61,9 @@ export default function TestBuilder() {
 
       if (paperSubject !== 'All') {
         // Use the prioritized getter function
-        const qCategory = getQuestionCategory(q, chapter, subject);
-        // Case-insensitive check to prevent 0 matches
-        if (qCategory.toLowerCase() !== paperSubject.toLowerCase()) return false; 
+        const qSubject = getQuestionSubject(q);
+        // Direct string match against the dropdown selection
+        if (qSubject !== paperSubject) return false; 
       }
       
       if (filter === 'Mixed') return true;
