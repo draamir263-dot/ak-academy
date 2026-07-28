@@ -44,13 +44,24 @@ const getAdvancedAutoCategory = (q) => {
 };
 
 // --- PRIORITIZED CATEGORY GETTER ---
-const getQuestionCategory = (q) => {
-  // 1. STRICTLY use the explicit 'subject' field if it exists
-  if (q.subject && q.subject.trim() !== '') {
-    return q.subject.trim();
+const getQuestionCategory = (q, chapter, subject) => {
+  // 1. STRICTLY prioritize explicit 'subject' fields from the question, chapter, or subject object
+  let rawSubject = q.subject || chapter?.subject || subject?.name || '';
+  
+  if (rawSubject && rawSubject.toString().trim() !== '') {
+    const sLower = rawSubject.toString().toLowerCase();
+    // Map any case variation to the exact standard string used in the dropdown
+    if (sLower.includes('bio')) return 'Biology';
+    if (sLower.includes('chem')) return 'Chemistry';
+    if (sLower.includes('phys')) return 'Physics';
+    if (sLower.includes('eng')) return 'English';
+    if (sLower.includes('log') || sLower.includes('reason')) return 'Logical Reasoning';
+    
+    // If it has a subject but doesn't match the standard 5, return it as is
+    return rawSubject.toString().trim(); 
   }
   
-  // 2. Fallback: Scan the whole MCQ text ONLY IF the subject field is missing or empty
+  // 2. Fallback: Scan the whole MCQ text ONLY IF the subject field is missing everywhere
   return getAdvancedAutoCategory(q);
 };
 
@@ -63,7 +74,7 @@ export default function TestBuilder() {
   const chapter = subject?.chapters.find(c => c.name === chapterName);
 
   const [numQuestions, setNumQuestions] = useState(10);
-  const [filter, setFilter] = useState('Mixed'); // Defaults to Mixed so all questions show
+  const [filter, setFilter] = useState('Mixed');
   const [timerMode, setTimerMode] = useState('Practice');
   const [paperSubject, setPaperSubject] = useState('All'); 
   const [difficulty, setDifficulty] = useState('All'); 
@@ -79,9 +90,10 @@ export default function TestBuilder() {
       }
 
       if (paperSubject !== 'All') {
-        // Direct string match against the subject field
-        const qCategory = getQuestionCategory(q);
-        if (qCategory !== paperSubject) return false; 
+        // Use the prioritized getter function
+        const qCategory = getQuestionCategory(q, chapter, subject);
+        // Case-insensitive check to prevent 0 matches
+        if (qCategory.toLowerCase() !== paperSubject.toLowerCase()) return false; 
       }
       
       if (filter === 'Mixed') return true;
