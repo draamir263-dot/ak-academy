@@ -3,9 +3,8 @@ import { structuredData } from '../services/questionLoader';
 import { useState, useEffect } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
-// --- ADVANCED AUTO-CATEGORIZATION ---
+// --- SUBJECT CATEGORIZATION HELPER ---
 const getAdvancedAutoCategory = (q) => {
-  // 1. Gather ALL text from the MCQ to analyze
   const fullText = [
     q.chapter, q.subject, q.question, 
     q.optionA, q.optionB, q.optionC, q.optionD, 
@@ -13,7 +12,6 @@ const getAdvancedAutoCategory = (q) => {
     q.summary
   ].join(' ').toLowerCase();
 
-  // 2. Define comprehensive keyword lists for each subject
   const keywords = {
     'Physics': ['physic', 'force', 'velocity', 'energy', 'momentum', 'circuit', 'optics', 'wave', 'motion', 'gravity', 'friction', 'torque', 'magnet', 'electric', 'charge', 'mass', 'acceleration', 'lens', 'mirror', 'heat', 'temperature', 'quantum', 'nuclear', 'projectile', 'fluid', 'pressure', 'newton', 'einstein', 'volt', 'ampere', 'ohm', 'faraday', 'kinetic', 'potential', 'resistor', 'capacitor', 'inductor', 'mechanics', 'dynamics'],
     'Chemistry': ['chem', 'mole', 'bond', 'reaction', 'acid', 'organic', 'base', 'salt', 'atom', 'molecule', 'electron', 'proton', 'neutron', 'periodic', 'element', 'compound', 'oxidation', 'reduction', 'titration', 'catalyst', 'halogen', 'alkali', 'valency', 'isotope', 'entropy', 'enthalpy', 'ph', 'buffer', 'hydrocarbon', 'functional group'],
@@ -22,19 +20,16 @@ const getAdvancedAutoCategory = (q) => {
     'Logical Reasoning': ['logical', 'deductive', 'inductive reasoning', 'syllogism', 'reasoning', 'argument', 'premise', 'conclusion', 'fallacy', 'assumption', 'deduce', 'infer', 'statement', 'truth value', 'conditional']
   };
 
-  // 3. Calculate a score for each subject based on keyword frequency
   const scores = { 'Physics': 0, 'Chemistry': 0, 'Biology': 0, 'English': 0, 'Logical Reasoning': 0 };
   
   for (const [subject, words] of Object.entries(keywords)) {
     words.forEach(word => {
-      // Count how many times the word appears
       const regex = new RegExp(word, 'g');
       const matches = fullText.match(regex);
       if (matches) scores[subject] += matches.length;
     });
   }
 
-  // 4. Respect the original JSON subject, but only as a 2-point baseline
   let originalSubject = null;
   if (q.subject) {
     const sLower = q.subject.toLowerCase();
@@ -46,10 +41,9 @@ const getAdvancedAutoCategory = (q) => {
   }
   
   if (originalSubject) {
-    scores[originalSubject] += 2; // Baseline advantage for the JSON tag
+    scores[originalSubject] += 2;
   }
 
-  // 5. Find the subject with the highest score
   let maxScore = 0;
   let bestCategory = originalSubject || 'Uncategorized';
 
@@ -60,7 +54,6 @@ const getAdvancedAutoCategory = (q) => {
     }
   }
 
-  // If the text has strong evidence (score > 2), it overrides the JSON subject
   if (maxScore > 2) {
     return bestCategory;
   }
@@ -83,7 +76,7 @@ export default function TestBuilder() {
   const [difficulty, setDifficulty] = useState('All'); 
 
   // Show Subject Category ONLY for Past Papers and Guess Papers
-  const showSubjectFilter = subjectName?.toLowerCase().includes('past') || subjectName?.toLowerCase().includes('guess');
+  const isSpecialPaper = subjectName?.toLowerCase().includes('past') || subjectName?.toLowerCase().includes('guess');
 
   const calculateMaxQuestions = () => {
     if (!chapter || !chapter.questions) return 0;
@@ -118,10 +111,10 @@ export default function TestBuilder() {
   }, [filter, maxQuestions, paperSubject, numQuestions, difficulty]);
 
   useEffect(() => {
-    if (!showSubjectFilter) {
+    if (!isSpecialPaper) {
       setPaperSubject('All');
     }
-  }, [showSubjectFilter]);
+  }, [isSpecialPaper]);
 
   const handleNumQuestionsClick = (num) => {
     setNumQuestions(Math.min(num, maxQuestions));
@@ -176,7 +169,6 @@ export default function TestBuilder() {
 
   return (
     <div className="relative min-h-screen aurora-bg overflow-hidden p-3 md:p-6">
-      {/* Glass Aurora theme — animated gradient + floating blurred color blobs */}
       <style>{`
         @keyframes auroraShift {
           0%   { background-position: 0% 30%; }
@@ -263,13 +255,11 @@ export default function TestBuilder() {
         .aurora-btn-start:hover { box-shadow: 0 8px 22px rgba(15,184,173,0.6); transform: translateY(-1px); }
       `}</style>
 
-      {/* Floating aurora blobs (decorative, behind content) */}
       <div className="aurora-blob b1" />
       <div className="aurora-blob b2" />
       <div className="aurora-blob b3" />
       <div className="aurora-blob b4" />
 
-      {/* Content sits above the blobs */}
       <div className="relative z-10 max-w-2xl mx-auto">
         <Link to={`/subject/${subjectName}`} className="aurora-back mb-6 inline-block px-4 py-2 rounded-lg font-semibold text-sm">
           &larr; Back to {subjectName}
@@ -284,7 +274,7 @@ export default function TestBuilder() {
 
         <div className="aurora-card rounded-2xl p-6 sm:p-8 space-y-8">
           
-          {showSubjectFilter && (
+          {isSpecialPaper && (
             <div>
               <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Subject Category</label>
               <select 
@@ -318,7 +308,6 @@ export default function TestBuilder() {
             </select>
           </div>
 
-          {/* Difficulty Level Selector Added Here */}
           <div>
             <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Difficulty Level</label>
             <div className="flex flex-wrap gap-2">
