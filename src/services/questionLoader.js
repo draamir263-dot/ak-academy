@@ -43,9 +43,18 @@ Object.keys(textFiles).forEach((path) => {
   }
 
   fileData.forEach(q => {
+    // Preserve the question's OWN subject (e.g. "Biology") from the raw JSON
+    // before we overwrite q.subject with the folder-level name (e.g.
+    // "Past-papers" / "Guess-papers"). This explicit per-question subject must
+    // win over the keyword text-scanner — the scanner only runs as a last
+    // resort when the question has no subject of its own.
+    const explicitSubject = q.subject;
+
     q.subject = formattedSubject;
     q.chapter = chapterName;
-    q.category = inferCategory(q);
+    q.category = (explicitSubject && explicitSubject.toString().trim() !== '')
+      ? explicitSubject
+      : inferCategory(q);
 
     subjectsMap[formattedSubject].chapters[chapterName].questions.push(q);
     subjectsMap[formattedSubject].chapters[chapterName].totalMcqs++;

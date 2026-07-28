@@ -17,14 +17,19 @@ const getQuestionSubjectFromText = (q) => {
 };
 
 // --- PRIORITIZED SUBJECT GETTER ---
-// STRICT PRIORITY: if a question already has a 'subject' field, that value is used
-// directly and the full-text scanner is never invoked for that question.
-// The (expensive) text scanner only ever runs for questions that have no
-// 'subject' field at all.
+// STRICT PRIORITY: the loader (questionLoader.js) preserves each question's own
+// academic subject (e.g. "Biology") in q.category — this is necessary because
+// q.subject gets overwritten with the folder/paper-level name (e.g. "Past-papers",
+// "Guess-papers") during loading. So q.category is checked first here; only if
+// BOTH q.category and q.subject are missing does the full-text scanner run.
 const getQuestionSubject = (q) => {
-  // 1. STRICTLY prioritize the explicit 'subject' field if it exists — no scanning needed.
-  if (q.subject && q.subject.toString().trim() !== '') {
-    const s = q.subject.toString().toLowerCase().trim();
+  const raw = (q.category && q.category.toString().trim() !== '')
+    ? q.category
+    : q.subject;
+
+  // 1. STRICTLY prioritize the explicit subject if it exists — no scanning needed.
+  if (raw && raw.toString().trim() !== '') {
+    const s = raw.toString().toLowerCase().trim();
     if (s.includes('bio')) return 'Biology';
     if (s.includes('chem')) return 'Chemistry';
     if (s.includes('phys')) return 'Physics';
@@ -32,7 +37,7 @@ const getQuestionSubject = (q) => {
     if (s.includes('log') || s.includes('reason')) return 'Logical Reasoning';
     
     // If it has a subject but doesn't match standard 5, return it as is
-    return q.subject.toString().trim();
+    return raw.toString().trim();
   }
   
   // 2. Fallback: only scan question/option/explanation text when subject is missing.
