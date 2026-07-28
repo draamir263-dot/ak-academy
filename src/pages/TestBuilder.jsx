@@ -3,7 +3,7 @@ import { structuredData } from '../services/questionLoader';
 import { useState, useEffect } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
-// --- SUBJECT CATEGORIZATION HELPER ---
+// --- SUBJECT CATEGORIZATION HELPER (Fallback) ---
 const getAdvancedAutoCategory = (q) => {
   const fullText = [
     q.chapter, q.subject, q.question, 
@@ -86,8 +86,25 @@ export default function TestBuilder() {
       }
 
       if (paperSubject !== 'All') {
-        const qCategory = getAdvancedAutoCategory(q);
-        if (qCategory !== paperSubject) return false; 
+        // 1. Try to map the subject directly from the question's subject property
+        let mappedSubject = null;
+        if (q.subject) {
+          const sLower = q.subject.toLowerCase();
+          if (sLower.includes('bio')) mappedSubject = 'Biology';
+          else if (sLower.includes('chem')) mappedSubject = 'Chemistry';
+          else if (sLower.includes('phys')) mappedSubject = 'Physics';
+          else if (sLower.includes('eng')) mappedSubject = 'English';
+          else if (sLower.includes('log') || sLower.includes('reason')) mappedSubject = 'Logical Reasoning';
+        }
+
+        // 2. If subject is available, prioritize it (do not scan the whole MCQ)
+        if (mappedSubject) {
+          if (mappedSubject !== paperSubject) return false;
+        } else {
+          // 3. If subject is NOT available, fall back to scanning the whole MCQ text
+          const scannedCategory = getAdvancedAutoCategory(q);
+          if (scannedCategory !== paperSubject) return false;
+        }
       }
       
       if (filter === 'Mixed') return true;
