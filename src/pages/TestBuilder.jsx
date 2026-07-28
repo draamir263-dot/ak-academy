@@ -3,7 +3,7 @@ import { structuredData } from '../services/questionLoader';
 import { useState, useEffect } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
-// --- AI-STYLE ADVANCED AUTO-CATEGORIZATION ---
+// --- ADVANCED AUTO-CATEGORIZATION ---
 const getAdvancedAutoCategory = (q) => {
   // 1. Gather ALL text from the MCQ to analyze
   const fullText = [
@@ -82,7 +82,8 @@ export default function TestBuilder() {
   const [paperSubject, setPaperSubject] = useState('All'); 
   const [difficulty, setDifficulty] = useState('All'); 
 
-  const isPastPaper = subjectName?.toLowerCase().includes('past');
+  // Show Subject Category ONLY for Past Papers and Guess Papers
+  const showSubjectFilter = subjectName?.toLowerCase().includes('past') || subjectName?.toLowerCase().includes('guess');
 
   const calculateMaxQuestions = () => {
     if (!chapter || !chapter.questions) return 0;
@@ -117,10 +118,10 @@ export default function TestBuilder() {
   }, [filter, maxQuestions, paperSubject, numQuestions, difficulty]);
 
   useEffect(() => {
-    if (!isPastPaper) {
+    if (!showSubjectFilter) {
       setPaperSubject('All');
     }
-  }, [isPastPaper]);
+  }, [showSubjectFilter]);
 
   const handleNumQuestionsClick = (num) => {
     setNumQuestions(Math.min(num, maxQuestions));
@@ -283,15 +284,15 @@ export default function TestBuilder() {
 
         <div className="aurora-card rounded-2xl p-6 sm:p-8 space-y-8">
           
-          {isPastPaper && (
+          {showSubjectFilter && (
             <div>
-              <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Subject Category (Smart AI Detection)</label>
+              <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Subject Category</label>
               <select 
                 value={paperSubject}
                 onChange={(e) => setPaperSubject(e.target.value)}
                 className="aurora-input w-full p-2.5 rounded-lg focus:outline-none"
               >
-                <option value="All">All Subjects (Full Paper)</option>
+                <option value="All">All Subjects</option>
                 <option value="Biology">Biology Only</option>
                 <option value="Chemistry">Chemistry Only</option>
                 <option value="Physics">Physics Only</option>
