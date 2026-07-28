@@ -1,6 +1,6 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { structuredData } from '../services/questionLoader';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
 // --- REFINED FALLBACK SCANNER (Only used if 'subject' field is completely missing) ---
@@ -17,8 +17,12 @@ const getQuestionSubjectFromText = (q) => {
 };
 
 // --- PRIORITIZED SUBJECT GETTER ---
+// STRICT PRIORITY: if a question already has a 'subject' field, that value is used
+// directly and the full-text scanner is never invoked for that question.
+// The (expensive) text scanner only ever runs for questions that have no
+// 'subject' field at all.
 const getQuestionSubject = (q) => {
-  // 1. STRICTLY prioritize the explicit 'subject' field if it exists
+  // 1. STRICTLY prioritize the explicit 'subject' field if it exists — no scanning needed.
   if (q.subject && q.subject.toString().trim() !== '') {
     const s = q.subject.toString().toLowerCase().trim();
     if (s.includes('bio')) return 'Biology';
@@ -31,7 +35,7 @@ const getQuestionSubject = (q) => {
     return q.subject.toString().trim();
   }
   
-  // 2. Fallback: Scan text ONLY if subject is missing
+  // 2. Fallback: only scan question/option/explanation text when subject is missing.
   return getQuestionSubjectFromText(q);
 };
 
@@ -52,6 +56,19 @@ export default function TestBuilder() {
   // Show Subject Category ONLY for Past Papers and Guess Papers
   const isSpecialPaper = subjectName?.toLowerCase().includes('past') || subjectName?.toLowerCase().includes('guess');
 
+  // Resolve each question's subject exactly ONCE per chapter (not on every filter
+  // change / render). Questions with an explicit 'subject' field are resolved
+  // instantly; the full-text scanner only runs for questions missing it.
+  const questionSubjectMap = useMemo(() => {
+    const map = new Map();
+    if (chapter?.questions) {
+      for (const q of chapter.questions) {
+        map.set(q.id, getQuestionSubject(q));
+      }
+    }
+    return map;
+  }, [chapter]);
+
   const calculateMaxQuestions = () => {
     if (!chapter || !chapter.questions) return 0;
     return chapter.questions.filter(q => {
@@ -60,8 +77,8 @@ export default function TestBuilder() {
       }
 
       if (paperSubject !== 'All') {
-        // Use the prioritized getter function
-        const qSubject = getQuestionSubject(q);
+        // Use the pre-computed, priority-respecting subject map (no re-scanning).
+        const qSubject = questionSubjectMap.get(q.id);
         // Direct string match against the dropdown selection
         if (qSubject !== paperSubject) return false; 
       }
