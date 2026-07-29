@@ -13,7 +13,7 @@ export default function Admin() {
   
   const [activeTab, setActiveTab] = useState('pending');
   const previousPendingCount = useRef(0);
-  const notificationTimeoutRef = useRef(null); // Fixes memory leak for setTimeout
+  const notificationTimeoutRef = useRef(null); 
 
   // REAL-TIME LISTENER
   useEffect(() => {
@@ -23,11 +23,9 @@ export default function Admin() {
       
       const pendingUsers = usersList.filter(u => u.paymentStatus === 'pending');
       
-      // NOTIFICATION LOGIC: Fixed to trigger even if going from 0 to 1
       if (pendingUsers.length > previousPendingCount.current) {
         setShowNotification(true);
         
-        // Clear existing timeout to prevent flickering if multiple requests come in
         if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
         
         notificationTimeoutRef.current = setTimeout(() => {
@@ -42,7 +40,6 @@ export default function Admin() {
       setLoading(false);
     });
 
-    // Cleanup the listener AND the timeout
     return () => {
       unsubscribe();
       if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
@@ -53,16 +50,22 @@ export default function Admin() {
     setMessage('');
     try {
       const expiryDate = new Date();
+      const startDate = new Date(); // Need this to track upgrade math in Payment.jsx
+
+      // 1. Match the EXACT plan names from Payment.jsx
       if (plan === '6_months') {
         expiryDate.setDate(expiryDate.getDate() + 180);
-      } else if (plan === '1_year') {
-        expiryDate.setDate(expiryDate.getDate() + 365);
+      } else if (plan === '3_Months') {
+        expiryDate.setDate(expiryDate.getDate() + 90);
       }
 
+      // 2. Push all required fields to Firestore
       await updateDoc(doc(db, 'users', userId), {
         isPremium: true,
         expiryDate: expiryDate.toISOString(),
-        paymentStatus: "approved"
+        paymentStatus: "approved",
+        currentPlan: plan,                         // Required for Payment.jsx upgrades
+        planStartDate: startDate.toISOString()     // Required for Payment.jsx upgrades
       });
 
       setMessage(`Success! User approved until ${expiryDate.toLocaleDateString()}.`);
@@ -102,22 +105,17 @@ export default function Admin() {
 
   const pendingUsers = allUsers.filter(u => u.paymentStatus === 'pending');
   
-  // Fixed logic: Premium users must have a future expiry date. 
-  // If isPremium is true but date is passed, they fall into "otherUsers"
   const premiumUsers = allUsers.filter(u => 
     u.isPremium === true && u.expiryDate && new Date(u.expiryDate) > new Date()
   );
   
   const otherUsers = allUsers.filter(u => {
-    // If they are pending, exclude (they show in pending tab)
     if (u.paymentStatus === 'pending') return false;
     
-    // If they are premium but expired, include them here as inactive
     if (u.isPremium === true && (!u.expiryDate || new Date(u.expiryDate) <= new Date())) {
       return true;
     }
     
-    // Include anyone who is not premium
     return u.isPremium !== true;
   });
 
@@ -131,7 +129,6 @@ export default function Admin() {
           <p className="text-lg text-gray-500 mt-2">Manage student accounts and payments in real-time.</p>
         </header>
 
-        {/* Real-time Notification Popup */}
         {showNotification && (
           <div className="fixed top-20 right-8 bg-green-600 text-white p-4 rounded-xl shadow-2xl animate-bounce z-50 flex items-center gap-3">
             <span className="text-2xl">🔔</span>
@@ -179,7 +176,8 @@ export default function Admin() {
                       <div>
                         <p className="font-bold text-gray-800">{user.email}</p>
                         <p className="text-sm text-gray-500 mt-1">
-                          <strong>Plan:</strong> {user.plan === '6_months' ? '6 Months (5,000 PKR)' : '1 Year (10,000 PKR)'}
+                          {/* Updated plan matching to match Payment.jsx exactly */}
+                          <strong>Plan:</strong> {user.plan === '6_months' ? '6 Months (9,999 PKR)' : '3 Months (4,999 PKR)'}
                         </p>
                         <p className="text-sm text-gray-500">
                           <strong>Transaction ID:</strong> {user.trxId}
@@ -235,7 +233,6 @@ export default function Admin() {
                       <h3 className="text-sm font-bold text-gray-500 uppercase mb-2">Inactive / Expired</h3>
                       <div className="space-y-4">
                         {otherUsers.map(user => {
-                          // Calculate if they were expired
                           const isExpired = user.isPremium === true && user.expiryDate && new Date(user.expiryDate) <= new Date();
                           
                           return (
@@ -246,7 +243,6 @@ export default function Admin() {
                                   <strong>Status:</strong> {isExpired ? 'Expired' : user.paymentStatus === 'canceled' ? 'Canceled by Admin' : 'Not Paid'}
                                 </p>
                               </div>
-                              {/* Removed the dead 'pending' check code from here */}
                             </div>
                           );
                         })}
