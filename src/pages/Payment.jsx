@@ -124,7 +124,7 @@ export default function Payment() {
         </Link>
         
         <div className="aurora-card rounded-2xl p-6 sm:p-8 mb-8">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight aurora-title mb-2">Unlock AK Academy</h1>
+          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight aurora-title mb-2">Unlock MedLife</h1>
           <p className="text-gray-300 mb-6">Get access to 50,000+ MCQs, Mock Exams, and Performance Analytics.</p>
 
           {/* Pricing Plans */}
@@ -138,10 +138,10 @@ export default function Payment() {
               <p className={`text-sm mt-1 ${plan === '6_months' ? 'text-gray-600' : 'text-gray-300'}`}>Perfect for MDCAT preparation</p>
             </div>
             <div 
-              className={`p-6 rounded-xl cursor-pointer ${plan === '1_year' ? 'aurora-plan-active' : 'aurora-plan-inactive'}`} 
-              onClick={() => setPlan('1_year')}
+              className={`p-6 rounded-xl cursor-pointer ${plan === '3_Months' ? 'aurora-plan-active' : 'aurora-plan-inactive'}`} 
+              onClick={() => setPlan('3_Months')}
             >
-              <h3 className={`font-bold text-xl ${plan === '3_months' ? 'text-gray-800' : 'text-white'}`}>3 Months</h3>
+              <h3 className={`font-bold text-xl ${plan === '3_onths' ? 'text-gray-800' : 'text-white'}`}>3 Months</h3>
               <p className={`text-3xl font-extrabold mt-2 ${plan === '3_Months' ? 'text-blue-800' : 'text-blue-300'}`}>4,999 PKR</p>
               <p className={`text-sm mt-1 ${plan === '3_Months' ? 'text-gray-600' : 'text-gray-300'}`}>Best value for repeated practice</p>
             </div>
