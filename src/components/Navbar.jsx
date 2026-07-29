@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
-  const { currentUser, isPremium, expiryDate, logout } = useAuth();
+  // 1. Added 'user' here to access the currentPlan from your Firestore database
+  const { currentUser, user, isPremium, expiryDate, logout } = useAuth();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
 
@@ -51,7 +52,7 @@ export default function Navbar() {
                 >
                   <span className="w-6 h-6 bg-white text-blue-900 rounded-full flex items-center justify-center text-xs uppercase">
                     {userName.charAt(0)}
-                </span>
+                  </span>
                   <span className="hidden sm:block capitalize">{userName}</span>
                   <span className="text-xs">▼</span>
                 </button>
@@ -65,6 +66,17 @@ export default function Navbar() {
                       <div className="bg-green-50 border border-green-200 p-3 rounded-lg mb-4 text-center">
                         <p className="text-sm font-bold text-green-700">⭐ Premium Active</p>
                         <p className="text-xs text-gray-500 mt-1">{daysLeft} days remaining</p>
+                        
+                        {/* 2. ADDED UPGRADE BUTTON LOGIC HERE */}
+                        {user?.currentPlan === '3_Months' && (
+                          <Link 
+                            to="/payment" 
+                            onClick={() => setShowDropdown(false)} 
+                            className="block mt-3 bg-blue-600 text-white text-xs font-bold py-2 rounded-md hover:bg-blue-700 transition-colors shadow-sm"
+                          >
+                            Upgrade to 6-Months
+                          </Link>
+                        )}
                       </div>
                     ) : (
                       <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-4 text-center">
