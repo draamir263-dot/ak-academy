@@ -23,6 +23,10 @@ const getDeviceSessionId = () => {
 
 export const AuthProvider = ({ children }) => {
   const [currentUser, setCurrentUser] = useState(null);
+  
+  // FIX 1: Add a state to hold the actual Firestore document data
+  const [user, setUser] = useState(null); 
+  
   const [isPremium, setIsPremium] = useState(false);
   const [expiryDate, setExpiryDate] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -38,13 +42,14 @@ export const AuthProvider = ({ children }) => {
         trxId: "",
         paymentStatus: "none",
         expiryDate: null,
-        activeSessionId: sessionId // Set session immediately on signup
+        currentPlan: "none",
+        activeSessionId: sessionId
       });
       
       return userCredential;
     } catch (error) {
       console.error("Signup Error:", error);
-      throw error; // Throw error so the UI component can catch and display it
+      throw error; 
     }
   }, []);
 
@@ -53,7 +58,6 @@ export const AuthProvider = ({ children }) => {
       const cred = await signInWithEmailAndPassword(auth, email, password);
       const sessionId = getDeviceSessionId();
       
-      // Register this device's session ID in Firebase
       await updateDoc(doc(db, 'users', cred.user.uid), {
         activeSessionId: sessionId
       });
@@ -67,7 +71,6 @@ export const AuthProvider = ({ children }) => {
 
   const logout = useCallback(async () => {
     try {
-      // Clear the activeSessionId in Firestore on manual logout
       if (currentUser) {
         await updateDoc(doc(db, 'users', currentUser.uid), {
           activeSessionId: null
@@ -77,19 +80,19 @@ export const AuthProvider = ({ children }) => {
       return signOut(auth);
     } catch (error) {
       console.error("Logout Error:", error);
-      // Still sign out locally even if firebase update fails
       return signOut(auth);
     }
   }, [currentUser]);
 
-  const submitPayment = useCallback(async (trxId, plan) => {
+  // FIX 2: Accept amountToPay so upgrades are correctly logged in the database
+  const submitPayment = useCallback(async (trxId, plan, amountToPay = 0) => {
     if (!currentUser) throw new Error("No user logged in");
     
     try {
-      // Using updateDoc since the document is guaranteed to exist from signup
       await updateDoc(doc(db, 'users', currentUser.uid), {
         trxId: trxId,
         plan: plan,
+        amountPaid: amountToPay, // Track how much they actually paid
         paymentStatus: "pending"
       });
     } catch (error) {
@@ -101,30 +104,27 @@ export const AuthProvider = ({ children }) => {
   useEffect(() => {
     let unsubDoc = null;
     
-    const unsubAuth = onAuthStateChanged(auth, async (user) => {
-      setCurrentUser(user);
+    const unsubAuth = onAuthStateChanged(auth, async (authUser) => {
+      setCurrentUser(authUser);
       
-      // Unsubscribe from previous user's document listener
       if (unsubDoc) {
         unsubDoc();
         unsubDoc = null;
       }
 
-      if (user) {
-        // Just read the session ID, don't generate a new one here 
-        // (prevents overwriting a new device's session ID with an old one)
+      if (authUser) {
         const sessionId = localStorage.getItem('ak_session_id');
         
-        // Listen to user's document in real-time
-        unsubDoc = onSnapshot(doc(db, 'users', user.uid), async (docSnap) => {
+        unsubDoc = onSnapshot(doc(db, 'users', authUser.uid), async (docSnap) => {
           if (docSnap.exists()) {
             const userData = docSnap.data();
+            
+            // FIX 3: Push Firestore data to the user state so Payment.jsx doesn't crash!
+            setUser({ id: authUser.uid, ...userData });
             
             // 1. SINGLE DEVICE CHECK
             if (userData.activeSessionId && sessionId && userData.activeSessionId !== sessionId) {
               console.log("Another device logged in. Logging out.");
-              
-              // Force sign out WITHOUT updating Firestore (so we don't log out the new device)
               localStorage.removeItem('ak_session_id');
               await signOut(auth);
               window.location.href = '/login?reason=another_device';
@@ -140,10 +140,9 @@ export const AuthProvider = ({ children }) => {
             } else {
               setIsPremium(false);
               
-              // If premium date has passed, lock the account in database
               if (userData.isPremium) {
                 try {
-                  await updateDoc(doc(db, 'users', user.uid), { 
+                  await updateDoc(doc(db, 'users', authUser.uid), { 
                     isPremium: false,
                     paymentStatus: "expired" 
                   });
@@ -159,6 +158,7 @@ export const AuthProvider = ({ children }) => {
           setLoading(false);
         });
       } else {
+        setUser(null); // Clear on logout
         setIsPremium(false);
         setExpiryDate(null);
         setLoading(false);
@@ -171,8 +171,10 @@ export const AuthProvider = ({ children }) => {
     };
   }, []);
 
+  // FIX 4: Export the 'user' object so Payment.jsx can read user.currentPlan safely
   const value = { 
     currentUser, 
+    user, 
     isPremium, 
     expiryDate, 
     signup, 

@@ -3,7 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 
 export default function Payment() {
-  // Assuming useAuth provides a 'user' object with currentPlan and planStartDate
+  // We now have access to both 'user' (the database document) and 'submitPayment'
   const { user, submitPayment } = useAuth(); 
   const navigate = useNavigate();
   
@@ -12,7 +12,7 @@ export default function Payment() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  // Plan configurations
+  // Plan configurations (Names exactly match Admin.jsx now)
   const PLANS = {
     '3_Months': { price: 4999, days: 90, label: '3 Months' },
     '6_months': { price: 9999, days: 180, label: '6 Months' }
@@ -20,15 +20,16 @@ export default function Payment() {
 
   // Calculate the upgrade amount dynamically
   const { amountToPay, isUpgrade, daysSpent, remainingValue } = useMemo(() => {
-    // If no user, or no current plan, they are paying fresh
-    if (!user || !user.currentPlan || user.currentPlan === 'none') {
+    // SECURITY UPDATE: If no user, no current plan, or their status is canceled/expired, 
+    // they do NOT get an upgrade discount. They pay fresh.
+    if (!user || !user.currentPlan || user.currentPlan === 'none' || user.paymentStatus !== 'approved') {
       return { amountToPay: PLANS[plan].price, isUpgrade: false, daysSpent: 0, remainingValue: 0 };
     }
 
     const currentPlanConfig = PLANS[user.currentPlan];
     const newPlanConfig = PLANS[plan];
 
-    // If they select the same plan they already have, or downgrading, just show full price (or handle as needed)
+    // If they select the same plan they already have, or downgrading, just show full price
     if (user.currentPlan === plan || newPlanConfig.price <= currentPlanConfig.price) {
       return { amountToPay: newPlanConfig.price, isUpgrade: false, daysSpent: 0, remainingValue: 0 };
     }
@@ -49,7 +50,7 @@ export default function Payment() {
     // Calculate final upgrade cost
     let upgradeCost = newPlanConfig.price - remainingValueCalc;
     
-    // Ensure it doesn't go negative (e.g., if they upgrade on day 89)
+    // Ensure it doesn't go negative
     if (upgradeCost < 0) upgradeCost = 0;
 
     return { 
@@ -66,7 +67,7 @@ export default function Payment() {
     setMessage('');
     
     try {
-      // Pass the amountToPay to your backend so it knows how much to verify
+      // Passes the calculated amountToPay to AuthContext so the Admin can see it
       await submitPayment(trxId, plan, amountToPay);
       setMessage('Payment submitted successfully! Please wait up to 24 hours for admin verification. You will be logged out automatically.');
       setTrxId('');
