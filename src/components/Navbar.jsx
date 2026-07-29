@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
-  // 1. Added 'user' here to access the currentPlan from your Firestore database
   const { currentUser, user, isPremium, expiryDate, logout } = useAuth();
   const navigate = useNavigate();
   const [showDropdown, setShowDropdown] = useState(false);
@@ -16,6 +15,9 @@ export default function Navbar() {
 
   const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)) : 0;
   const userName = currentUser?.email ? currentUser.email.split('@')[0] : 'Account';
+
+  // Check if they are eligible for an upgrade (they have a plan, but it's not the maximum 1-year plan)
+  const canUpgrade = user?.currentPlan && user.currentPlan !== '1_year' && user.currentPlan !== 'none';
 
   return (
     <nav className="bg-blue-900 shadow-sm border-b border-blue-800 sticky top-0 z-50 pt-[env(safe-area-inset-top)]">
@@ -67,14 +69,14 @@ export default function Navbar() {
                         <p className="text-sm font-bold text-green-700">⭐ Premium Active</p>
                         <p className="text-xs text-gray-500 mt-1">{daysLeft} days remaining</p>
                         
-                        {/* 2. ADDED UPGRADE BUTTON LOGIC HERE */}
-                        {user?.currentPlan === '3_Months' && (
+                        {/* 1. UPGRADE BUTTON OPENS FOR ANYONE NOT ON 1-YEAR */}
+                        {canUpgrade && (
                           <Link 
                             to="/payment" 
                             onClick={() => setShowDropdown(false)} 
                             className="block mt-3 bg-blue-600 text-white text-xs font-bold py-2 rounded-md hover:bg-blue-700 transition-colors shadow-sm"
                           >
-                            Upgrade to 6-Months
+                            Upgrade your plan
                           </Link>
                         )}
                       </div>

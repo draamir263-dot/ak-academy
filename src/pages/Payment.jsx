@@ -11,9 +11,14 @@ export default function Payment() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
+  // 1. ALL NEW PLANS CONFIGURED HERE
   const PLANS = {
-    '3_Months': { price: 4999, days: 90, label: '3 Months' },
-    '6_months': { price: 9999, days: 180, label: '6 Months' }
+    '15_days': { price: 999, days: 15, label: '15 Days', desc: 'Quick revision' },
+    '1_month': { price: 1999, days: 30, label: '1 Month', desc: 'Focused preparation' },
+    '3_months': { price: 4999, days: 90, label: '3 Months', desc: 'Repeated practice' },
+    '3_Months': { price: 4999, days: 90, label: '3 Months', desc: 'Repeated practice' }, // Legacy support
+    '6_months': { price: 8999, days: 180, label: '6 Months', desc: 'Comprehensive study' },
+    '1_year': { price: 15999, days: 365, label: '1 Year', desc: 'Full academic year' }
   };
 
   const { amountToPay, isUpgrade, daysSpent, remainingValue } = useMemo(() => {
@@ -112,29 +117,27 @@ export default function Payment() {
           {isUpgrade && (
             <div className="mb-6 p-4 bg-blue-500/15 border border-blue-400/30 text-blue-100 rounded-lg text-sm">
               <p className="font-bold mb-1">Upgrade Calculation</p>
-              <p>You've used <strong>{daysSpent} days</strong> of your 3-Month plan.</p>
+              <p>You've used <strong>{daysSpent} days</strong> of your current plan.</p>
               <p>Remaining value: <strong>{remainingValue} PKR</strong></p>
-              <p className="mt-2 text-green-300 font-bold">Amount due for 6-Month upgrade: {amountToPay} PKR</p>
+              <p className="mt-2 text-green-300 font-bold">Amount due for upgrade: {amountToPay} PKR</p>
             </div>
           )}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
-            <div 
-              className={`p-6 rounded-xl cursor-pointer ${plan === '6_months' ? 'aurora-plan-active' : 'aurora-plan-inactive'}`} 
-              onClick={() => setPlan('6_months')}
-            >
-              <h3 className={`font-bold text-xl ${plan === '6_months' ? 'text-gray-800' : 'text-white'}`}>6 Months</h3>
-              <p className={`text-3xl font-extrabold mt-2 ${plan === '6_months' ? 'text-blue-800' : 'text-blue-300'}`}>9,999 PKR</p>
-              <p className={`text-sm mt-1 ${plan === '6_months' ? 'text-gray-600' : 'text-gray-300'}`}>Perfect for MDCAT preparation</p>
-            </div>
-            <div 
-              className={`p-6 rounded-xl cursor-pointer ${plan === '3_Months' ? 'aurora-plan-active' : 'aurora-plan-inactive'}`} 
-              onClick={() => setPlan('3_Months')}
-            >
-              <h3 className={`font-bold text-xl ${plan === '3_Months' ? 'text-gray-800' : 'text-white'}`}>3 Months</h3>
-              <p className={`text-3xl font-extrabold mt-2 ${plan === '3_Months' ? 'text-blue-800' : 'text-blue-300'}`}>4,999 PKR</p>
-              <p className={`text-sm mt-1 ${plan === '3_Months' ? 'text-gray-600' : 'text-gray-300'}`}>Best value for repeated practice</p>
-            </div>
+          {/* 2. DYNAMIC PLAN GRID (Responsive) */}
+          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
+            {Object.entries(PLANS)
+              .filter(([key]) => key !== '3_Months') // Hide legacy plan from UI
+              .map(([key, config]) => (
+              <div 
+                key={key}
+                className={`p-4 rounded-xl cursor-pointer flex flex-col justify-between ${plan === key ? 'aurora-plan-active' : 'aurora-plan-inactive'}`} 
+                onClick={() => setPlan(key)}
+              >
+                <h3 className={`font-bold text-lg ${plan === key ? 'text-gray-800' : 'text-white'}`}>{config.label}</h3>
+                <p className={`text-2xl font-extrabold mt-1 ${plan === key ? 'text-blue-800' : 'text-blue-300'}`}>{config.price} PKR</p>
+                <p className={`text-xs mt-2 ${plan === key ? 'text-gray-600' : 'text-gray-400'}`}>{config.desc}</p>
+              </div>
+            ))}
           </div>
 
           <div className="bg-white/5 border border-white/15 p-6 rounded-xl mb-8 space-y-4">

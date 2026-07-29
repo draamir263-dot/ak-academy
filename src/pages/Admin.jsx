@@ -49,11 +49,12 @@ export default function Admin() {
       const expiryDate = new Date();
       const startDate = new Date(); 
 
-      if (plan === '6_months') {
-        expiryDate.setDate(expiryDate.getDate() + 180);
-      } else if (plan === '3_Months') {
-        expiryDate.setDate(expiryDate.getDate() + 90);
-      }
+      // 1. ADDED ALL 5 PLAN DATE CALCULATIONS HERE
+      if (plan === '15_days') expiryDate.setDate(expiryDate.getDate() + 15);
+      else if (plan === '1_month') expiryDate.setDate(expiryDate.getDate() + 30);
+      else if (plan === '3_months' || plan === '3_Months') expiryDate.setDate(expiryDate.getDate() + 90);
+      else if (plan === '6_months') expiryDate.setDate(expiryDate.getDate() + 180);
+      else if (plan === '1_year') expiryDate.setDate(expiryDate.getDate() + 365);
 
       await updateDoc(doc(db, 'users', userId), {
         isPremium: true,
@@ -115,6 +116,12 @@ export default function Admin() {
     if (u.isPremium === true && (!u.expiryDate || new Date(u.expiryDate) <= new Date())) return true;
     return u.isPremium !== true;
   });
+
+  // Helper for UI
+  const getPlanName = (planCode) => {
+    const names = { '15_days': '15 Days', '1_month': '1 Month', '3_months': '3 Months', '3_Months': '3 Months', '6_months': '6 Months', '1_year': '1 Year' };
+    return names[planCode] || planCode;
+  };
 
   return (
     <div className="min-h-screen p-8 relative">
@@ -182,7 +189,7 @@ export default function Admin() {
                           ) : (
                             <span className="inline-block mt-1 px-2 py-1 bg-yellow-500 text-white text-xs font-bold rounded">NEW SUBSCRIPTION</span>
                           )}
-                          <p className="text-sm text-gray-700 mt-2"><strong>Requested Plan:</strong> {user.plan === '6_months' ? '6 Months' : '3 Months'}</p>
+                          <p className="text-sm text-gray-700 mt-2"><strong>Requested Plan:</strong> {getPlanName(user.plan)}</p>
                           <p className="text-sm text-gray-700"><strong>Amount to Verify:</strong> {user.amountPaid ? `${user.amountPaid} PKR` : 'Full Price'}</p>
                           <p className="text-sm text-gray-700"><strong>Transaction ID:</strong> <span className="font-mono bg-white px-1 border border-gray-200 rounded">{user.trxId}</span></p>
                         </div>
@@ -209,7 +216,7 @@ export default function Admin() {
                           <div key={user.id} className="border border-green-200 bg-green-50 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                             <div>
                               <p className="font-bold text-gray-800">{user.email}</p>
-                              <p className="text-sm text-gray-500 mt-1"><strong>Status:</strong> Active for {daysLeft} more days</p>
+                              <p className="text-sm text-gray-500 mt-1"><strong>Status:</strong> Active for {daysLeft} more days ({getPlanName(user.currentPlan)})</p>
                             </div>
                             <button onClick={() => setCancelModal({ isOpen: true, userId: user.id, email: user.email })} className="bg-red-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-600 w-full md:w-auto">
                               Cancel Access
