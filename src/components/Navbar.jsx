@@ -25,7 +25,7 @@ export default function Navbar() {
           
           <Link to="/" replace className="flex items-center space-x-2">
             <span className="text-2xl">🩺</span>
-            <span className="font-extrabold text-xl text-white hidden sm:block"><MedLife></MedLife></span>
+            <span className="font-extrabold text-xl text-white hidden sm:block">AK Academy</span>
           </Link>
 
           <div className="flex items-center space-x-2 sm:space-x-4 md:space-x-6">
