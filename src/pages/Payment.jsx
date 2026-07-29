@@ -11,12 +11,11 @@ export default function Payment() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  // 1. ALL NEW PLANS CONFIGURED HERE
   const PLANS = {
     '15_days': { price: 999, days: 15, label: '15 Days', desc: 'Quick revision' },
     '1_month': { price: 1999, days: 30, label: '1 Month', desc: 'Focused preparation' },
     '3_months': { price: 4999, days: 90, label: '3 Months', desc: 'Repeated practice' },
-    '3_Months': { price: 4999, days: 90, label: '3 Months', desc: 'Repeated practice' }, // Legacy support
+    '3_Months': { price: 4999, days: 90, label: '3 Months', desc: 'Repeated practice' },
     '6_months': { price: 8999, days: 180, label: '6 Months', desc: 'Comprehensive study' },
     '1_year': { price: 15999, days: 365, label: '1 Year', desc: 'Full academic year' }
   };
@@ -123,10 +122,9 @@ export default function Payment() {
             </div>
           )}
 
-          {/* 2. DYNAMIC PLAN GRID (Responsive) */}
           <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
             {Object.entries(PLANS)
-              .filter(([key]) => key !== '3_Months') // Hide legacy plan from UI
+              .filter(([key]) => key !== '3_Months') 
               .map(([key, config]) => (
               <div 
                 key={key}
@@ -170,6 +168,14 @@ export default function Payment() {
           {message && (
             <div className="mb-4 p-3 bg-green-500/15 border border-green-400/30 text-green-100 rounded-lg text-sm text-center">
               {message}
+            </div>
+          )}
+
+          {/* NEW: Reject Banner specifically for Wrong IDs */}
+          {user?.paymentStatus === 'rejected' && (
+            <div className="mb-6 p-4 bg-red-600/20 border border-red-500 text-red-100 rounded-xl text-sm text-center font-bold">
+              ⚠️ Your previous payment request was rejected (Invalid Transaction ID).<br /> 
+              Please verify and submit the correct Transaction ID below.
             </div>
           )}
 

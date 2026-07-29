@@ -16,7 +16,6 @@ export default function Navbar() {
   const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)) : 0;
   const userName = currentUser?.email ? currentUser.email.split('@')[0] : 'Account';
 
-  // Check if they are eligible for an upgrade (they have a plan, but it's not the maximum 1-year plan)
   const canUpgrade = user?.currentPlan && user.currentPlan !== '1_year' && user.currentPlan !== 'none';
 
   return (
@@ -26,7 +25,7 @@ export default function Navbar() {
           
           <Link to="/" replace className="flex items-center space-x-2">
             <span className="text-2xl">🩺</span>
-            <span className="font-extrabold text-xl text-white hidden sm:block">AK Academy</span>
+            <span className="font-extrabold text-xl text-white hidden sm:block"><MedLife></MedLife></span>
           </Link>
 
           <div className="flex items-center space-x-2 sm:space-x-4 md:space-x-6">
@@ -69,7 +68,6 @@ export default function Navbar() {
                         <p className="text-sm font-bold text-green-700">⭐ Premium Active</p>
                         <p className="text-xs text-gray-500 mt-1">{daysLeft} days remaining</p>
                         
-                        {/* 1. UPGRADE BUTTON OPENS FOR ANYONE NOT ON 1-YEAR */}
                         {canUpgrade && (
                           <Link 
                             to="/payment" 
@@ -81,12 +79,23 @@ export default function Navbar() {
                         )}
                       </div>
                     ) : (
-                      <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-4 text-center">
-                        <p className="text-sm font-bold text-red-700">Account Expired</p>
-                        <Link to="/payment" onClick={() => setShowDropdown(false)} className="block mt-1 text-xs text-blue-600 underline font-semibold">
-                          Click here to recharge
-                        </Link>
-                      </div>
+                      // NEW: Logic that checks if they were just rejected by admin
+                      user?.paymentStatus === 'rejected' ? (
+                        <div className="bg-red-50 border border-red-500 p-3 rounded-lg mb-4 text-center">
+                          <p className="text-sm font-bold text-red-700">Payment Rejected ❌</p>
+                          <p className="text-xs text-gray-700 mt-1 font-medium">Wrong Transaction ID.</p>
+                          <Link to="/payment" onClick={() => setShowDropdown(false)} className="block mt-2 text-xs text-blue-600 underline font-semibold">
+                            Submit correct ID here
+                          </Link>
+                        </div>
+                      ) : (
+                        <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-4 text-center">
+                          <p className="text-sm font-bold text-red-700">Account Expired</p>
+                          <Link to="/payment" onClick={() => setShowDropdown(false)} className="block mt-1 text-xs text-blue-600 underline font-semibold">
+                            Click here to recharge
+                          </Link>
+                        </div>
+                      )
                     )}
 
                     <button 

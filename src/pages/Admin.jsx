@@ -13,6 +13,8 @@ export default function Admin() {
   
   const [cancelModal, setCancelModal] = useState({ isOpen: false, userId: null, email: '' });
   const [reactivateModal, setReactivateModal] = useState({ isOpen: false, userId: null, email: '' });
+  // NEW: Reject Modal
+  const [rejectModal, setRejectModal] = useState({ isOpen: false, userId: null, email: '' });
   
   const [activeTab, setActiveTab] = useState('pending');
   const previousPendingCount = useRef(0);
@@ -50,7 +52,6 @@ export default function Admin() {
       const startDate = new Date(); 
       let daysToAdd = 0;
 
-      // 1. BULLETPROOF PLAN PARSING (forces lowercase, removes extra spaces)
       const safePlan = String(plan || '').trim().toLowerCase();
 
       if (safePlan === '15_days') daysToAdd = 15;
@@ -59,9 +60,8 @@ export default function Admin() {
       else if (safePlan === '6_months') daysToAdd = 180;
       else if (safePlan === '1_year') daysToAdd = 365;
 
-      // 2. SAFETY NET: Prevent instant expiration bug
       if (daysToAdd === 0) {
-        alert(`Approval Failed: The system does not recognize the plan name "${plan}". Please cancel this request and ask the student to resubmit their payment ID.`);
+        alert(`Approval Failed: The system does not recognize the plan name "${plan}". Please reject this request and ask the student to resubmit.`);
         return; 
       }
 
@@ -79,6 +79,20 @@ export default function Admin() {
     } catch (err) {
       setMessage('Error approving user. Check Firestore rules.');
     }
+  };
+
+  // NEW: Function to reject the payment request
+  const confirmRejection = async () => {
+    setMessage('');
+    try {
+      await updateDoc(doc(db, 'users', rejectModal.userId), {
+        paymentStatus: "rejected" // This triggers the warning on the user's screen
+      });
+      setMessage(`Success! Payment request rejected for ${rejectModal.email}.`);
+    } catch (err) {
+      setMessage('Error rejecting request.');
+    }
+    setRejectModal({ isOpen: false, userId: null, email: '' });
   };
 
   const confirmCancellation = async () => {
@@ -137,6 +151,20 @@ export default function Admin() {
   return (
     <div className="min-h-screen p-8 relative">
       
+      {/* Reject Modal */}
+      {rejectModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-red-600 mb-2">Reject Request?</h3>
+            <p className="text-gray-600 mb-6">Are you sure you want to reject this request? <strong>{rejectModal.email}</strong> will be notified that their Transaction ID was wrong.</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setRejectModal({ isOpen: false, userId: null, email: '' })} className="px-4 py-2 text-gray-600 font-semibold hover:bg-gray-100 rounded-lg">Cancel</button>
+              <button onClick={confirmRejection} className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700">Yes, Reject</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {cancelModal.isOpen && (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
@@ -204,9 +232,15 @@ export default function Admin() {
                           <p className="text-sm text-gray-700"><strong>Amount to Verify:</strong> {user.amountPaid ? `${user.amountPaid} PKR` : 'Full Price'}</p>
                           <p className="text-sm text-gray-700"><strong>Transaction ID:</strong> <span className="font-mono bg-white px-1 border border-gray-200 rounded">{user.trxId}</span></p>
                         </div>
-                        <button onClick={() => handleApprove(user.id, user.plan)} className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 w-full md:w-auto">
-                          Approve & Unlock
-                        </button>
+                        {/* NEW: Reject button added here */}
+                        <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
+                          <button onClick={() => setRejectModal({ isOpen: true, userId: user.id, email: user.email })} className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 w-full sm:w-auto">
+                            Reject (Wrong ID)
+                          </button>
+                          <button onClick={() => handleApprove(user.id, user.plan)} className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 w-full sm:w-auto">
+                            Approve & Unlock
+                          </button>
+                        </div>
                       </div>
                     )
                   })}
@@ -246,16 +280,17 @@ export default function Admin() {
                       {otherUsers.map(user => {
                         const isExpired = user.isPremium === true && user.expiryDate && new Date(user.expiryDate) <= new Date();
                         const isCanceled = user.paymentStatus === 'canceled';
+                        const isRejected = user.paymentStatus === 'rejected'; // Show rejected users here too
                         
                         return (
                           <div key={user.id} className="border border-gray-200 bg-gray-50 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 opacity-90">
                             <div>
                               <p className="font-bold text-gray-700">{user.email}</p>
                               <p className="text-sm text-gray-400 mt-1">
-                                <strong>Status:</strong> {isExpired ? 'Expired' : isCanceled ? 'Canceled by Admin' : 'Not Paid'}
+                                <strong>Status:</strong> {isExpired ? 'Expired' : isCanceled ? 'Canceled by Admin' : isRejected ? 'Rejected (Wrong ID)' : 'Not Paid'}
                               </p>
                             </div>
-                            {(isCanceled || isExpired) && (
+                            {(isCanceled || isExpired || isRejected) && (
                                <button 
                                  onClick={() => setReactivateModal({ isOpen: true, userId: user.id, email: user.email })} 
                                  className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 text-sm w-full md:w-auto"
