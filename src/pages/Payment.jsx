@@ -134,16 +134,16 @@ export default function Payment() {
               onClick={() => setPlan('6_months')}
             >
               <h3 className={`font-bold text-xl ${plan === '6_months' ? 'text-gray-800' : 'text-white'}`}>6 Months</h3>
-              <p className={`text-3xl font-extrabold mt-2 ${plan === '6_months' ? 'text-blue-800' : 'text-blue-300'}`}>5,000 PKR</p>
+              <p className={`text-3xl font-extrabold mt-2 ${plan === '6_months' ? 'text-blue-800' : 'text-blue-300'}`}>9,999 PKR</p>
               <p className={`text-sm mt-1 ${plan === '6_months' ? 'text-gray-600' : 'text-gray-300'}`}>Perfect for MDCAT preparation</p>
             </div>
             <div 
               className={`p-6 rounded-xl cursor-pointer ${plan === '1_year' ? 'aurora-plan-active' : 'aurora-plan-inactive'}`} 
               onClick={() => setPlan('1_year')}
             >
-              <h3 className={`font-bold text-xl ${plan === '1_year' ? 'text-gray-800' : 'text-white'}`}>1 Year</h3>
-              <p className={`text-3xl font-extrabold mt-2 ${plan === '1_year' ? 'text-blue-800' : 'text-blue-300'}`}>10,000 PKR</p>
-              <p className={`text-sm mt-1 ${plan === '1_year' ? 'text-gray-600' : 'text-gray-300'}`}>Best value for repeated practice</p>
+              <h3 className={`font-bold text-xl ${plan === '3_months' ? 'text-gray-800' : 'text-white'}`}>3 Months</h3>
+              <p className={`text-3xl font-extrabold mt-2 ${plan === '3_Months' ? 'text-blue-800' : 'text-blue-300'}`}>4,999 PKR</p>
+              <p className={`text-sm mt-1 ${plan === '3_Months' ? 'text-gray-600' : 'text-gray-300'}`}>Best value for repeated practice</p>
             </div>
           </div>
 
