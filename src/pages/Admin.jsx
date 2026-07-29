@@ -11,6 +11,9 @@ export default function Admin() {
   const [message, setMessage] = useState('');
   const [showNotification, setShowNotification] = useState(false);
   
+  // NEW STATE: For the mobile-friendly custom popup
+  const [cancelModal, setCancelModal] = useState({ isOpen: false, userId: null, email: '' });
+  
   const [activeTab, setActiveTab] = useState('pending');
   const previousPendingCount = useRef(0);
   const notificationTimeoutRef = useRef(null); 
@@ -50,22 +53,20 @@ export default function Admin() {
     setMessage('');
     try {
       const expiryDate = new Date();
-      const startDate = new Date(); // Need this to track upgrade math in Payment.jsx
+      const startDate = new Date(); 
 
-      // 1. Match the EXACT plan names from Payment.jsx
       if (plan === '6_months') {
         expiryDate.setDate(expiryDate.getDate() + 180);
       } else if (plan === '3_Months') {
         expiryDate.setDate(expiryDate.getDate() + 90);
       }
 
-      // 2. Push all required fields to Firestore
       await updateDoc(doc(db, 'users', userId), {
         isPremium: true,
         expiryDate: expiryDate.toISOString(),
         paymentStatus: "approved",
-        currentPlan: plan,                         // Required for Payment.jsx upgrades
-        planStartDate: startDate.toISOString()     // Required for Payment.jsx upgrades
+        currentPlan: plan,                         
+        planStartDate: startDate.toISOString()     
       });
 
       setMessage(`Success! User approved until ${expiryDate.toLocaleDateString()}.`);
@@ -75,20 +76,26 @@ export default function Admin() {
     }
   };
 
-  const handleCancelAccess = async (userId, email) => {
+  // STEP 1: Instead of window.confirm, just open our custom mobile modal
+  const handleCancelAccess = (userId, email) => {
+    setCancelModal({ isOpen: true, userId, email });
+  };
+
+  // STEP 2: The function that runs when the admin clicks "Yes" inside the custom modal
+  const confirmCancellation = async () => {
     setMessage('');
-    if (window.confirm(`Are you sure you want to cancel premium access for ${email}?`)) {
-      try {
-        await updateDoc(doc(db, 'users', userId), {
-          isPremium: false,
-          paymentStatus: "canceled"
-        });
-        setMessage(`Success! Premium access canceled for ${email}.`);
-      } catch (err) {
-        console.error("Error canceling user: ", err);
-        setMessage('Error canceling user.');
-      }
+    try {
+      await updateDoc(doc(db, 'users', cancelModal.userId), {
+        isPremium: false,
+        paymentStatus: "canceled"
+      });
+      setMessage(`Success! Premium access canceled for ${cancelModal.email}.`);
+    } catch (err) {
+      console.error("Error canceling user: ", err);
+      setMessage('Error canceling user.');
     }
+    // Close the modal when done
+    setCancelModal({ isOpen: false, userId: null, email: '' });
   };
 
   const adminEmail = "draamir308@gmail.com"; 
@@ -121,6 +128,34 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen p-8 relative">
+      
+      {/* --- CUSTOM MOBILE-FRIENDLY POPUP MODAL --- */}
+      {cancelModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Cancel Premium?</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to revoke premium access for <strong>{cancelModal.email}</strong>?
+            </p>
+            <div className="flex gap-3 justify-end">
+              <button
+                onClick={() => setCancelModal({ isOpen: false, userId: null, email: '' })}
+                className="px-4 py-2 text-gray-600 font-semibold hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                No, Go Back
+              </button>
+              <button
+                onClick={confirmCancellation}
+                className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition-colors"
+              >
+                Yes, Cancel Access
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* ------------------------------------------- */}
+
       <div className="max-w-4xl mx-auto">
         <Link to="/" className="text-blue-600 mb-6 inline-block">&larr; Back to Home</Link>
         
@@ -176,7 +211,6 @@ export default function Admin() {
                       <div>
                         <p className="font-bold text-gray-800">{user.email}</p>
                         <p className="text-sm text-gray-500 mt-1">
-                          {/* Updated plan matching to match Payment.jsx exactly */}
                           <strong>Plan:</strong> {user.plan === '6_months' ? '6 Months (9,999 PKR)' : '3 Months (4,999 PKR)'}
                         </p>
                         <p className="text-sm text-gray-500">
