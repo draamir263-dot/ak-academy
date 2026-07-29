@@ -150,7 +150,7 @@ export default function Home() {
               <div className="w-6 h-6">{logoIcon}</div>
             </div>
 
-            <h1 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight aurora-title">AK Academy</h1>
+            <h1 className="text-2xl md:text-4xl font-extrabold text-white tracking-tight aurora-title">MedLife</h1>
 
             {/* Quranic Verse Section (Shuffles on refresh) */}
             <div className="mt-2.5 mb-1.5 px-4 max-w-xl mx-auto">
