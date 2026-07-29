@@ -3,7 +3,6 @@ import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 
 export default function Payment() {
-  // We now have access to both 'user' (the database document) and 'submitPayment'
   const { user, submitPayment } = useAuth(); 
   const navigate = useNavigate();
   
@@ -12,16 +11,12 @@ export default function Payment() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
 
-  // Plan configurations (Names exactly match Admin.jsx now)
   const PLANS = {
     '3_Months': { price: 4999, days: 90, label: '3 Months' },
     '6_months': { price: 9999, days: 180, label: '6 Months' }
   };
 
-  // Calculate the upgrade amount dynamically
   const { amountToPay, isUpgrade, daysSpent, remainingValue } = useMemo(() => {
-    // SECURITY UPDATE: If no user, no current plan, or their status is canceled/expired, 
-    // they do NOT get an upgrade discount. They pay fresh.
     if (!user || !user.currentPlan || user.currentPlan === 'none' || user.paymentStatus !== 'approved') {
       return { amountToPay: PLANS[plan].price, isUpgrade: false, daysSpent: 0, remainingValue: 0 };
     }
@@ -29,28 +24,19 @@ export default function Payment() {
     const currentPlanConfig = PLANS[user.currentPlan];
     const newPlanConfig = PLANS[plan];
 
-    // If they select the same plan they already have, or downgrading, just show full price
     if (user.currentPlan === plan || newPlanConfig.price <= currentPlanConfig.price) {
       return { amountToPay: newPlanConfig.price, isUpgrade: false, daysSpent: 0, remainingValue: 0 };
     }
 
-    // Calculate days spent
     const startDate = new Date(user.planStartDate);
     const today = new Date();
     const diffTime = Math.abs(today - startDate);
     const daysSpentCalc = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-    // Prevent division by zero or negative days
     const safeDaysSpent = Math.min(daysSpentCalc, currentPlanConfig.days);
-
-    // Calculate remaining value
     const dailyRate = currentPlanConfig.price / currentPlanConfig.days;
     const remainingValueCalc = dailyRate * (currentPlanConfig.days - safeDaysSpent);
-
-    // Calculate final upgrade cost
-    let upgradeCost = newPlanConfig.price - remainingValueCalc;
     
-    // Ensure it doesn't go negative
+    let upgradeCost = newPlanConfig.price - remainingValueCalc;
     if (upgradeCost < 0) upgradeCost = 0;
 
     return { 
@@ -67,7 +53,6 @@ export default function Payment() {
     setMessage('');
     
     try {
-      // Passes the calculated amountToPay to AuthContext so the Admin can see it
       await submitPayment(trxId, plan, amountToPay);
       setMessage('Payment submitted successfully! Please wait up to 24 hours for admin verification. You will be logged out automatically.');
       setTrxId('');
@@ -124,7 +109,6 @@ export default function Payment() {
           <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight aurora-title mb-2">Unlock MedLife</h1>
           <p className="text-gray-300 mb-6">Get access to 50,000+ MCQs, Mock Exams, and Performance Analytics.</p>
 
-          {/* Upgrade Notification Banner */}
           {isUpgrade && (
             <div className="mb-6 p-4 bg-blue-500/15 border border-blue-400/30 text-blue-100 rounded-lg text-sm">
               <p className="font-bold mb-1">Upgrade Calculation</p>
@@ -134,7 +118,6 @@ export default function Payment() {
             </div>
           )}
 
-          {/* Pricing Plans */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
             <div 
               className={`p-6 rounded-xl cursor-pointer ${plan === '6_months' ? 'aurora-plan-active' : 'aurora-plan-inactive'}`} 
@@ -154,7 +137,6 @@ export default function Payment() {
             </div>
           </div>
 
-          {/* Bank Details */}
           <div className="bg-white/5 border border-white/15 p-6 rounded-xl mb-8 space-y-4">
             <h3 className="font-bold text-white mb-2">Transfer {isUpgrade ? 'the upgrade amount' : 'the amount'} to any of the following:</h3>
             
@@ -173,7 +155,15 @@ export default function Payment() {
             <p className="text-sm text-red-300 mt-2">*After transferring <strong>{amountToPay} PKR</strong>, enter your Transaction ID below.</p>
           </div>
 
-          {/* Submit Form */}
+          <div className="bg-blue-900/40 border border-blue-500/30 p-4 rounded-xl mb-8 text-center">
+            <p className="text-sm text-blue-100">
+              Having issues with your account, payments, or upgrades?
+            </p>
+            <p className="text-sm text-blue-100 mt-1">
+              Contact Admin: <a href="mailto:draamir263@gmail.com" className="font-bold text-blue-300 hover:text-white underline">draamir263@gmail.com</a>
+            </p>
+          </div>
+
           {message && (
             <div className="mb-4 p-3 bg-green-500/15 border border-green-400/30 text-green-100 rounded-lg text-sm text-center">
               {message}

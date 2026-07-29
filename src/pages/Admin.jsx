@@ -10,7 +10,9 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
   const [showNotification, setShowNotification] = useState(false);
+  
   const [cancelModal, setCancelModal] = useState({ isOpen: false, userId: null, email: '' });
+  const [reactivateModal, setReactivateModal] = useState({ isOpen: false, userId: null, email: '' });
   
   const [activeTab, setActiveTab] = useState('pending');
   const previousPendingCount = useRef(0);
@@ -63,13 +65,8 @@ export default function Admin() {
 
       setMessage(`Success! User approved until ${expiryDate.toLocaleDateString()}.`);
     } catch (err) {
-      console.error("Error approving user: ", err);
       setMessage('Error approving user. Check Firestore rules.');
     }
-  };
-
-  const handleCancelAccess = (userId, email) => {
-    setCancelModal({ isOpen: true, userId, email });
   };
 
   const confirmCancellation = async () => {
@@ -81,10 +78,23 @@ export default function Admin() {
       });
       setMessage(`Success! Premium access canceled for ${cancelModal.email}.`);
     } catch (err) {
-      console.error("Error canceling user: ", err);
       setMessage('Error canceling user.');
     }
     setCancelModal({ isOpen: false, userId: null, email: '' });
+  };
+
+  const confirmReactivation = async () => {
+    setMessage('');
+    try {
+      await updateDoc(doc(db, 'users', reactivateModal.userId), {
+        isPremium: true,
+        paymentStatus: "approved"
+      });
+      setMessage(`Success! Premium access restored for ${reactivateModal.email}.`);
+    } catch (err) {
+      setMessage('Error restoring user access.');
+    }
+    setReactivateModal({ isOpen: false, userId: null, email: '' });
   };
 
   const adminEmail = "draamir308@gmail.com"; 
@@ -109,7 +119,6 @@ export default function Admin() {
   return (
     <div className="min-h-screen p-8 relative">
       
-      {/* Mobile Cancel Modal */}
       {cancelModal.isOpen && (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
@@ -118,6 +127,19 @@ export default function Admin() {
             <div className="flex gap-3 justify-end">
               <button onClick={() => setCancelModal({ isOpen: false, userId: null, email: '' })} className="px-4 py-2 text-gray-600 font-semibold hover:bg-gray-100 rounded-lg">No, Go Back</button>
               <button onClick={confirmCancellation} className="px-4 py-2 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700">Yes, Cancel Access</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {reactivateModal.isOpen && (
+        <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
+            <h3 className="text-xl font-bold text-gray-900 mb-2">Restore Access?</h3>
+            <p className="text-gray-600 mb-6">Are you sure you want to reopen premium access for <strong>{reactivateModal.email}</strong>? They will regain their remaining days.</p>
+            <div className="flex gap-3 justify-end">
+              <button onClick={() => setReactivateModal({ isOpen: false, userId: null, email: '' })} className="px-4 py-2 text-gray-600 font-semibold hover:bg-gray-100 rounded-lg">Cancel</button>
+              <button onClick={confirmReactivation} className="px-4 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700">Yes, Restore Access</button>
             </div>
           </div>
         </div>
@@ -150,9 +172,7 @@ export default function Admin() {
               {pendingUsers.length === 0 ? <p className="text-gray-500 italic">No pending payments right now.</p> : (
                 <div className="space-y-4">
                   {pendingUsers.map(user => {
-                    // Check if this is an upgrade (they already have a plan and are currently premium)
                     const isUpgrade = user.currentPlan && user.currentPlan !== 'none' && user.currentPlan !== user.plan && user.isPremium;
-                    
                     return (
                       <div key={user.id} className={`border rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 ${isUpgrade ? 'bg-blue-50 border-blue-200' : 'bg-yellow-50 border-yellow-200'}`}>
                         <div>
@@ -162,22 +182,11 @@ export default function Admin() {
                           ) : (
                             <span className="inline-block mt-1 px-2 py-1 bg-yellow-500 text-white text-xs font-bold rounded">NEW SUBSCRIPTION</span>
                           )}
-                          
-                          <p className="text-sm text-gray-700 mt-2">
-                            <strong>Requested Plan:</strong> {user.plan === '6_months' ? '6 Months' : '3 Months'}
-                          </p>
-                          <p className="text-sm text-gray-700">
-                            {/* Shows the exact prorated amount to verify in the bank */}
-                            <strong>Amount to Verify:</strong> {user.amountPaid ? `${user.amountPaid} PKR` : 'Full Price'}
-                          </p>
-                          <p className="text-sm text-gray-700">
-                            <strong>Transaction ID:</strong> <span className="font-mono bg-white px-1 border border-gray-200 rounded">{user.trxId}</span>
-                          </p>
+                          <p className="text-sm text-gray-700 mt-2"><strong>Requested Plan:</strong> {user.plan === '6_months' ? '6 Months' : '3 Months'}</p>
+                          <p className="text-sm text-gray-700"><strong>Amount to Verify:</strong> {user.amountPaid ? `${user.amountPaid} PKR` : 'Full Price'}</p>
+                          <p className="text-sm text-gray-700"><strong>Transaction ID:</strong> <span className="font-mono bg-white px-1 border border-gray-200 rounded">{user.trxId}</span></p>
                         </div>
-                        <button 
-                          onClick={() => handleApprove(user.id, user.plan)}
-                          className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors w-full md:w-auto"
-                        >
+                        <button onClick={() => handleApprove(user.id, user.plan)} className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 w-full md:w-auto">
                           Approve & Unlock
                         </button>
                       </div>
@@ -187,10 +196,62 @@ export default function Admin() {
               )}
             </>
           ) : (
-            // ... (Rest of the All Users tab remains exactly the same)
             <>
               <h2 className="text-xl font-bold text-gray-800 mb-4">All Registered Students</h2>
-              {/* Premium and Inactive maps go here as they were in the previous code */}
+              <div className="space-y-4">
+                {premiumUsers.length > 0 && (
+                  <div className="mb-6">
+                    <h3 className="text-sm font-bold text-green-600 uppercase mb-2">Premium Active</h3>
+                    <div className="space-y-4">
+                      {premiumUsers.map(user => {
+                        const daysLeft = user.expiryDate ? Math.ceil((new Date(user.expiryDate) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+                        return (
+                          <div key={user.id} className="border border-green-200 bg-green-50 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
+                            <div>
+                              <p className="font-bold text-gray-800">{user.email}</p>
+                              <p className="text-sm text-gray-500 mt-1"><strong>Status:</strong> Active for {daysLeft} more days</p>
+                            </div>
+                            <button onClick={() => setCancelModal({ isOpen: true, userId: user.id, email: user.email })} className="bg-red-500 text-white px-6 py-2 rounded-lg font-semibold hover:bg-red-600 w-full md:w-auto">
+                              Cancel Access
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+
+                {otherUsers.length > 0 && (
+                  <div>
+                    <h3 className="text-sm font-bold text-gray-500 uppercase mb-2">Inactive / Expired</h3>
+                    <div className="space-y-4">
+                      {otherUsers.map(user => {
+                        const isExpired = user.isPremium === true && user.expiryDate && new Date(user.expiryDate) <= new Date();
+                        const isCanceled = user.paymentStatus === 'canceled';
+                        
+                        return (
+                          <div key={user.id} className="border border-gray-200 bg-gray-50 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 opacity-90">
+                            <div>
+                              <p className="font-bold text-gray-700">{user.email}</p>
+                              <p className="text-sm text-gray-400 mt-1">
+                                <strong>Status:</strong> {isExpired ? 'Expired' : isCanceled ? 'Canceled by Admin' : 'Not Paid'}
+                              </p>
+                            </div>
+                            {(isCanceled || isExpired) && (
+                               <button 
+                                 onClick={() => setReactivateModal({ isOpen: true, userId: user.id, email: user.email })} 
+                                 className="bg-blue-600 text-white px-4 py-2 rounded-lg font-semibold hover:bg-blue-700 text-sm w-full md:w-auto"
+                               >
+                                 Reopen Access
+                               </button>
+                            )}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
             </>
           )}
         </div>
