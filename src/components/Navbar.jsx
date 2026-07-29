@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { db } from '../services/firebase';
-import { collection, getDocs, query, where } from 'firebase/firestore';
+import { collection, getDocs } from 'firebase/firestore';
 
 export default function Navbar() {
   const { currentUser, user, isPremium, expiryDate, logout } = useAuth();
@@ -11,13 +11,14 @@ export default function Navbar() {
 
   // --- SEARCH FEATURE STATE ---
   const [isSearchOpen, setIsSearchOpen] = useState(false);
-  const [searchType, setSearchType] = useState('mcq'); // 'chapter' or 'mcq'
+  const [searchType, setSearchType] = useState('mcq'); 
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedChapter, setSelectedChapter] = useState('');
   const [chaptersList, setChaptersList] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const [expandedResultId, setExpandedResultId] = useState(null);
+  const [searchStatus, setSearchStatus] = useState(''); // To show loading progress
 
   const handleLogout = async () => {
     await logout();
@@ -29,30 +30,54 @@ export default function Navbar() {
   const userName = currentUser?.email ? currentUser.email.split('@')[0] : 'Account';
   const canUpgrade = user?.currentPlan && user.currentPlan !== '1_year' && user.currentPlan !== 'none';
 
-  // Fetch Chapters for the Dropdown when Search Modal opens
+  // The collections where your subjects are stored
+  const SUBJECT_COLLECTIONS = [
+    'biology', 'Biology', 
+    'chemistry', 'Chemistry', 
+    'physics', 'Physics', 
+    'logical reasoning', 'Logical Reasoning', 'logical_reasoning',
+    'past papers', 'Past Papers', 'past_papers',
+    'guess paper', 'Guess Paper', 'guess_papers',
+    'mcqs', 'chapters' // Fallbacks
+  ];
+
+  // 1. Fetch All Unique Chapters Across All Subjects
   useEffect(() => {
     if (isSearchOpen && chaptersList.length === 0) {
-      const fetchChapters = async () => {
-        try {
-          // Assuming your chapters are stored in a collection called 'chapters'
-          const snap = await getDocs(collection(db, 'chapters'));
-          const chaps = snap.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-          setChaptersList(chaps);
-        } catch (error) {
-          console.error("Error fetching chapters. If you don't have a 'chapters' collection yet, this is normal.", error);
-          // Fallback dummy data just so the UI works for you to test
-          setChaptersList([
-            { id: 'chap1', name: 'Biology - Cell Structure' },
-            { id: 'chap2', name: 'Physics - Thermodynamics' },
-            { id: 'chap3', name: 'Chemistry - Organic' }
-          ]);
+      const fetchAllChapters = async () => {
+        setSearchStatus('Loading chapters from all subjects...');
+        const uniqueChapters = new Set();
+
+        for (const colName of SUBJECT_COLLECTIONS) {
+          try {
+            const snap = await getDocs(collection(db, colName));
+            snap.docs.forEach(doc => {
+              const data = doc.data();
+              // Extract chapter names wherever they might be saved
+              if (data.chapter) uniqueChapters.add(data.chapter);
+              if (data.chapterName) uniqueChapters.add(data.chapterName);
+              if (data.name) uniqueChapters.add(data.name); 
+              if (data.title) uniqueChapters.add(data.title);
+            });
+          } catch (error) {
+            // Collection doesn't exist, ignore and move to next
+          }
         }
+
+        const formattedChapters = Array.from(uniqueChapters)
+          .filter(Boolean) // Remove empties
+          .map(ch => ({ id: ch, name: ch }))
+          .sort((a, b) => a.name.localeCompare(b.name));
+
+        setChaptersList(formattedChapters);
+        setSearchStatus('');
       };
-      fetchChapters();
+      
+      fetchAllChapters();
     }
   }, [isSearchOpen, chaptersList.length]);
 
-  // Handle the Search Logic
+  // 2. Handle the Deep Search
   const handleSearch = async (e) => {
     e.preventDefault();
     if (!searchQuery.trim() && searchType === 'chapter') return;
@@ -64,39 +89,56 @@ export default function Navbar() {
     setIsSearching(true);
     setSearchResults([]);
     setExpandedResultId(null);
+    setSearchStatus('Scanning subjects for matches...');
+
+    // Break the user's search into individual lowercase words for fuzzy matching
+    const searchTerms = searchQuery.toLowerCase().split(' ').filter(t => t.trim() !== '');
 
     try {
       if (searchType === 'chapter') {
-        // Search Chapters
-        const snap = await getDocs(collection(db, 'chapters'));
-        const allChapters = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-        
-        // Filter locally for fuzzy matching
-        const filtered = allChapters.filter(c => 
-          (c.name || c.title || '').toLowerCase().includes(searchQuery.toLowerCase())
+        // Search Chapters locally
+        const filtered = chaptersList.filter(c => 
+          searchTerms.every(term => c.name.toLowerCase().includes(term))
         );
         setSearchResults(filtered);
 
       } else {
-        // Search MCQs inside the selected Chapter
-        // Assuming your MCQs are in a collection called 'mcqs' and have a 'chapter' field
-        const mcqRef = collection(db, 'mcqs');
-        
-        // We query by chapter to save database reads, then filter text locally
-        const q = query(mcqRef, where("chapter", "==", selectedChapter));
-        const snap = await getDocs(q);
-        const allMcqs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+        // Search MCQs across all subjects
+        let allMatchedMcqs = [];
 
-        const filtered = allMcqs.filter(m => 
-          (m.question || m.statement || m.text || '').toLowerCase().includes(searchQuery.toLowerCase())
-        );
-        setSearchResults(filtered);
+        for (const colName of SUBJECT_COLLECTIONS) {
+          try {
+            const snap = await getDocs(collection(db, colName));
+            
+            snap.docs.forEach(doc => {
+              const data = doc.data();
+              const mcqChapter = data.chapter || data.chapterName || data.name || '';
+              
+              // Only look inside the selected chapter
+              if (mcqChapter !== selectedChapter) return;
+
+              const textToSearch = (data.question || data.statement || data.text || '').toLowerCase();
+              
+              // FUZZY MATCH: Every word the user typed must exist somewhere in the question
+              const isMatch = searchTerms.every(term => textToSearch.includes(term));
+              
+              if (isMatch && textToSearch.trim() !== '') {
+                allMatchedMcqs.push({ id: doc.id, subjectFrom: colName, ...data });
+              }
+            });
+          } catch (error) {
+             // Ignore non-existent collections
+          }
+        }
+        
+        setSearchResults(allMatchedMcqs);
       }
     } catch (error) {
       console.error("Search error:", error);
     }
     
     setIsSearching(false);
+    setSearchStatus('');
   };
 
   return (
@@ -111,7 +153,7 @@ export default function Navbar() {
                 <span className="font-extrabold text-xl text-white hidden sm:block">AK Academy</span>
               </Link>
 
-              {/* SEARCH BUTTON ADDED NEXT TO HOME */}
+              {/* SEARCH BUTTON */}
               <button 
                 onClick={() => setIsSearchOpen(true)}
                 className="text-blue-100 hover:text-white hover:bg-blue-800 px-3 py-2 rounded-md text-sm font-semibold transition-colors flex items-center gap-2 border border-blue-700/50"
@@ -259,8 +301,8 @@ export default function Navbar() {
                       className="w-full border border-gray-300 rounded-lg p-3 text-gray-700 bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                     >
                       <option value="">-- Choose a Chapter --</option>
-                      {chaptersList.map(chap => (
-                        <option key={chap.id} value={chap.name || chap.id}>{chap.name || chap.title || chap.id}</option>
+                      {chaptersList.map((chap, idx) => (
+                        <option key={idx} value={chap.name}>{chap.name}</option>
                       ))}
                     </select>
                   </div>
@@ -274,7 +316,7 @@ export default function Navbar() {
                   <div className="flex gap-2">
                     <input 
                       type="text" 
-                      placeholder={searchType === 'mcq' ? "e.g., mitochondria, thermodynamics..." : "e.g., Biology Chapter 1"}
+                      placeholder={searchType === 'mcq' ? "e.g., cell, thermodynamics, atoms..." : "e.g., Biology Chapter 1"}
                       value={searchQuery}
                       onChange={(e) => setSearchQuery(e.target.value)}
                       className="w-full border border-gray-300 rounded-lg p-3 text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -291,11 +333,18 @@ export default function Navbar() {
               </form>
             </div>
 
+            {/* Loading Status Indicator */}
+            {searchStatus && (
+              <div className="px-5 py-2 text-sm text-blue-600 font-semibold bg-blue-50 animate-pulse">
+                {searchStatus}
+              </div>
+            )}
+
             {/* Results Area */}
             <div className="bg-gray-50 border-t border-gray-200 p-5 overflow-y-auto max-h-[50vh]">
-              {searchResults.length === 0 && !isSearching && (
+              {searchResults.length === 0 && !isSearching && !searchStatus && (
                 <div className="text-center text-gray-400 py-8">
-                  {searchQuery ? 'No results found.' : 'Search results will appear here.'}
+                  {searchQuery ? 'No matches found in the database.' : 'Search results will appear here.'}
                 </div>
               )}
 
@@ -312,13 +361,18 @@ export default function Navbar() {
                         className={`p-4 ${searchType === 'mcq' ? 'cursor-pointer hover:bg-blue-50' : ''}`}
                       >
                         <h4 className="font-bold text-gray-800">
-                          {searchType === 'chapter' ? (item.name || item.title) : (item.question || item.statement || item.text)}
+                          {searchType === 'chapter' ? item.name : (item.question || item.statement || item.text)}
                         </h4>
                         
                         {searchType === 'mcq' && (
-                          <p className="text-xs text-blue-600 mt-2 font-semibold">
-                            {expandedResultId === item.id ? 'Close Details ▲' : 'View Full MCQ ▼'}
-                          </p>
+                          <div className="flex justify-between items-center mt-2">
+                            <span className="text-[10px] font-bold text-gray-400 uppercase tracking-wider bg-gray-100 px-2 py-1 rounded">
+                              Found in: {item.subjectFrom}
+                            </span>
+                            <p className="text-xs text-blue-600 font-semibold">
+                              {expandedResultId === item.id ? 'Close Details ▲' : 'View Full MCQ ▼'}
+                            </p>
+                          </div>
                         )}
                       </div>
 
@@ -326,7 +380,7 @@ export default function Navbar() {
                       {searchType === 'mcq' && expandedResultId === item.id && (
                         <div className="p-4 bg-blue-50/50 border-t border-blue-100">
                           
-                          {/* If options are stored in an array */}
+                          {/* Handles Array options (if you used lists) */}
                           {Array.isArray(item.options) && (
                             <ul className="space-y-2 mb-4">
                               {item.options.map((opt, i) => (
@@ -337,7 +391,7 @@ export default function Navbar() {
                             </ul>
                           )}
 
-                          {/* If options are stored as optionA, optionB, etc. */}
+                          {/* Handles Object options (optionA, optionB, etc) */}
                           {!Array.isArray(item.options) && (item.optionA || item.option1) && (
                             <div className="space-y-2 mb-4">
                               <div className="text-sm text-gray-700 bg-white p-2 border border-gray-200 rounded">A) {item.optionA || item.option1}</div>
@@ -347,7 +401,7 @@ export default function Navbar() {
                             </div>
                           )}
 
-                          <div className="mt-3 inline-block bg-green-100 text-green-800 px-3 py-1 rounded-md text-sm font-bold border border-green-200">
+                          <div className="mt-3 inline-block bg-green-100 text-green-800 px-3 py-1 rounded-md text-sm font-bold border border-green-200 shadow-sm">
                             Correct Answer: {item.correctAnswer || item.answer || 'Not specified'}
                           </div>
                         </div>
