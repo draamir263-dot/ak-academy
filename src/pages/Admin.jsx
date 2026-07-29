@@ -48,13 +48,24 @@ export default function Admin() {
     try {
       const expiryDate = new Date();
       const startDate = new Date(); 
+      let daysToAdd = 0;
 
-      // 1. ADDED ALL 5 PLAN DATE CALCULATIONS HERE
-      if (plan === '15_days') expiryDate.setDate(expiryDate.getDate() + 15);
-      else if (plan === '1_month') expiryDate.setDate(expiryDate.getDate() + 30);
-      else if (plan === '3_months' || plan === '3_Months') expiryDate.setDate(expiryDate.getDate() + 90);
-      else if (plan === '6_months') expiryDate.setDate(expiryDate.getDate() + 180);
-      else if (plan === '1_year') expiryDate.setDate(expiryDate.getDate() + 365);
+      // 1. BULLETPROOF PLAN PARSING (forces lowercase, removes extra spaces)
+      const safePlan = String(plan || '').trim().toLowerCase();
+
+      if (safePlan === '15_days') daysToAdd = 15;
+      else if (safePlan === '1_month') daysToAdd = 30;
+      else if (safePlan === '3_months' || safePlan === '3_months') daysToAdd = 90;
+      else if (safePlan === '6_months') daysToAdd = 180;
+      else if (safePlan === '1_year') daysToAdd = 365;
+
+      // 2. SAFETY NET: Prevent instant expiration bug
+      if (daysToAdd === 0) {
+        alert(`Approval Failed: The system does not recognize the plan name "${plan}". Please cancel this request and ask the student to resubmit their payment ID.`);
+        return; 
+      }
+
+      expiryDate.setDate(expiryDate.getDate() + daysToAdd);
 
       await updateDoc(doc(db, 'users', userId), {
         isPremium: true,
@@ -64,7 +75,7 @@ export default function Admin() {
         planStartDate: startDate.toISOString()     
       });
 
-      setMessage(`Success! User approved until ${expiryDate.toLocaleDateString()}.`);
+      setMessage(`Success! User approved for ${daysToAdd} days until ${expiryDate.toLocaleDateString()}.`);
     } catch (err) {
       setMessage('Error approving user. Check Firestore rules.');
     }
@@ -117,10 +128,10 @@ export default function Admin() {
     return u.isPremium !== true;
   });
 
-  // Helper for UI
   const getPlanName = (planCode) => {
-    const names = { '15_days': '15 Days', '1_month': '1 Month', '3_months': '3 Months', '3_Months': '3 Months', '6_months': '6 Months', '1_year': '1 Year' };
-    return names[planCode] || planCode;
+    const safeCode = String(planCode || '').trim().toLowerCase();
+    const names = { '15_days': '15 Days', '1_month': '1 Month', '3_months': '3 Months', '6_months': '6 Months', '1_year': '1 Year' };
+    return names[safeCode] || planCode || 'Unknown Plan';
   };
 
   return (
