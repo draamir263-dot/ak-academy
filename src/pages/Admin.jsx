@@ -13,8 +13,9 @@ export default function Admin() {
   
   const [activeTab, setActiveTab] = useState('pending');
   const previousPendingCount = useRef(0);
+  const notificationTimeoutRef = useRef(null); // Fixes memory leak for setTimeout
 
-  // REAL-TIME LISTENER: Updates instantly when a student submits a payment
+  // REAL-TIME LISTENER
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'users'), (querySnapshot) => {
       const usersList = querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
@@ -22,10 +23,16 @@ export default function Admin() {
       
       const pendingUsers = usersList.filter(u => u.paymentStatus === 'pending');
       
-      // NOTIFICATION LOGIC: If the number of pending requests increases, show a popup!
-      if (pendingUsers.length > previousPendingCount.current && previousPendingCount.current !== 0) {
+      // NOTIFICATION LOGIC: Fixed to trigger even if going from 0 to 1
+      if (pendingUsers.length > previousPendingCount.current) {
         setShowNotification(true);
-        setTimeout(() => setShowNotification(false), 5000); // Hide after 5 seconds
+        
+        // Clear existing timeout to prevent flickering if multiple requests come in
+        if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
+        
+        notificationTimeoutRef.current = setTimeout(() => {
+          setShowNotification(false);
+        }, 5000);
       }
       previousPendingCount.current = pendingUsers.length;
       
@@ -35,8 +42,11 @@ export default function Admin() {
       setLoading(false);
     });
 
-    // Cleanup the listener when you leave the page
-    return () => unsubscribe();
+    // Cleanup the listener AND the timeout
+    return () => {
+      unsubscribe();
+      if (notificationTimeoutRef.current) clearTimeout(notificationTimeoutRef.current);
+    };
   }, []);
 
   const handleApprove = async (userId, plan) => {
@@ -91,8 +101,25 @@ export default function Admin() {
   }
 
   const pendingUsers = allUsers.filter(u => u.paymentStatus === 'pending');
-  const premiumUsers = allUsers.filter(u => u.isPremium === true);
-  const otherUsers = allUsers.filter(u => u.isPremium !== true && u.paymentStatus !== 'pending');
+  
+  // Fixed logic: Premium users must have a future expiry date. 
+  // If isPremium is true but date is passed, they fall into "otherUsers"
+  const premiumUsers = allUsers.filter(u => 
+    u.isPremium === true && u.expiryDate && new Date(u.expiryDate) > new Date()
+  );
+  
+  const otherUsers = allUsers.filter(u => {
+    // If they are pending, exclude (they show in pending tab)
+    if (u.paymentStatus === 'pending') return false;
+    
+    // If they are premium but expired, include them here as inactive
+    if (u.isPremium === true && (!u.expiryDate || new Date(u.expiryDate) <= new Date())) {
+      return true;
+    }
+    
+    // Include anyone who is not premium
+    return u.isPremium !== true;
+  });
 
   return (
     <div className="min-h-screen p-8 relative">
@@ -207,24 +234,22 @@ export default function Admin() {
                     <div>
                       <h3 className="text-sm font-bold text-gray-500 uppercase mb-2">Inactive / Expired</h3>
                       <div className="space-y-4">
-                        {otherUsers.map(user => (
-                          <div key={user.id} className="border border-gray-200 bg-gray-50 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 opacity-75">
-                            <div>
-                              <p className="font-bold text-gray-700">{user.email}</p>
-                              <p className="text-sm text-gray-400 mt-1">
-                                <strong>Status:</strong> {user.paymentStatus === 'canceled' ? 'Canceled by Admin' : 'Expired/Not Paid'}
-                              </p>
+                        {otherUsers.map(user => {
+                          // Calculate if they were expired
+                          const isExpired = user.isPremium === true && user.expiryDate && new Date(user.expiryDate) <= new Date();
+                          
+                          return (
+                            <div key={user.id} className="border border-gray-200 bg-gray-50 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 opacity-75">
+                              <div>
+                                <p className="font-bold text-gray-700">{user.email}</p>
+                                <p className="text-sm text-gray-400 mt-1">
+                                  <strong>Status:</strong> {isExpired ? 'Expired' : user.paymentStatus === 'canceled' ? 'Canceled by Admin' : 'Not Paid'}
+                                </p>
+                              </div>
+                              {/* Removed the dead 'pending' check code from here */}
                             </div>
-                            {user.paymentStatus === 'pending' && (
-                               <button 
-                               onClick={() => handleApprove(user.id, user.plan)}
-                               className="bg-green-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-green-700 transition-colors w-full md:w-auto"
-                             >
-                               Approve
-                             </button>
-                            )}
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
                   )}
