@@ -231,11 +231,11 @@ export default function TestEngine() {
               onClick={() => toggleFavourite(currentQuestion.id)} 
               className={`${isFavourite(currentQuestion.id) ? 'text-yellow-500' : 'text-gray-300 hover:text-yellow-400'}`}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={isFavourite(currentQuestion.id) ? 'currentColor' : 'none'} stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={isFavourite(currentQuestion.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
             </button>
           </div>
 
-          <h1 className="text-xl md:text-2xl font-bold text-blue-900 mb-6 leading-relaxed">
+          <h1 className="text-base md:text-lg font-bold text-blue-900 mb-6 leading-relaxed">
             {currentQuestion.question}
           </h1>
 
@@ -313,4 +313,4 @@ export default function TestEngine() {
       </div>
     </div>
   );
-} 
+}
