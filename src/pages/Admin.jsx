@@ -13,12 +13,21 @@ export default function Admin() {
   
   const [cancelModal, setCancelModal] = useState({ isOpen: false, userId: null, email: '' });
   const [reactivateModal, setReactivateModal] = useState({ isOpen: false, userId: null, email: '' });
-  // NEW: Reject Modal
   const [rejectModal, setRejectModal] = useState({ isOpen: false, userId: null, email: '' });
   
   const [activeTab, setActiveTab] = useState('pending');
   const previousPendingCount = useRef(0);
   const notificationTimeoutRef = useRef(null); 
+
+  const [isAdmin, setIsAdmin] = useState(false);
+
+  useEffect(() => {
+    if (currentUser) {
+      currentUser.getIdTokenResult().then((token) => {
+        setIsAdmin(!!token.claims.admin);
+      });
+    }
+  }, [currentUser]);
 
   useEffect(() => {
     const unsubscribe = onSnapshot(collection(db, 'users'), (querySnapshot) => {
@@ -81,12 +90,11 @@ export default function Admin() {
     }
   };
 
-  // NEW: Function to reject the payment request
   const confirmRejection = async () => {
     setMessage('');
     try {
       await updateDoc(doc(db, 'users', rejectModal.userId), {
-        paymentStatus: "rejected" // This triggers the warning on the user's screen
+        paymentStatus: "rejected"
       });
       setMessage(`Success! Payment request rejected for ${rejectModal.email}.`);
     } catch (err) {
@@ -123,9 +131,7 @@ export default function Admin() {
     setReactivateModal({ isOpen: false, userId: null, email: '' });
   };
 
-  const adminEmail = "draamir263@gmail.com"; 
-
-  if (!currentUser || currentUser.email?.toLowerCase() !== adminEmail) {
+  if (!currentUser || !isAdmin) {
     return (
       <div className="min-h-screen p-8 text-center">
         <h1 className="text-2xl font-bold text-red-600">Access Denied</h1>
@@ -151,7 +157,6 @@ export default function Admin() {
   return (
     <div className="min-h-screen p-8 relative">
       
-      {/* Reject Modal */}
       {rejectModal.isOpen && (
         <div className="fixed inset-0 bg-black/60 z-[100] flex items-center justify-center p-4">
           <div className="bg-white rounded-2xl p-6 max-w-sm w-full shadow-2xl">
@@ -232,7 +237,6 @@ export default function Admin() {
                           <p className="text-sm text-gray-700"><strong>Amount to Verify:</strong> {user.amountPaid ? `${user.amountPaid} PKR` : 'Full Price'}</p>
                           <p className="text-sm text-gray-700"><strong>Transaction ID:</strong> <span className="font-mono bg-white px-1 border border-gray-200 rounded">{user.trxId}</span></p>
                         </div>
-                        {/* NEW: Reject button added here */}
                         <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
                           <button onClick={() => setRejectModal({ isOpen: true, userId: user.id, email: user.email })} className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 w-full sm:w-auto">
                             Reject (Wrong ID)
@@ -280,7 +284,7 @@ export default function Admin() {
                       {otherUsers.map(user => {
                         const isExpired = user.isPremium === true && user.expiryDate && new Date(user.expiryDate) <= new Date();
                         const isCanceled = user.paymentStatus === 'canceled';
-                        const isRejected = user.paymentStatus === 'rejected'; // Show rejected users here too
+                        const isRejected = user.paymentStatus === 'rejected';
                         
                         return (
                           <div key={user.id} className="border border-gray-200 bg-gray-50 rounded-xl p-5 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 opacity-90">

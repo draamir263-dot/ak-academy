@@ -7,6 +7,7 @@ export default function Navbar() {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const [showProfile, setShowProfile] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const menuRef = useRef(null);
   const profileRef = useRef(null);
 
@@ -21,9 +22,14 @@ export default function Navbar() {
   const userName = currentUser?.email ? currentUser.email.split('@')[0] : 'Account';
   const canUpgrade = user?.currentPlan && user.currentPlan !== '1_year' && user.currentPlan !== 'none';
 
-  const isAdmin = currentUser?.email?.toLowerCase() === "draamir263@gmail.com";
+  useEffect(() => {
+    if (currentUser) {
+      currentUser.getIdTokenResult().then((token) => {
+        setIsAdmin(!!token.claims.admin);
+      });
+    }
+  }, [currentUser]);
 
-  // Close menus when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (menuRef.current && !menuRef.current.contains(e.target) && !e.target.closest('.hamburger-btn')) {
@@ -37,7 +43,6 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  // Close menu on route change
   useEffect(() => {
     setShowMenu(false);
     setShowProfile(false);
@@ -48,16 +53,13 @@ export default function Navbar() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           
-          {/* Logo */}
           <Link to="/" replace className="flex items-center space-x-2">
             <span className="text-2xl">🩺</span>
             <span className="font-extrabold text-xl text-white">MedLife</span>
           </Link>
 
-          {/* Right side buttons */}
           <div className="flex items-center space-x-2">
 
-            {/* Admin button — only for admin email, always visible (outside hamburger) */}
             {isAdmin && (
               <Link 
                 to="/admin" 
@@ -67,7 +69,6 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* Profile / Login button */}
             {currentUser ? (
               <button
                 onClick={() => { setShowProfile(!showProfile); setShowMenu(false); }}
@@ -87,7 +88,6 @@ export default function Navbar() {
               </Link>
             )}
 
-            {/* Hamburger Menu Button (3 lines) */}
             <button
               onClick={() => { setShowMenu(!showMenu); setShowProfile(false); }}
               className="hamburger-btn flex flex-col justify-center items-center w-10 h-10 rounded-md hover:bg-blue-800 transition-colors gap-1.5"
@@ -100,7 +100,6 @@ export default function Navbar() {
         </div>
       </div>
 
-      {/* ===== HAMBURGER DROPDOWN MENU ===== */}
       {showMenu && (
         <div 
           ref={menuRef}
@@ -137,7 +136,6 @@ export default function Navbar() {
             </Link>
           </div>
 
-          {/* Logged-in only: account section */}
           {currentUser && (
             <>
               <div className="border-t border-gray-100" />
@@ -160,7 +158,6 @@ export default function Navbar() {
             </>
           )}
 
-          {/* Not logged in */}
           {!currentUser && (
             <>
               <div className="border-t border-gray-100" />
@@ -180,7 +177,6 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* ===== PROFILE DROPDOWN (for account info / premium / payment) ===== */}
       {showProfile && currentUser && (
         <div 
           ref={profileRef}
@@ -231,7 +227,6 @@ export default function Navbar() {
         </div>
       )}
 
-      {/* Animation keyframes */}
       <style>{`
         @keyframes menuSlideIn {
           0% { opacity: 0; transform: translateY(-8px) scale(0.96); }
