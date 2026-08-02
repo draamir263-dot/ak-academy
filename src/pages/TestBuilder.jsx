@@ -3,7 +3,7 @@ import { structuredData } from '../services/questionLoader';
 import { useState, useEffect, useMemo } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
-// --- REFINED FALLBACK SCANNER (Only used if 'subject' field is completely missing) ---
+// --- REFINED FALLBACK SCANNER (Only used if q.category AND q.subject are both missing) ---
 const getQuestionSubjectFromText = (q) => {
   const text = `${q.question} ${q.optionA} ${q.optionB} ${q.optionC} ${q.optionD} ${q.explanation}`.toLowerCase();
   
@@ -17,30 +17,29 @@ const getQuestionSubjectFromText = (q) => {
 };
 
 // --- PRIORITIZED SUBJECT GETTER ---
-// STRICT PRIORITY: the loader (questionLoader.js) preserves each question's own
-// academic subject (e.g. "Biology") in q.category — this is necessary because
-// q.subject gets overwritten with the folder/paper-level name (e.g. "Past-papers",
-// "Guess-papers") during loading. So q.category is checked first here; only if
-// BOTH q.category and q.subject are missing does the full-text scanner run.
+// The questionLoader preserves each question's own academic subject (e.g. "Biology")
+// in q.category.  q.subject is overwritten with the folder/paper-level name
+// (e.g. "Past-papers", "Guess-papers") during loading.
+// So q.category is checked first here; only if BOTH q.category and q.subject are
+// missing does the full-text scanner run.
 const getQuestionSubject = (q) => {
-  const raw = (q.category && q.category.toString().trim() !== '')
-    ? q.category
-    : q.subject;
+  // 1. q.category = the question's REAL academic subject (set by questionLoader)
+  const cat = (q.category && q.category.toString().trim() !== '')
+    ? q.category.toString().trim()
+    : '';
 
-  // 1. STRICTLY prioritize the explicit subject if it exists — no scanning needed.
-  if (raw && raw.toString().trim() !== '') {
-    const s = raw.toString().toLowerCase().trim();
-    if (s.includes('bio')) return 'Biology';
-    if (s.includes('chem')) return 'Chemistry';
-    if (s.includes('phys')) return 'Physics';
-    if (s.includes('eng')) return 'English';
-    if (s.includes('log') || s.includes('reason')) return 'Logical Reasoning';
-    
-    // If it has a subject but doesn't match standard 5, return it as is
-    return raw.toString().trim();
+  if (cat) {
+    const c = cat.toLowerCase();
+    if (c.includes('bio'))     return 'Biology';
+    if (c.includes('chem'))    return 'Chemistry';
+    if (c.includes('phys'))    return 'Physics';
+    if (c.includes('eng'))     return 'English';
+    if (c.includes('log') || c.includes('reason')) return 'Logical Reasoning';
+    // Has a subject but doesn't match the standard 5 — return as-is
+    return cat;
   }
-  
-  // 2. Fallback: only scan question/option/explanation text when subject is missing.
+
+  // 2. Fallback: scan question text only when category is completely missing.
   return getQuestionSubjectFromText(q);
 };
 
@@ -53,40 +52,49 @@ export default function TestBuilder() {
   const chapter = subject?.chapters.find(c => c.name === chapterName);
 
   const [numQuestions, setNumQuestions] = useState(10);
-  const [filter, setFilter] = useState('Mixed'); // Defaults to Mixed to show all
+  const [filter, setFilter] = useState('Mixed');
   const [timerMode, setTimerMode] = useState('Practice');
   const [paperSubject, setPaperSubject] = useState('All'); 
   const [difficulty, setDifficulty] = useState('All'); 
 
-  // Show Subject Category ONLY for Past Papers and Guess Papers
-  const isSpecialPaper = subjectName?.toLowerCase().includes('past') || subjectName?.toLowerCase().includes('guess');
+  // --- FIX: Show Subject Category for ALL folders EXCEPT the 5 core subjects ---
+  // Previously this only checked for "past" or "guess", missing Model-papers,
+  // Practice-papers, Entry-tests, and any custom mixed-subject folder.
+  const CORE_SUBJECTS = ['biology', 'chemistry', 'physics', 'english', 'logical reasoning'];
+  const isSpecialPaper = !CORE_SUBJECTS.some(
+    core => subjectName?.toLowerCase().trim() === core
+  );
 
-  // Resolve each question's subject exactly ONCE per chapter (not on every filter
-  // change / render). Questions with an explicit 'subject' field are resolved
-  // instantly; the full-text scanner only runs for questions missing it.
-  // Stored POSITIONALLY (parallel array, same order as chapter.questions) rather
-  // than keyed by q.id, since question IDs are not guaranteed to be unique across
-  // an entire Past Paper / Guess Paper chapter (e.g. multiple subject sections can
-  // reuse the same numbering) — keying by id would silently overwrite entries.
+  // Pre-compute each question's resolved subject ONCE (not on every render).
+  // Stored as a parallel array indexed the same as chapter.questions.
   const questionSubjects = useMemo(() => {
     if (!chapter?.questions) return [];
     return chapter.questions.map(getQuestionSubject);
   }, [chapter]);
 
+  // Collect the unique subjects actually present in this chapter
+  // (used to populate the dropdown dynamically)
+  const availableSubjects = useMemo(() => {
+    const set = new Set(questionSubjects);
+    set.delete('Uncategorized');
+    return ['All', ...Array.from(set).sort()];
+  }, [questionSubjects]);
+
   const calculateMaxQuestions = () => {
     if (!chapter || !chapter.questions) return 0;
     return chapter.questions.filter((q, idx) => {
+      // Difficulty filter
       if (difficulty !== 'All') {
         if (!q.difficulty || q.difficulty.toLowerCase() !== difficulty.toLowerCase()) return false;
       }
 
+      // Subject filter (only for mixed-subject papers)
       if (paperSubject !== 'All') {
-        // Use the pre-computed, priority-respecting subject list (no re-scanning).
         const qSubject = questionSubjects[idx];
-        // Direct string match against the dropdown selection
         if (qSubject !== paperSubject) return false; 
       }
       
+      // Usage / accuracy filter
       if (filter === 'Mixed') return true;
       if (filter === 'Used') return progress.used.includes(q.id);
       if (filter === 'Unused') return !progress.used.includes(q.id);
@@ -107,6 +115,7 @@ export default function TestBuilder() {
     }
   }, [filter, maxQuestions, paperSubject, numQuestions, difficulty]);
 
+  // Reset paperSubject to 'All' when navigating to a core subject
   useEffect(() => {
     if (!isSpecialPaper) {
       setPaperSubject('All');
@@ -133,7 +142,9 @@ export default function TestBuilder() {
 
   const startTest = () => {
     if (maxQuestions === 0 || !numQuestions || numQuestions < 1) return;
-    navigate(`/test-engine/${subjectName}/${chapterName}/${numQuestions}`, { state: { filter, paperSubject, difficulty } });
+    navigate(`/test-engine/${subjectName}/${chapterName}/${numQuestions}`, {
+      state: { filter, paperSubject, difficulty }
+    });
   };
 
   if (!chapter) {
@@ -271,7 +282,8 @@ export default function TestBuilder() {
 
         <div className="aurora-card rounded-2xl p-6 sm:p-8 space-y-8">
           
-          {isSpecialPaper && (
+          {/* Subject Category — now shown for ALL non-core-subject folders */}
+          {isSpecialPaper && availableSubjects.length > 2 && (
             <div>
               <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Subject Category</label>
               <select 
@@ -279,13 +291,17 @@ export default function TestBuilder() {
                 onChange={(e) => setPaperSubject(e.target.value)}
                 className="aurora-input w-full p-2.5 rounded-lg focus:outline-none"
               >
-                <option value="All">All Subjects</option>
-                <option value="Biology">Biology Only</option>
-                <option value="Chemistry">Chemistry Only</option>
-                <option value="Physics">Physics Only</option>
-                <option value="English">English Only</option>
-                <option value="Logical Reasoning">Logical Reasoning Only</option>
+                {availableSubjects.map(sub => (
+                  <option key={sub} value={sub}>
+                    {sub === 'All' ? 'All Subjects' : `${sub} Only`}
+                  </option>
+                ))}
               </select>
+              {paperSubject !== 'All' && (
+                <p className="text-xs mt-1.5" style={{ color: '#b8d4ff', opacity: 0.8 }}>
+                  Showing {maxQuestions} {paperSubject} MCQs in this chapter
+                </p>
+              )}
             </div>
           )}
 

@@ -12,62 +12,55 @@ const shuffleArray = (array) => {
   return shuffled;
 };
 
-// --- AI-STYLE ADVANCED AUTO-CATEGORIZATION ---
-const getAdvancedAutoCategory = (q) => {
-  const fullText = [
-    q.chapter, q.subject, q.question, 
-    q.optionA, q.optionB, q.optionC, q.optionD, 
-    q.explanation, q.explanationA, q.explanationB, q.explanationC, q.explanationD, 
-    q.summary
-  ].join(' ').toLowerCase();
+// ---------------------------------------------------------------------------
+// SUBJECT RESOLVER — matches TestBuilder logic exactly
+// ---------------------------------------------------------------------------
+// questionLoader overwrites q.subject with the folder-level name (e.g.
+// "Past-papers") and stores the question's REAL academic subject in q.category.
+// So q.category must be checked FIRST; q.subject is the folder name and means
+// nothing about the academic subject.
+//
+// This resolver is used for subject-based filtering in mixed papers.
+// It does NOT attempt to re-classify questions — it trusts the explicit data.
+const resolveSubject = (q) => {
+  // 1. q.category = the question's real academic subject (set by questionLoader)
+  const cat = (q.category && q.category.toString().trim() !== '')
+    ? q.category.toString().trim()
+    : '';
 
-  const keywords = {
-    'Physics': ['physic', 'force', 'velocity', 'energy', 'momentum', 'circuit', 'optics', 'wave', 'motion', 'gravity', 'friction', 'torque', 'magnet', 'electric', 'charge', 'mass', 'acceleration', 'lens', 'mirror', 'heat', 'temperature', 'quantum', 'nuclear', 'projectile', 'fluid', 'pressure', 'newton', 'einstein', 'volt', 'ampere', 'ohm', 'faraday', 'kinetic', 'potential', 'resistor', 'capacitor', 'inductor', 'mechanics', 'dynamics'],
-    'Chemistry': ['chem', 'mole', 'bond', 'reaction', 'acid', 'organic', 'base', 'salt', 'atom', 'molecule', 'electron', 'proton', 'neutron', 'periodic', 'element', 'compound', 'oxidation', 'reduction', 'titration', 'catalyst', 'halogen', 'alkali', 'valency', 'isotope', 'entropy', 'enthalpy', 'ph', 'buffer', 'hydrocarbon', 'functional group'],
-    'Biology': ['bio', 'cell', 'genetic', 'anatom', 'plant', 'organism', 'tissue', 'organ', 'blood', 'dna', 'rna', 'protein', 'enzyme', 'photosynthesis', 'respiration', 'ecosystem', 'evolution', 'bacteria', 'virus', 'mitosis', 'meiosis', 'membrane', 'nucleus', 'chromosome', 'taxonomy', 'physiology'],
-    'English': ['english', 'tense', 'preposition', 'verb', 'grammar', 'sentence', 'noun', 'pronoun', 'adjective', 'adverb', 'punctuation', 'synonym', 'antonym', 'analogy', 'vocab', 'passive', 'active', 'clause', 'phrase', 'idiom', 'voice'],
-    'Logical Reasoning': ['logical', 'deductive', 'inductive reasoning', 'syllogism', 'reasoning', 'argument', 'premise', 'conclusion', 'fallacy', 'assumption', 'deduce', 'infer', 'statement', 'truth value', 'conditional']
-  };
-
-  const scores = { 'Physics': 0, 'Chemistry': 0, 'Biology': 0, 'English': 0, 'Logical Reasoning': 0 };
-  
-  for (const [subject, words] of Object.entries(keywords)) {
-    words.forEach(word => {
-      const regex = new RegExp(word, 'g');
-      const matches = fullText.match(regex);
-      if (matches) scores[subject] += matches.length;
-    });
+  if (cat) {
+    const c = cat.toLowerCase();
+    if (c.includes('bio'))     return 'Biology';
+    if (c.includes('chem'))    return 'Chemistry';
+    if (c.includes('phys'))    return 'Physics';
+    if (c.includes('eng'))     return 'English';
+    if (c.includes('log') || c.includes('reason')) return 'Logical Reasoning';
+    return cat; // non-standard subject, return as-is
   }
 
-  let originalSubject = null;
-  if (q.subject) {
-    const sLower = q.subject.toLowerCase();
-    if (sLower.includes('bio')) originalSubject = 'Biology';
-    else if (sLower.includes('chem')) originalSubject = 'Chemistry';
-    else if (sLower.includes('phys')) originalSubject = 'Physics';
-    else if (sLower.includes('eng')) originalSubject = 'English';
-    else if (sLower.includes('log') || sLower.includes('reason')) originalSubject = 'Logical Reasoning';
-  }
-  
-  if (originalSubject) {
-    scores[originalSubject] += 2;
-  }
+  // 2. No category at all — last-resort text scan (same keywords as TestBuilder)
+  const text = `${q.question} ${q.optionA} ${q.optionB} ${q.optionC} ${q.optionD} ${q.explanation}`.toLowerCase();
 
-  let maxScore = 0;
-  let bestCategory = originalSubject || 'Uncategorized';
+  if (text.includes('photosynthesis') || text.includes('mitosis') || text.includes('dna') || text.includes('rna') || text.includes('enzyme') || text.includes('bacteria') || text.includes('virus') || text.includes('ecosystem')) return 'Biology';
+  if (text.includes('periodic') || text.includes('mole') || text.includes('oxidation') || text.includes('alkane') || text.includes('titration') || text.includes('catalyst')) return 'Chemistry';
+  if (text.includes('velocity') || text.includes('momentum') || text.includes('newton') || text.includes('circuit') || text.includes('kinematics') || text.includes('projectile')) return 'Physics';
+  if (text.includes('tense') || text.includes('preposition') || text.includes('synonym') || text.includes('grammar') || text.includes('antonym')) return 'English';
+  if (text.includes('syllogism') || text.includes('deductive') || text.includes('logical') || text.includes('premise')) return 'Logical Reasoning';
 
-  for (const [subject, score] of Object.entries(scores)) {
-    if (score > maxScore) {
-      maxScore = score;
-      bestCategory = subject;
-    }
-  }
+  return 'Uncategorized';
+};
 
-  if (maxScore > 2) {
-    return bestCategory;
-  }
-  
-  return bestCategory;
+// ---------------------------------------------------------------------------
+// RESOLVED SUBJECT CACHE — avoid re-scanning on every filter check
+// Maps question ID → resolved subject (memoized inside useEffect)
+// ---------------------------------------------------------------------------
+let subjectCache = new Map();
+
+const getCachedSubject = (q) => {
+  if (subjectCache.has(q.id)) return subjectCache.get(q.id);
+  const resolved = resolveSubject(q);
+  subjectCache.set(q.id, resolved);
+  return resolved;
 };
 
 export default function TestEngine() {
@@ -76,12 +69,14 @@ export default function TestEngine() {
   const navigate = useNavigate();
   const { progress, recordAnswer, toggleFavourite, isFavourite } = useProgress();
 
-  const filter = location.state?.filter || 'Unused';
+  // FIX: Default filter is 'Mixed' (matching TestBuilder), NOT 'Unused'
+  const filter = location.state?.filter || 'Mixed';
   const paperSubject = location.state?.paperSubject || 'All';
-  const selectedTopic = location.state?.selectedTopic || chapterName;
+  // FIX: Now actually using the difficulty from TestBuilder
+  const difficulty = location.state?.difficulty || 'All';
 
   const subject = structuredData.find(s => s.name === subjectName);
-  const chapter = subject?.chapters.find(c => c.name === selectedTopic);
+  const chapter = subject?.chapters.find(c => c.name === chapterName);
   
   const [testQuestions, setTestQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
@@ -89,29 +84,45 @@ export default function TestEngine() {
   const [showExplanation, setShowExplanation] = useState(false); 
 
   useEffect(() => {
+    // Try to restore a saved test session first
     const savedTest = localStorage.getItem('ak_academy_active_test');
     if (savedTest) {
       const parsed = JSON.parse(savedTest);
-      if (parsed.subjectName === subjectName && parsed.chapterName === chapterName && parsed.numQuestions === numQuestions && parsed.paperSubject === paperSubject && parsed.filter === filter) {
+      if (
+        parsed.subjectName === subjectName &&
+        parsed.chapterName === chapterName &&
+        parsed.numQuestions === numQuestions &&
+        parsed.paperSubject === paperSubject &&
+        parsed.filter === filter &&
+        parsed.difficulty === difficulty
+      ) {
         setTestQuestions(parsed.testQuestions);
         setCurrentIndex(parsed.currentIndex);
         setUserAnswers(parsed.userAnswers);
         setShowExplanation(!!parsed.userAnswers[parsed.testQuestions[parsed.currentIndex]?.id]);
+        // Rebuild subject cache from saved questions
+        parsed.testQuestions.forEach(q => subjectCache.set(q.id, resolveSubject(q)));
         return;
       }
     }
 
-    let pool = [];
-    if (selectedTopic === 'All') {
-      pool = subject ? subject.chapters.flatMap(c => c.questions) : [];
-    } else {
-      pool = chapter ? [...chapter.questions] : [];
-    }
-    
+    // --- BUILD QUESTION POOL ---
+    let pool = chapter ? [...chapter.questions] : [];
+
+    // 1. Subject filter — uses q.category (the real academic subject), NOT q.subject
     if (paperSubject !== 'All') {
-      pool = pool.filter(q => getAdvancedAutoCategory(q) === paperSubject);
+      pool = pool.filter(q => getCachedSubject(q) === paperSubject);
     }
 
+    // 2. Difficulty filter — was completely missing before!
+    if (difficulty !== 'All') {
+      pool = pool.filter(q => {
+        if (!q.difficulty) return false;
+        return q.difficulty.toLowerCase() === difficulty.toLowerCase();
+      });
+    }
+
+    // 3. Usage / accuracy filter
     if (filter === 'Used') {
       pool = pool.filter(q => progress.used.includes(q.id));
     } else if (filter === 'Unused') {
@@ -123,24 +134,38 @@ export default function TestEngine() {
     } else if (filter === 'Favourite') {
       pool = pool.filter(q => progress.favourites.includes(q.id));
     }
+    // filter === 'Mixed' → no filtering needed, keep all
 
-    setTestQuestions(shuffleArray(pool).slice(0, parseInt(numQuestions) || 0));
+    // Shuffle and slice to the requested number
+    const finalPool = shuffleArray(pool).slice(0, parseInt(numQuestions) || 0);
+
+    // Pre-build the subject cache for all selected questions
+    finalPool.forEach(q => subjectCache.set(q.id, resolveSubject(q)));
+
+    setTestQuestions(finalPool);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Save test progress to localStorage
   useEffect(() => {
     if (testQuestions.length > 0) {
       localStorage.setItem('ak_academy_active_test', JSON.stringify({
-        subjectName, chapterName, numQuestions, paperSubject, filter, testQuestions, currentIndex, userAnswers
+        subjectName, chapterName, numQuestions, paperSubject, filter, difficulty,
+        testQuestions, currentIndex, userAnswers
       }));
     }
-  }, [testQuestions, currentIndex, userAnswers, subjectName, chapterName, numQuestions, paperSubject, filter]);
+  }, [testQuestions, currentIndex, userAnswers, subjectName, chapterName, numQuestions, paperSubject, filter, difficulty]);
 
   if (testQuestions.length === 0) {
     return (
       <div className="min-h-screen bg-blue-900 p-8 text-center flex items-center justify-center">
         <div>
           <h1 className="text-2xl font-bold text-red-400">No questions found for this filter!</h1>
+          <p className="text-blue-200 mt-2">
+            {paperSubject !== 'All' && `Subject filter: ${paperSubject} | `}
+            {difficulty !== 'All' && `Difficulty: ${difficulty} | `}
+            Filter: {filter}
+          </p>
           <Link to={`/test-builder/${subjectName}/${chapterName}`} className="text-yellow-400 underline mt-4 inline-block">Go Back</Link>
         </div>
       </div>
@@ -179,11 +204,13 @@ export default function TestEngine() {
 
   const handleEndTest = () => {
     localStorage.removeItem('ak_academy_active_test');
+    subjectCache.clear(); // Clear cache when test ends
     navigate('/results', { replace: true, state: { testQuestions, userAnswers, subjectName, chapterName } });
   };
 
   const handleExitTest = () => {
     localStorage.removeItem('ak_academy_active_test');
+    subjectCache.clear();
     navigate(`/test-builder/${subjectName}/${chapterName}`, { replace: true });
   };
 
