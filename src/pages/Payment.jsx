@@ -90,6 +90,8 @@ export default function Payment() {
     setLoading(false);
   };
 
+  const bankInfo = paymentInfo?.faySalBank || paymentInfo?.faysalBank || null;
+
   return (
     <div className="relative min-h-screen aurora-bg overflow-hidden p-3 md:p-6">
       <style>{`
@@ -161,17 +163,17 @@ export default function Payment() {
             
             {paymentInfo?.jazzCashSadapay && (
               <div className="border-b border-white/15 pb-4">
-                <p className="font-semibold text-white">JazzCash / Raast ID</p>
+                <p className="font-semibold text-white">JazzCash / SadaPay</p>
                 <p className="text-gray-300">Title: {paymentInfo.jazzCashSadapay.accountName}</p>
                 <p className="text-gray-300">Number: {paymentInfo.jazzCashSadapay.accountNumber}</p>
               </div>
             )}
 
-            {paymentInfo?.faySalBank && (
+            {bankInfo && (
               <div>
                 <p className="font-semibold text-white">Faysal Bank</p>
-                <p className="text-gray-300">Title: {paymentInfo.faySalBank.accountName}</p>
-                <p className="text-gray-300">Account Number: {paymentInfo.faySalBank.accountNumber}</p>
+                <p className="text-gray-300">Title: {bankInfo.accountName}</p>
+                <p className="text-gray-300">Account Number: {bankInfo.accountNumber}</p>
               </div>
             )}
 
