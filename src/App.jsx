@@ -11,13 +11,13 @@ import Login from './pages/Login';
 import Payment from './pages/Payment';
 import Admin from './pages/Admin';
 import Navbar from './components/Navbar';
+import About from './pages/About';
 
 function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
   const [hasInitialized, setHasInitialized] = useState(false);
 
   useEffect(() => {
-    // HIDE THE LOADING SCREEN ONCE APP IS READY
     const loadingScreen = document.getElementById('loading-screen');
     if (loadingScreen) {
       loadingScreen.style.opacity = '0';
@@ -70,6 +70,7 @@ function App() {
         <Route path="/test-engine/:subjectName/:chapterName/:numQuestions" element={<TestEngine />} />
         <Route path="/results" element={<Results />} />
         <Route path="/dashboard" element={<Dashboard />} />
+        <Route path="/about" element={<About />} />
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>

@@ -35,6 +35,9 @@ export default function Navbar() {
             <Link to="/dashboard" replace className="text-blue-200 hover:text-white px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors">
               Dashboard
             </Link>
+            <Link to="/about" replace className="text-blue-200 hover:text-white px-2 sm:px-3 py-2 rounded-md text-sm font-medium transition-colors">
+              About
+            </Link>
             
             {currentUser && currentUser.email?.toLowerCase() === "draamir308@gmail.com" && (
               <Link 
