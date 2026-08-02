@@ -123,7 +123,7 @@ export default function Admin() {
     setReactivateModal({ isOpen: false, userId: null, email: '' });
   };
 
-  const adminEmail = "draamir308@gmail.com"; 
+  const adminEmail = "draamir263@gmail.com"; 
 
   if (!currentUser || currentUser.email?.toLowerCase() !== adminEmail) {
     return (
