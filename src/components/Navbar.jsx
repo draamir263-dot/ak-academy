@@ -21,7 +21,7 @@ export default function Navbar() {
   const userName = currentUser?.email ? currentUser.email.split('@')[0] : 'Account';
   const canUpgrade = user?.currentPlan && user.currentPlan !== '1_year' && user.currentPlan !== 'none';
 
-  const isAdmin = currentUser?.email?.toLowerCase() === "draamir308@gmail.com";
+  const isAdmin = currentUser?.email?.toLowerCase() === "draamir263@gmail.com";
 
   // Close menus when clicking outside
   useEffect(() => {
