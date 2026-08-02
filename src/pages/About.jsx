@@ -1,19 +1,11 @@
 import { Link } from 'react-router-dom';
 
-// Opens native app if installed, otherwise falls back to browser
-const openSocial = (appUrl, browserUrl) => {
-  const start = Date.now();
-  window.location.href = appUrl;
-
-  const timer = setTimeout(() => {
-    if (Date.now() - start < 2000) {
-      window.location.href = browserUrl;
-    }
-  }, 1500);
-
-  window.addEventListener('blur', () => {
-    clearTimeout(timer);
-  }, { once: true });
+const openSocial = (url) => {
+  window.open(url, '_blank');
+  // Fallback if window.open fails in WebView
+  setTimeout(() => {
+    window.location.href = url;
+  }, 300);
 };
 
 export default function About() {
@@ -121,10 +113,7 @@ export default function About() {
 
           {/* Facebook */}
           <div
-            onClick={() => openSocial(
-              'fb://facewebmodal/f?href=https://www.facebook.com/share/19Dv9kCPZi/',
-              'https://www.facebook.com/share/19Dv9kCPZi/'
-            )}
+            onClick={() => openSocial('https://www.facebook.com/profile.php?id=61591346253247')}
             style={{
               display: 'flex', alignItems: 'center', padding: '12px 10px',
               borderRadius: '12px', cursor: 'pointer', transition: 'background 0.2s'
@@ -146,10 +135,7 @@ export default function About() {
 
           {/* TikTok */}
           <div
-            onClick={() => openSocial(
-              'tiktok://user/@medlife458',
-              'https://www.tiktok.com/@medlife458'
-            )}
+            onClick={() => openSocial('https://www.tiktok.com/@medlife458')}
             style={{
               display: 'flex', alignItems: 'center', padding: '12px 10px',
               borderRadius: '12px', cursor: 'pointer', transition: 'background 0.2s'
