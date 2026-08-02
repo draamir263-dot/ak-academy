@@ -1,5 +1,21 @@
 import { Link } from 'react-router-dom';
 
+// Opens native app if installed, otherwise falls back to browser
+const openSocial = (appUrl, browserUrl) => {
+  const start = Date.now();
+  window.location.href = appUrl;
+
+  const timer = setTimeout(() => {
+    if (Date.now() - start < 2000) {
+      window.location.href = browserUrl;
+    }
+  }, 1500);
+
+  window.addEventListener('blur', () => {
+    clearTimeout(timer);
+  }, { once: true });
+};
+
 export default function About() {
   return (
     <div className="min-h-screen bg-gray-50" style={{ padding: '24px 16px 48px' }}>
@@ -83,13 +99,13 @@ export default function About() {
             </div>
             <div style={{ width: '1px', height: '36px', background: '#e2e8f0', marginTop: '4px' }} />
             <div style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ color: '#1e293b', fontSize: '26px', fontWeight: 800 }}>5</div>
-              <div style={{ color: '#64748b', fontSize: '13px', fontWeight: 500 }}>Subjects</div>
+              <div style={{ color: '#1e293b', fontSize: '26px', fontWeight: 800 }}>Medical Material</div>
+              <div style={{ color: '#64748b', fontSize: '13px', fontWeight: 500 }}>All Subjects</div>
             </div>
             <div style={{ width: '1px', height: '36px', background: '#e2e8f0', marginTop: '4px' }} />
             <div style={{ textAlign: 'center', flex: 1 }}>
-              <div style={{ color: '#1e293b', fontSize: '26px', fontWeight: 800 }}>Free</div>
-              <div style={{ color: '#64748b', fontSize: '13px', fontWeight: 500 }}>Access</div>
+              <div style={{ color: '#1e293b', fontSize: '26px', fontWeight: 800 }}>Free Demo</div>
+              <div style={{ color: '#64748b', fontSize: '13px', fontWeight: 500 }}>Minimum Charges For Complete Access</div>
             </div>
           </div>
         </div>
@@ -103,10 +119,15 @@ export default function About() {
             Connect With Me
           </h2>
 
-          <a href="https://www.facebook.com/share/1E7srFhDDm/" target="_blank" rel="noopener noreferrer"
+          {/* Facebook */}
+          <div
+            onClick={() => openSocial(
+              'fb://facewebmodal/f?href=https://www.facebook.com/share/19Dv9kCPZi/',
+              'https://www.facebook.com/share/19Dv9kCPZi/'
+            )}
             style={{
               display: 'flex', alignItems: 'center', padding: '12px 10px',
-              borderRadius: '12px', textDecoration: 'none', transition: 'background 0.2s'
+              borderRadius: '12px', cursor: 'pointer', transition: 'background 0.2s'
             }}
             onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -121,12 +142,17 @@ export default function About() {
               <div style={{ color: '#64748b', fontSize: '13px' }}>AK Academy</div>
             </div>
             <span style={{ marginLeft: 'auto', color: '#1877F2', fontWeight: 700, fontSize: '18px' }}>→</span>
-          </a>
+          </div>
 
-          <a href="https://www.tiktok.com/@medlife458" target="_blank" rel="noopener noreferrer"
+          {/* TikTok */}
+          <div
+            onClick={() => openSocial(
+              'tiktok://user/@medlife458',
+              'https://www.tiktok.com/@medlife458'
+            )}
             style={{
               display: 'flex', alignItems: 'center', padding: '12px 10px',
-              borderRadius: '12px', textDecoration: 'none', transition: 'background 0.2s'
+              borderRadius: '12px', cursor: 'pointer', transition: 'background 0.2s'
             }}
             onMouseEnter={(e) => e.currentTarget.style.background = '#f1f5f9'}
             onMouseLeave={(e) => e.currentTarget.style.background = 'transparent'}
@@ -141,7 +167,7 @@ export default function About() {
               <div style={{ color: '#64748b', fontSize: '13px' }}>@medlife458</div>
             </div>
             <span style={{ marginLeft: 'auto', color: '#ff0050', fontWeight: 700, fontSize: '18px' }}>→</span>
-          </a>
+          </div>
         </div>
 
         {/* Footer */}
