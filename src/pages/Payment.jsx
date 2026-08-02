@@ -1,4 +1,6 @@
-import { useState, useMemo } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { db } from '../services/firebase';
+import { doc, getDoc } from 'firebase/firestore';
 import { useAuth } from '../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 
@@ -10,6 +12,22 @@ export default function Payment() {
   const [plan, setPlan] = useState('6_months');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
+  const [paymentInfo, setPaymentInfo] = useState(null);
+
+  useEffect(() => {
+    async function fetchPaymentInfo() {
+      try {
+        const docRef = doc(db, 'appConfig', 'paymentInfo');
+        const docSnap = await getDoc(docRef);
+        if (docSnap.exists()) {
+          setPaymentInfo(docSnap.data());
+        }
+      } catch (err) {
+        console.error('Error loading payment info:', err);
+      }
+    }
+    fetchPaymentInfo();
+  }, []);
 
   const PLANS = {
     '15_days': { price: 999, days: 15, label: '15 Days', desc: 'Quick revision' },
@@ -141,17 +159,21 @@ export default function Payment() {
           <div className="bg-white/5 border border-white/15 p-6 rounded-xl mb-8 space-y-4">
             <h3 className="font-bold text-white mb-2">Transfer {isUpgrade ? 'the upgrade amount' : 'the amount'} to any of the following:</h3>
             
-            <div className="border-b border-white/15 pb-4">
-              <p className="font-semibold text-white">JazzCash / Raast ID</p>
-              <p className="text-gray-300">Title: Aamir uldeen</p>
-              <p className="text-gray-300">Number: 03069747445</p>
-            </div>
+            {paymentInfo?.jazzCashSadapay && (
+              <div className="border-b border-white/15 pb-4">
+                <p className="font-semibold text-white">JazzCash / Raast ID</p>
+                <p className="text-gray-300">Title: {paymentInfo.jazzCashSadapay.accountName}</p>
+                <p className="text-gray-300">Number: {paymentInfo.jazzCashSadapay.accountNumber}</p>
+              </div>
+            )}
 
-            <div>
-              <p className="font-semibold text-white">Faysal Bank</p>
-              <p className="text-gray-300">Title: Aamir uddin</p>
-              <p className="text-gray-300">Account Number: 3341383000001976</p>
-            </div>
+            {paymentInfo?.faySalBank && (
+              <div>
+                <p className="font-semibold text-white">Faysal Bank</p>
+                <p className="text-gray-300">Title: {paymentInfo.faySalBank.accountName}</p>
+                <p className="text-gray-300">Account Number: {paymentInfo.faySalBank.accountNumber}</p>
+              </div>
+            )}
 
             <p className="text-sm text-red-300 mt-2">*After transferring <strong>{amountToPay} PKR</strong>, enter your Transaction ID below.</p>
           </div>
@@ -161,7 +183,7 @@ export default function Payment() {
               Having issues with your account, payments, or upgrades?
             </p>
             <p className="text-sm text-blue-100 mt-1">
-              Contact Admin: <a href="mailto:draamir263@gmail.com" className="font-bold text-blue-300 hover:text-white underline">draamir263@gmail.com</a>
+              Contact Admin: <a href={`mailto:${paymentInfo?.contactEmail || ''}`} className="font-bold text-blue-300 hover:text-white underline">{paymentInfo?.contactEmail || 'Loading...'}</a>
             </p>
           </div>
 
@@ -171,10 +193,9 @@ export default function Payment() {
             </div>
           )}
 
-          {/* NEW: Reject Banner specifically for Wrong IDs */}
           {user?.paymentStatus === 'rejected' && (
             <div className="mb-6 p-4 bg-red-600/20 border border-red-500 text-red-100 rounded-xl text-sm text-center font-bold">
-              ⚠️ Your previous payment request was rejected (Invalid Transaction ID).<br /> 
+              Your previous payment request was rejected (Invalid Transaction ID).<br /> 
               Please verify and submit the correct Transaction ID below.
             </div>
           )}
