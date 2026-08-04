@@ -5,7 +5,6 @@ import { useProgress } from '../context/ProgressContext';
 
 const getQuestionSubjectFromText = (q) => {
   const text = `${q.question} ${q.optionA} ${q.optionB} ${q.optionC} ${q.optionD} ${q.explanation}`.toLowerCase();
-  
   if (text.includes('photosynthesis') || text.includes('mitosis') || text.includes('dna') || text.includes('rna') || text.includes('enzyme') || text.includes('bacteria') || text.includes('virus') || text.includes('ecosystem')) return 'Biology';
   if (text.includes('periodic') || text.includes('mole') || text.includes('oxidation') || text.includes('alkane') || text.includes('titration') || text.includes('catalyst')) return 'Chemistry';
   if (text.includes('velocity') || text.includes('momentum') || text.includes('newton') || text.includes('circuit') || text.includes('kinematics') || text.includes('projectile')) return 'Physics';
@@ -40,40 +39,9 @@ export default function TestBuilder() {
   const [filter, setFilter] = useState('Mixed');
   const [timerMode, setTimerMode] = useState('Practice');
   const [paperSubject, setPaperSubject] = useState('All'); 
-  const [difficulty, setDifficulty] = useState('All'); 
+  const [difficulty, setDifficulty] = useState('All');
+  const [chapterFilter, setChapterFilter] = useState('All Chapters');
 
-  // ---- AUTO-DETECT: unique original chapters from the JSON data ----
-  const uniqueChapters = useMemo(() => {
-    if (!chapter?.questions) return [];
-    const set = new Set(chapter.questions.map(q => q.originalChapter).filter(Boolean));
-    return Array.from(set).sort();
-  }, [chapter]);
-
-  const hasMultipleChapters = uniqueChapters.length > 1;
-
-  // ---- Chapter filter state ----
-  const [selectedChapters, setSelectedChapters] = useState([]);
-
-  useEffect(() => {
-    if (hasMultipleChapters && selectedChapters.length === 0) {
-      setSelectedChapters([...uniqueChapters]);
-    }
-  }, [hasMultipleChapters, uniqueChapters]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const allChaptersSelected = selectedChapters.length === uniqueChapters.length && uniqueChapters.length > 0;
-  const someChaptersSelected = selectedChapters.length > 0 && !allChaptersSelected;
-
-  const toggleAllChapters = () => {
-    setSelectedChapters(allChaptersSelected ? [] : [...uniqueChapters]);
-  };
-
-  const toggleChapter = (ch) => {
-    setSelectedChapters(prev =>
-      prev.includes(ch) ? prev.filter(c => c !== ch) : [...prev, ch]
-    );
-  };
-
-  // ---- Existing logic ----
   const CORE_SUBJECTS = ['biology', 'chemistry', 'physics', 'english', 'logical reasoning'];
   const isSpecialPaper = !CORE_SUBJECTS.some(core => subjectName?.toLowerCase().trim() === core);
 
@@ -88,25 +56,44 @@ export default function TestBuilder() {
     return ['All', ...Array.from(set).sort()];
   }, [questionSubjects]);
 
+  // Chapters that belong to the currently selected subject (or all subjects)
+  const availableChapters = useMemo(() => {
+    if (!chapter?.questions) return [];
+    const chapters = new Set();
+    chapter.questions.forEach((q, idx) => {
+      if (paperSubject !== 'All') {
+        const qSubject = questionSubjects[idx];
+        if (qSubject !== paperSubject) return;
+      }
+      if (q.originalChapter) chapters.add(q.originalChapter);
+    });
+    return ['All Chapters', ...Array.from(chapters).sort()];
+  }, [chapter, paperSubject, questionSubjects]);
+
+  const hasMultipleChapters = availableChapters.length > 2;
+
+  // Reset chapter filter when subject category changes
+  useEffect(() => {
+    setChapterFilter('All Chapters');
+  }, [paperSubject]);
+
   const calculateMaxQuestions = () => {
     if (!chapter || !chapter.questions) return 0;
     return chapter.questions.filter((q, idx) => {
-      // 1. Chapter filter (auto-detected — only runs when multiple chapters found)
-      if (hasMultipleChapters) {
-        if (selectedChapters.length === 0) return false;
-        const qCh = q.originalChapter;
-        if (!qCh || !selectedChapters.includes(qCh)) return false;
+      // 1. Chapter filter
+      if (hasMultipleChapters && chapterFilter !== 'All Chapters') {
+        if (q.originalChapter !== chapterFilter) return false;
       }
 
-      // 2. Difficulty filter
-      if (difficulty !== 'All') {
-        if (!q.difficulty || q.difficulty.toLowerCase() !== difficulty.toLowerCase()) return false;
-      }
-
-      // 3. Subject filter
+      // 2. Subject filter
       if (paperSubject !== 'All') {
         const qSubject = questionSubjects[idx];
-        if (qSubject !== paperSubject) return false; 
+        if (qSubject !== paperSubject) return false;
+      }
+
+      // 3. Difficulty filter
+      if (difficulty !== 'All') {
+        if (!q.difficulty || q.difficulty.toLowerCase() !== difficulty.toLowerCase()) return false;
       }
       
       // 4. Usage / accuracy filter
@@ -128,7 +115,7 @@ export default function TestBuilder() {
     } else if (numQuestions > maxQuestions || numQuestions === 0) {
       setNumQuestions(maxQuestions);
     }
-  }, [filter, maxQuestions, paperSubject, numQuestions, difficulty, selectedChapters]);
+  }, [filter, maxQuestions, paperSubject, numQuestions, difficulty, chapterFilter]);
 
   useEffect(() => {
     if (!isSpecialPaper) setPaperSubject('All');
@@ -153,7 +140,7 @@ export default function TestBuilder() {
         filter,
         paperSubject,
         difficulty,
-        selectedOriginalChapters: hasMultipleChapters ? selectedChapters : null
+        selectedOriginalChapter: hasMultipleChapters && chapterFilter !== 'All Chapters' ? chapterFilter : null
       }
     });
   };
@@ -204,11 +191,6 @@ export default function TestBuilder() {
         .aurora-chip-disabled { background: rgba(255,255,255,0.05); color: rgba(255,255,255,0.4); cursor: not-allowed; border: 1px solid rgba(255,255,255,0.1); }
         .aurora-btn-start { background: linear-gradient(135deg, #0fb8ad, #35e0c4); color: #102a43; box-shadow: 0 6px 18px rgba(15,184,173,0.4); transition: box-shadow .2s ease, transform .2s ease; }
         .aurora-btn-start:hover { box-shadow: 0 8px 22px rgba(15,184,173,0.6); transform: translateY(-1px); }
-        .chapter-checkbox { accent-color: #0fb8ad; width: 16px; height: 16px; cursor: pointer; }
-        .chapter-scroll::-webkit-scrollbar { width: 6px; }
-        .chapter-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 3px; }
-        .chapter-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
-        .chapter-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
       `}</style>
 
       <div className="aurora-blob b1" />
@@ -247,60 +229,28 @@ export default function TestBuilder() {
               </select>
               {paperSubject !== 'All' && (
                 <p className="text-xs mt-1.5" style={{ color: '#b8d4ff', opacity: 0.8 }}>
-                  Showing {maxQuestions} {paperSubject} MCQs in this chapter
+                  Showing {maxQuestions} {paperSubject} MCQs
                 </p>
               )}
             </div>
           )}
 
-          {/* Chapter Filter — AUTO-DETECTED: only appears when JSON files have multiple different chapter values */}
+          {/* Chapter Filter — dropdown that updates based on Subject Category */}
           {hasMultipleChapters && (
             <div>
               <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Chapter Filter</label>
-              <div className="chapter-scroll max-h-48 overflow-y-auto space-y-1.5 pr-1 rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                <label className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                  <input 
-                    type="checkbox"
-                    checked={allChaptersSelected}
-                    ref={el => { if (el) el.indeterminate = someChaptersSelected; }}
-                    onChange={toggleAllChapters}
-                    className="chapter-checkbox"
-                  />
-                  <span className="text-white font-semibold text-sm">
-                    {allChaptersSelected ? 'Deselect All' : 'Select All'}
-                  </span>
-                  <span className="ml-auto text-xs" style={{ color: '#eee9ff', opacity: 0.7 }}>
-                    {chapter.questions.length} MCQs
-                  </span>
-                </label>
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', margin: '4px 0' }} />
-                {uniqueChapters.map(ch => {
-                  const isChecked = selectedChapters.includes(ch);
-                  const chCount = chapter.questions.filter(q => q.originalChapter === ch).length;
-                  return (
-                    <label 
-                      key={ch} 
-                      className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${isChecked ? '' : 'opacity-60'}`}
-                      style={{ background: isChecked ? 'rgba(15,184,173,0.12)' : 'transparent' }}
-                    >
-                      <input 
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleChapter(ch)}
-                        className="chapter-checkbox"
-                      />
-                      <span className="text-white text-sm flex-1">{ch}</span>
-                      <span className="text-xs" style={{ color: '#eee9ff', opacity: 0.7 }}>{chCount}</span>
-                    </label>
-                  );
-                })}
-              </div>
-              {selectedChapters.length === 0 && (
-                <p className="text-xs mt-2" style={{ color: '#ffcccc' }}>Please select at least one chapter</p>
-              )}
-              {selectedChapters.length > 0 && (
+              <select 
+                value={chapterFilter}
+                onChange={(e) => setChapterFilter(e.target.value)}
+                className="aurora-input w-full p-2.5 rounded-lg focus:outline-none"
+              >
+                {availableChapters.map(ch => (
+                  <option key={ch} value={ch}>{ch}</option>
+                ))}
+              </select>
+              {chapterFilter !== 'All Chapters' && (
                 <p className="text-xs mt-1.5" style={{ color: '#b8d4ff', opacity: 0.8 }}>
-                  {maxQuestions} MCQs from {selectedChapters.length} selected chapter{selectedChapters.length > 1 ? 's' : ''}
+                  Showing {maxQuestions} MCQs from chapter: {chapterFilter}
                 </p>
               )}
             </div>
