@@ -36,23 +36,20 @@ export default function Subject() {
     );
   }
 
-  // Calculate total MCQs dynamically if the property is missing in the JSON
   const totalMcqsCount = subject.totalMcqs || subject.chapters.reduce((acc, ch) => acc + (ch.questions?.length || 0), 0);
 
-  // SORTING LOGIC: Bring "Demo" to the top, and sort the rest alphabetically & numerically
   const sortedChapters = [...subject.chapters].sort((a, b) => {
     const aIsDemo = a.name.toLowerCase().includes("demo");
     const bIsDemo = b.name.toLowerCase().includes("demo");
     
-    if (aIsDemo && !bIsDemo) return -1; // a (Demo) comes first
-    if (!aIsDemo && bIsDemo) return 1;  // b (Demo) comes first
+    if (aIsDemo && !bIsDemo) return -1;
+    if (!aIsDemo && bIsDemo) return 1;
     
     return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
   });
 
   return (
     <div className="relative min-h-screen aurora-bg overflow-hidden p-3 md:p-6">
-      {/* Glass Aurora theme — animated gradient + floating blurred color blobs */}
       <style>{`
         @keyframes auroraShift {
           0%   { background-position: 0% 30%; }
@@ -115,13 +112,11 @@ export default function Subject() {
         .aurora-back:hover { background: rgba(255,255,255,0.22); transform: translateX(-2px); }
       `}</style>
 
-      {/* Floating aurora blobs (decorative, behind content) */}
       <div className="aurora-blob b1" />
       <div className="aurora-blob b2" />
       <div className="aurora-blob b3" />
       <div className="aurora-blob b4" />
 
-      {/* Content sits above the blobs */}
       <div className="relative z-10 max-w-4xl mx-auto">
         <Link to="/" className="aurora-back mb-6 inline-block px-4 py-2 rounded-lg font-semibold text-sm">
           &larr; Back to Home
@@ -134,11 +129,9 @@ export default function Subject() {
           </p>
         </header>
 
-        {/* GRID LAYOUT: 2 columns on mobile, 3 columns on larger screens */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-4">
           {sortedChapters.map((chapter, index) => {
             const isLocked = !chapter.name.toLowerCase().includes("demo") && (!currentUser || !isPremium);
-            // Dynamic chapter MCQ count fallback
             const chapterMcqCount = chapter.totalMcqs || chapter.questions?.length || 0;
 
             return (
@@ -165,7 +158,7 @@ export default function Subject() {
                     </Link>
                   ) : (
                     <Link 
-                      to={`/test-builder/${subject.name}/${chapter.name}`} 
+                      to={`/test-builder/${encodeURIComponent(subject.name)}/${encodeURIComponent(chapter.name)}`}
                       className="aurora-btn block text-center px-2 py-2 rounded-md font-semibold text-xs"
                     >
                       Start

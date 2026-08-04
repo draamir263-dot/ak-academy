@@ -27,13 +27,52 @@ const getQuestionSubject = (q) => {
   return getQuestionSubjectFromText(q);
 };
 
+// Robust finder — handles URL encoding, case differences, and whitespace
+const findSubject = (name) => {
+  if (!name) return null;
+  // 1. Exact match
+  let found = structuredData.find(s => s.name === name);
+  if (found) return found;
+  // 2. Decoded match (handles %20 etc.)
+  found = structuredData.find(s => s.name === decodeURIComponent(name));
+  if (found) return found;
+  // 3. Case-insensitive match
+  found = structuredData.find(s => s.name.toLowerCase() === name.toLowerCase());
+  if (found) return found;
+  // 4. Decoded + case-insensitive
+  found = structuredData.find(s => decodeURIComponent(s.name).toLowerCase() === decodeURIComponent(name).toLowerCase());
+  if (found) return found;
+  // 5. Trimmed match
+  found = structuredData.find(s => s.name.trim().toLowerCase() === name.trim().toLowerCase());
+  return found;
+};
+
+const findChapter = (subject, name) => {
+  if (!subject || !subject.chapters || !name) return null;
+  // 1. Exact match
+  let found = subject.chapters.find(c => c.name === name);
+  if (found) return found;
+  // 2. Decoded match
+  found = subject.chapters.find(c => c.name === decodeURIComponent(name));
+  if (found) return found;
+  // 3. Case-insensitive match
+  found = subject.chapters.find(c => c.name.toLowerCase() === name.toLowerCase());
+  if (found) return found;
+  // 4. Decoded + case-insensitive
+  found = subject.chapters.find(c => decodeURIComponent(c.name).toLowerCase() === decodeURIComponent(name).toLowerCase());
+  if (found) return found;
+  // 5. Trimmed match
+  found = subject.chapters.find(c => c.name.trim().toLowerCase() === name.trim().toLowerCase());
+  return found;
+};
+
 export default function TestBuilder() {
   const { subjectName, chapterName } = useParams();
   const navigate = useNavigate();
   const { progress } = useProgress();
   
-  const subject = structuredData.find(s => s.name === subjectName);
-  const chapter = subject?.chapters.find(c => c.name === chapterName);
+  const subject = findSubject(subjectName);
+  const chapter = findChapter(subject, chapterName);
 
   const [numQuestions, setNumQuestions] = useState(10);
   const [filter, setFilter] = useState('Mixed');
@@ -56,7 +95,6 @@ export default function TestBuilder() {
     return ['All', ...Array.from(set).sort()];
   }, [questionSubjects]);
 
-  // Chapters that belong to the currently selected subject (or all subjects)
   const availableChapters = useMemo(() => {
     if (!chapter?.questions) return [];
     const chapters = new Set();
@@ -72,7 +110,6 @@ export default function TestBuilder() {
 
   const hasMultipleChapters = availableChapters.length > 2;
 
-  // Reset chapter filter when subject category changes
   useEffect(() => {
     setChapterFilter('All Chapters');
   }, [paperSubject]);
@@ -80,23 +117,19 @@ export default function TestBuilder() {
   const calculateMaxQuestions = () => {
     if (!chapter || !chapter.questions) return 0;
     return chapter.questions.filter((q, idx) => {
-      // 1. Chapter filter
       if (hasMultipleChapters && chapterFilter !== 'All Chapters') {
         if (q.originalChapter !== chapterFilter) return false;
       }
 
-      // 2. Subject filter
       if (paperSubject !== 'All') {
         const qSubject = questionSubjects[idx];
         if (qSubject !== paperSubject) return false;
       }
 
-      // 3. Difficulty filter
       if (difficulty !== 'All') {
         if (!q.difficulty || q.difficulty.toLowerCase() !== difficulty.toLowerCase()) return false;
       }
       
-      // 4. Usage / accuracy filter
       if (filter === 'Mixed') return true;
       if (filter === 'Used') return progress.used.includes(q.id);
       if (filter === 'Unused') return !progress.used.includes(q.id);
@@ -135,24 +168,38 @@ export default function TestBuilder() {
 
   const startTest = () => {
     if (maxQuestions === 0 || !numQuestions || numQuestions < 1) return;
-    navigate(`/test-engine/${subjectName}/${chapterName}/${numQuestions}`, {
+
+    // FIX: send as array to match what TestEngine expects
+    const selectedChapters = (hasMultipleChapters && chapterFilter !== 'All Chapters') 
+      ? [chapterFilter] 
+      : null;
+
+    navigate(`/test-engine/${encodeURIComponent(subjectName)}/${encodeURIComponent(chapterName)}/${numQuestions}`, {
       state: {
         filter,
         paperSubject,
         difficulty,
-        selectedOriginalChapter: hasMultipleChapters && chapterFilter !== 'All Chapters' ? chapterFilter : null
+        selectedOriginalChapters: selectedChapters
       }
     });
   };
 
-  if (!chapter) {
+  if (!subject || !chapter) {
+    const debugInfo = subject 
+      ? `Chapters available: ${subject.chapters.map(c => `"${c.name}"`).join(', ')}`
+      : `Subjects available: ${structuredData.map(s => `"${s.name}"`).join(', ')}`;
+    
     return (
       <div className="min-h-screen aurora-bg p-8 text-center flex items-center justify-center relative overflow-hidden">
         <div className="aurora-blob b1" />
         <div className="aurora-blob b2" />
-        <div className="relative z-10">
-          <h1 className="text-2xl font-bold text-red-300">Chapter not found!</h1>
-          <Link to="/" className="text-yellow-200 underline mt-4 inline-block">Go Home</Link>
+        <div className="relative z-10 max-w-md">
+          <h1 className="text-2xl font-bold text-red-300 mb-4">Chapter not found!</h1>
+          <p className="text-yellow-200 text-sm mb-2">
+            Looking for: <code className="bg-white/10 px-2 py-1 rounded">{subjectName} / {chapterName}</code>
+          </p>
+          <p className="text-blue-200 text-xs mb-6 break-all">{debugInfo}</p>
+          <Link to="/" className="text-yellow-200 underline inline-block">Go Home</Link>
         </div>
         <style>{`
           @keyframes auroraShift { 0% { background-position: 0% 30%; } 50% { background-position: 100% 70%; } 100% { background-position: 0% 30%; } }
@@ -199,8 +246,8 @@ export default function TestBuilder() {
       <div className="aurora-blob b4" />
 
       <div className="relative z-10 max-w-2xl mx-auto">
-        <Link to={`/subject/${subjectName}`} className="aurora-back mb-6 inline-block px-4 py-2 rounded-lg font-semibold text-sm">
-          &larr; Back to {subjectName}
+        <Link to={`/subject/${encodeURIComponent(subject.name)}`} className="aurora-back mb-6 inline-block px-4 py-2 rounded-lg font-semibold text-sm">
+          &larr; Back to {subject.name}
         </Link>
         
         <header className="mb-8 text-center">
