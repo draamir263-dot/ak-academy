@@ -3,6 +3,7 @@ import { structuredData } from '../services/questionLoader';
 import { useState, useEffect, useMemo } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
+// --- REFINED FALLBACK SCANNER (Only used if q.category AND q.subject are both missing) ---
 const getQuestionSubjectFromText = (q) => {
   const text = `${q.question} ${q.optionA} ${q.optionB} ${q.optionC} ${q.optionD} ${q.explanation}`.toLowerCase();
   
@@ -15,7 +16,14 @@ const getQuestionSubjectFromText = (q) => {
   return 'Uncategorized';
 };
 
+// --- PRIORITIZED SUBJECT GETTER ---
+// The questionLoader preserves each question's own academic subject (e.g. "Biology")
+// in q.category.  q.subject is overwritten with the folder/paper-level name
+// (e.g. "Past-papers", "Guess-papers") during loading.
+// So q.category is checked first here; only if BOTH q.category and q.subject are
+// missing does the full-text scanner run.
 const getQuestionSubject = (q) => {
+  // 1. q.category = the question's REAL academic subject (set by questionLoader)
   const cat = (q.category && q.category.toString().trim() !== '')
     ? q.category.toString().trim()
     : '';
@@ -27,9 +35,11 @@ const getQuestionSubject = (q) => {
     if (c.includes('phys'))    return 'Physics';
     if (c.includes('eng'))     return 'English';
     if (c.includes('log') || c.includes('reason')) return 'Logical Reasoning';
+    // Has a subject but doesn't match the standard 5 — return as-is
     return cat;
   }
 
+  // 2. Fallback: scan question text only when category is completely missing.
   return getQuestionSubjectFromText(q);
 };
 
@@ -41,62 +51,29 @@ export default function TestBuilder() {
   const subject = structuredData.find(s => s.name === subjectName);
   const chapter = subject?.chapters.find(c => c.name === chapterName);
 
-  const isMixOrAll = subjectName && (subjectName.toLowerCase().includes('mix') || subjectName.toLowerCase().includes('all'));
-  const isMultiChapter = isMixOrAll && chapterName === '__all__';
-
-  const [selectedChapters, setSelectedChapters] = useState([]);
-
-  useEffect(() => {
-    if (isMultiChapter && subject && selectedChapters.length === 0) {
-      setSelectedChapters(subject.chapters.map(c => c.name));
-    }
-  }, [isMultiChapter, subject]); // eslint-disable-line react-hooks/exhaustive-deps
-
-  const allChapterNames = subject?.chapters.map(c => c.name) || [];
-  const allChaptersSelected = selectedChapters.length === allChapterNames.length && allChapterNames.length > 0;
-  const someChaptersSelected = selectedChapters.length > 0 && !allChaptersSelected;
-
-  const toggleAllChapters = () => {
-    if (allChaptersSelected) {
-      setSelectedChapters([]);
-    } else {
-      setSelectedChapters([...allChapterNames]);
-    }
-  };
-
-  const toggleChapter = (name) => {
-    setSelectedChapters(prev =>
-      prev.includes(name)
-        ? prev.filter(n => n !== name)
-        : [...prev, name]
-    );
-  };
-
   const [numQuestions, setNumQuestions] = useState(10);
   const [filter, setFilter] = useState('Mixed');
   const [timerMode, setTimerMode] = useState('Practice');
   const [paperSubject, setPaperSubject] = useState('All'); 
   const [difficulty, setDifficulty] = useState('All'); 
 
+  // --- FIX: Show Subject Category for ALL folders EXCEPT the 5 core subjects ---
+  // Previously this only checked for "past" or "guess", missing Model-papers,
+  // Practice-papers, Entry-tests, and any custom mixed-subject folder.
   const CORE_SUBJECTS = ['biology', 'chemistry', 'physics', 'english', 'logical reasoning'];
   const isSpecialPaper = !CORE_SUBJECTS.some(
     core => subjectName?.toLowerCase().trim() === core
   );
 
-  const allQuestions = useMemo(() => {
-    if (!subject) return [];
-    if (isMultiChapter) {
-      return subject.chapters
-        .filter(ch => selectedChapters.includes(ch.name))
-        .flatMap(ch => ch.questions || []);
-    }
-    return chapter?.questions || [];
-  }, [subject, chapter, isMultiChapter, selectedChapters]);
-
+  // Pre-compute each question's resolved subject ONCE (not on every render).
+  // Stored as a parallel array indexed the same as chapter.questions.
   const questionSubjects = useMemo(() => {
-    return allQuestions.map(getQuestionSubject);
-  }, [allQuestions]);
+    if (!chapter?.questions) return [];
+    return chapter.questions.map(getQuestionSubject);
+  }, [chapter]);
 
+  // Collect the unique subjects actually present in this chapter
+  // (used to populate the dropdown dynamically)
   const availableSubjects = useMemo(() => {
     const set = new Set(questionSubjects);
     set.delete('Uncategorized');
@@ -104,17 +81,20 @@ export default function TestBuilder() {
   }, [questionSubjects]);
 
   const calculateMaxQuestions = () => {
-    if (allQuestions.length === 0) return 0;
-    return allQuestions.filter((q, idx) => {
+    if (!chapter || !chapter.questions) return 0;
+    return chapter.questions.filter((q, idx) => {
+      // Difficulty filter
       if (difficulty !== 'All') {
         if (!q.difficulty || q.difficulty.toLowerCase() !== difficulty.toLowerCase()) return false;
       }
 
+      // Subject filter (only for mixed-subject papers)
       if (paperSubject !== 'All') {
         const qSubject = questionSubjects[idx];
         if (qSubject !== paperSubject) return false; 
       }
       
+      // Usage / accuracy filter
       if (filter === 'Mixed') return true;
       if (filter === 'Used') return progress.used.includes(q.id);
       if (filter === 'Unused') return !progress.used.includes(q.id);
@@ -135,6 +115,7 @@ export default function TestBuilder() {
     }
   }, [filter, maxQuestions, paperSubject, numQuestions, difficulty]);
 
+  // Reset paperSubject to 'All' when navigating to a core subject
   useEffect(() => {
     if (!isSpecialPaper) {
       setPaperSubject('All');
@@ -162,22 +143,17 @@ export default function TestBuilder() {
   const startTest = () => {
     if (maxQuestions === 0 || !numQuestions || numQuestions < 1) return;
     navigate(`/test-engine/${subjectName}/${chapterName}/${numQuestions}`, {
-      state: {
-        filter,
-        paperSubject,
-        difficulty,
-        selectedChapters: isMultiChapter ? selectedChapters : null
-      }
+      state: { filter, paperSubject, difficulty }
     });
   };
 
-  if (!subject || (!chapter && !isMultiChapter)) {
+  if (!chapter) {
     return (
       <div className="min-h-screen aurora-bg p-8 text-center flex items-center justify-center relative overflow-hidden">
         <div className="aurora-blob b1" />
         <div className="aurora-blob b2" />
         <div className="relative z-10">
-          <h1 className="text-2xl font-bold text-red-300">{!subject ? 'Subject not found!' : 'Chapter not found!'}</h1>
+          <h1 className="text-2xl font-bold text-red-300">Chapter not found!</h1>
           <Link to="/" className="text-yellow-200 underline mt-4 inline-block">Go Home</Link>
         </div>
         <style>{`
@@ -198,9 +174,6 @@ export default function TestBuilder() {
       </div>
     );
   }
-
-  const displayTitle = isMultiChapter ? 'All Chapters' : chapter.name;
-  const displayCount = allQuestions.length;
 
   return (
     <div className="relative min-h-screen aurora-bg overflow-hidden p-3 md:p-6">
@@ -288,16 +261,6 @@ export default function TestBuilder() {
           transition: box-shadow .2s ease, transform .2s ease;
         }
         .aurora-btn-start:hover { box-shadow: 0 8px 22px rgba(15,184,173,0.6); transform: translateY(-1px); }
-        .chapter-checkbox {
-          accent-color: #0fb8ad;
-          width: 16px;
-          height: 16px;
-          cursor: pointer;
-        }
-        .chapter-scroll::-webkit-scrollbar { width: 6px; }
-        .chapter-scroll::-webkit-scrollbar-track { background: rgba(255,255,255,0.05); border-radius: 3px; }
-        .chapter-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.2); border-radius: 3px; }
-        .chapter-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.35); }
       `}</style>
 
       <div className="aurora-blob b1" />
@@ -311,65 +274,15 @@ export default function TestBuilder() {
         </Link>
         
         <header className="mb-8 text-center">
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight aurora-title">{displayTitle}</h1>
+          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight aurora-title">{chapter.name}</h1>
           <p className="text-sm md:text-lg font-semibold italic mt-2" style={{ color: '#ffe9a8' }}>
-            ✦ {displayCount} Total MCQs{isMultiChapter && selectedChapters.length > 0 ? ` (${selectedChapters.length} chapters selected)` : ''} ✦
+            ✦ {chapter.questions?.length || 0} Total MCQs in Chapter ✦
           </p>
         </header>
 
         <div className="aurora-card rounded-2xl p-6 sm:p-8 space-y-8">
           
-          {isMultiChapter && (
-            <div>
-              <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Select Chapters</label>
-              <div className="chapter-scroll max-h-56 overflow-y-auto space-y-1.5 pr-1 rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                <label className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                  <input 
-                    type="checkbox"
-                    checked={allChaptersSelected}
-                    ref={el => { if (el) el.indeterminate = someChaptersSelected; }}
-                    onChange={toggleAllChapters}
-                    className="chapter-checkbox"
-                  />
-                  <span className="text-white font-semibold text-sm">
-                    {allChaptersSelected ? 'Deselect All' : 'Select All'}
-                  </span>
-                  <span className="ml-auto text-xs" style={{ color: '#eee9ff', opacity: 0.7 }}>
-                    {subject.chapters.reduce((acc, ch) => acc + (ch.questions?.length || 0), 0)} MCQs
-                  </span>
-                </label>
-
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', margin: '4px 0' }} />
-
-                {subject.chapters.map(ch => {
-                  const isChecked = selectedChapters.includes(ch.name);
-                  const chCount = ch.questions?.length || 0;
-                  return (
-                    <label 
-                      key={ch.name} 
-                      className={`flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors ${isChecked ? '' : 'opacity-60'}`}
-                      style={{ background: isChecked ? 'rgba(15,184,173,0.12)' : 'transparent' }}
-                    >
-                      <input 
-                        type="checkbox"
-                        checked={isChecked}
-                        onChange={() => toggleChapter(ch.name)}
-                        className="chapter-checkbox"
-                      />
-                      <span className="text-white text-sm flex-1">{ch.name}</span>
-                      <span className="text-xs" style={{ color: '#eee9ff', opacity: 0.7 }}>{chCount}</span>
-                    </label>
-                  );
-                })}
-              </div>
-              {selectedChapters.length === 0 && (
-                <p className="text-xs mt-2" style={{ color: '#ffcccc' }}>
-                  Please select at least one chapter
-                </p>
-              )}
-            </div>
-          )}
-
+          {/* Subject Category — now shown for ALL non-core-subject folders */}
           {isSpecialPaper && availableSubjects.length > 2 && (
             <div>
               <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Subject Category</label>
@@ -386,7 +299,7 @@ export default function TestBuilder() {
               </select>
               {paperSubject !== 'All' && (
                 <p className="text-xs mt-1.5" style={{ color: '#b8d4ff', opacity: 0.8 }}>
-                  Showing {maxQuestions} {paperSubject} MCQs
+                  Showing {maxQuestions} {paperSubject} MCQs in this chapter
                 </p>
               )}
             </div>

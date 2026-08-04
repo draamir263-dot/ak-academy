@@ -36,22 +36,23 @@ export default function Subject() {
     );
   }
 
+  // Calculate total MCQs dynamically if the property is missing in the JSON
   const totalMcqsCount = subject.totalMcqs || subject.chapters.reduce((acc, ch) => acc + (ch.questions?.length || 0), 0);
 
-  const isMixOrAll = subject.name.toLowerCase().includes('mix') || subject.name.toLowerCase().includes('all');
-
+  // SORTING LOGIC: Bring "Demo" to the top, and sort the rest alphabetically & numerically
   const sortedChapters = [...subject.chapters].sort((a, b) => {
     const aIsDemo = a.name.toLowerCase().includes("demo");
     const bIsDemo = b.name.toLowerCase().includes("demo");
     
-    if (aIsDemo && !bIsDemo) return -1;
-    if (!aIsDemo && bIsDemo) return 1;
+    if (aIsDemo && !bIsDemo) return -1; // a (Demo) comes first
+    if (!aIsDemo && bIsDemo) return 1;  // b (Demo) comes first
     
     return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
   });
 
   return (
     <div className="relative min-h-screen aurora-bg overflow-hidden p-3 md:p-6">
+      {/* Glass Aurora theme — animated gradient + floating blurred color blobs */}
       <style>{`
         @keyframes auroraShift {
           0%   { background-position: 0% 30%; }
@@ -114,11 +115,13 @@ export default function Subject() {
         .aurora-back:hover { background: rgba(255,255,255,0.22); transform: translateX(-2px); }
       `}</style>
 
+      {/* Floating aurora blobs (decorative, behind content) */}
       <div className="aurora-blob b1" />
       <div className="aurora-blob b2" />
       <div className="aurora-blob b3" />
       <div className="aurora-blob b4" />
 
+      {/* Content sits above the blobs */}
       <div className="relative z-10 max-w-4xl mx-auto">
         <Link to="/" className="aurora-back mb-6 inline-block px-4 py-2 rounded-lg font-semibold text-sm">
           &larr; Back to Home
@@ -131,27 +134,11 @@ export default function Subject() {
           </p>
         </header>
 
-        {isMixOrAll && (
-          <div className="aurora-card rounded-xl p-4 sm:p-5 flex items-center justify-between mb-4 sm:mb-6">
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">📚</span>
-              <div>
-                <h2 className="text-base sm:text-lg font-bold text-white" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>All Chapters</h2>
-                <p className="text-xs sm:text-sm" style={{ color: '#eee9ff', opacity: 0.85 }}>{totalMcqsCount} MCQs combined</p>
-              </div>
-            </div>
-            <Link 
-              to={`/test-builder/${subject.name}/__all__`} 
-              className="aurora-btn px-4 py-2.5 rounded-lg font-semibold text-sm"
-            >
-              Start Test
-            </Link>
-          </div>
-        )}
-
+        {/* GRID LAYOUT: 2 columns on mobile, 3 columns on larger screens */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5 sm:gap-4">
           {sortedChapters.map((chapter, index) => {
             const isLocked = !chapter.name.toLowerCase().includes("demo") && (!currentUser || !isPremium);
+            // Dynamic chapter MCQ count fallback
             const chapterMcqCount = chapter.totalMcqs || chapter.questions?.length || 0;
 
             return (
