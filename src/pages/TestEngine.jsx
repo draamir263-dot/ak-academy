@@ -56,7 +56,6 @@ export default function TestEngine() {
   const filter = location.state?.filter || 'Mixed';
   const paperSubject = location.state?.paperSubject || 'All';
   const difficulty = location.state?.difficulty || 'All';
-  // ✅ NEW — Receive selectedChapters from TestBuilder (null for single-chapter mode)
   const selectedChapters = location.state?.selectedChapters || null;
 
   const subject = structuredData.find(s => s.name === subjectName);
@@ -88,24 +87,19 @@ export default function TestEngine() {
       }
     }
 
-    // ✅ CHANGED — Build pool from multiple chapters or single chapter
     let pool = [];
     if (selectedChapters && selectedChapters.length > 0 && subject) {
-      // Multi-chapter mode: combine questions from all selected chapters
       pool = subject.chapters
         .filter(ch => selectedChapters.includes(ch.name))
         .flatMap(ch => ch.questions || []);
     } else {
-      // Single-chapter mode (original behavior)
       pool = chapter ? [...chapter.questions] : [];
     }
 
-    // 1. Subject filter
     if (paperSubject !== 'All') {
       pool = pool.filter(q => getCachedSubject(q) === paperSubject);
     }
 
-    // 2. Difficulty filter
     if (difficulty !== 'All') {
       pool = pool.filter(q => {
         if (!q.difficulty) return false;
@@ -113,7 +107,6 @@ export default function TestEngine() {
       });
     }
 
-    // 3. Usage / accuracy filter
     if (filter === 'Used') {
       pool = pool.filter(q => progress.used.includes(q.id));
     } else if (filter === 'Unused') {

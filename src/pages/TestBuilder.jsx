@@ -3,7 +3,6 @@ import { structuredData } from '../services/questionLoader';
 import { useState, useEffect, useMemo } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
-// --- REFINED FALLBACK SCANNER (Only used if q.category AND q.subject are both missing) ---
 const getQuestionSubjectFromText = (q) => {
   const text = `${q.question} ${q.optionA} ${q.optionB} ${q.optionC} ${q.optionD} ${q.explanation}`.toLowerCase();
   
@@ -42,21 +41,17 @@ export default function TestBuilder() {
   const subject = structuredData.find(s => s.name === subjectName);
   const chapter = subject?.chapters.find(c => c.name === chapterName);
 
-  // ✅ NEW — Detect if this is a Mix/All folder AND we're in multi-chapter mode
   const isMixOrAll = subjectName && (subjectName.toLowerCase().includes('mix') || subjectName.toLowerCase().includes('all'));
   const isMultiChapter = isMixOrAll && chapterName === '__all__';
 
-  // ✅ NEW — Chapter selection state (only used in multi-chapter mode)
   const [selectedChapters, setSelectedChapters] = useState([]);
 
-  // ✅ NEW — Initialize selectedChapters when subject loads
   useEffect(() => {
     if (isMultiChapter && subject && selectedChapters.length === 0) {
       setSelectedChapters(subject.chapters.map(c => c.name));
     }
   }, [isMultiChapter, subject]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // ✅ NEW — Toggle helpers for chapter selection
   const allChapterNames = subject?.chapters.map(c => c.name) || [];
   const allChaptersSelected = selectedChapters.length === allChapterNames.length && allChapterNames.length > 0;
   const someChaptersSelected = selectedChapters.length > 0 && !allChaptersSelected;
@@ -88,7 +83,6 @@ export default function TestBuilder() {
     core => subjectName?.toLowerCase().trim() === core
   );
 
-  // ✅ CHANGED — Build question pool from selected chapters (multi-chapter) or single chapter
   const allQuestions = useMemo(() => {
     if (!subject) return [];
     if (isMultiChapter) {
@@ -109,7 +103,6 @@ export default function TestBuilder() {
     return ['All', ...Array.from(set).sort()];
   }, [questionSubjects]);
 
-  // ✅ CHANGED — Uses allQuestions instead of chapter.questions
   const calculateMaxQuestions = () => {
     if (allQuestions.length === 0) return 0;
     return allQuestions.filter((q, idx) => {
@@ -166,7 +159,6 @@ export default function TestBuilder() {
     }
   };
 
-  // ✅ CHANGED — Pass selectedChapters to TestEngine when in multi-chapter mode
   const startTest = () => {
     if (maxQuestions === 0 || !numQuestions || numQuestions < 1) return;
     navigate(`/test-engine/${subjectName}/${chapterName}/${numQuestions}`, {
@@ -179,7 +171,6 @@ export default function TestBuilder() {
     });
   };
 
-  // ✅ CHANGED — Handle both "subject not found" and "chapter not found", but allow __all__
   if (!subject || (!chapter && !isMultiChapter)) {
     return (
       <div className="min-h-screen aurora-bg p-8 text-center flex items-center justify-center relative overflow-hidden">
@@ -208,7 +199,6 @@ export default function TestBuilder() {
     );
   }
 
-  // ✅ CHANGED — Show "All Chapters" or chapter name in header
   const displayTitle = isMultiChapter ? 'All Chapters' : chapter.name;
   const displayCount = allQuestions.length;
 
@@ -298,7 +288,6 @@ export default function TestBuilder() {
           transition: box-shadow .2s ease, transform .2s ease;
         }
         .aurora-btn-start:hover { box-shadow: 0 8px 22px rgba(15,184,173,0.6); transform: translateY(-1px); }
-        /* ✅ NEW — Custom checkbox styling for chapter selector */
         .chapter-checkbox {
           accent-color: #0fb8ad;
           width: 16px;
@@ -330,12 +319,10 @@ export default function TestBuilder() {
 
         <div className="aurora-card rounded-2xl p-6 sm:p-8 space-y-8">
           
-          {/* ✅ NEW — Chapter Selector (only shown for Mix/All folders in multi-chapter mode) */}
           {isMultiChapter && (
             <div>
               <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Select Chapters</label>
               <div className="chapter-scroll max-h-56 overflow-y-auto space-y-1.5 pr-1 rounded-lg p-3" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)' }}>
-                {/* Select All / Deselect All */}
                 <label className="flex items-center gap-3 p-2 rounded-lg cursor-pointer transition-colors" style={{ background: 'rgba(255,255,255,0.08)' }}>
                   <input 
                     type="checkbox"
@@ -354,7 +341,6 @@ export default function TestBuilder() {
 
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', margin: '4px 0' }} />
 
-                {/* Individual chapters */}
                 {subject.chapters.map(ch => {
                   const isChecked = selectedChapters.includes(ch.name);
                   const chCount = ch.questions?.length || 0;
@@ -384,7 +370,6 @@ export default function TestBuilder() {
             </div>
           )}
 
-          {/* Subject Category — now shown for ALL non-core-subject folders */}
           {isSpecialPaper && availableSubjects.length > 2 && (
             <div>
               <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Subject Category</label>
@@ -401,7 +386,7 @@ export default function TestBuilder() {
               </select>
               {paperSubject !== 'All' && (
                 <p className="text-xs mt-1.5" style={{ color: '#b8d4ff', opacity: 0.8 }}>
-                  Showing {maxQuestions} {paperSubject} MCQs in this chapter
+                  Showing {maxQuestions} {paperSubject} MCQs
                 </p>
               )}
             </div>

@@ -38,7 +38,6 @@ export default function Subject() {
 
   const totalMcqsCount = subject.totalMcqs || subject.chapters.reduce((acc, ch) => acc + (ch.questions?.length || 0), 0);
 
-  // ✅ NEW — Detect Mix/All folders
   const isMixOrAll = subject.name.toLowerCase().includes('mix') || subject.name.toLowerCase().includes('all');
 
   const sortedChapters = [...subject.chapters].sort((a, b) => {
@@ -132,7 +131,6 @@ export default function Subject() {
           </p>
         </header>
 
-        {/* ✅ NEW — All Chapters card for Mix/All folders */}
         {isMixOrAll && (
           <div className="aurora-card rounded-xl p-4 sm:p-5 flex items-center justify-between mb-4 sm:mb-6">
             <div className="flex items-center gap-3">
