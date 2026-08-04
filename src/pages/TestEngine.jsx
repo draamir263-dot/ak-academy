@@ -12,18 +12,7 @@ const shuffleArray = (array) => {
   return shuffled;
 };
 
-// ---------------------------------------------------------------------------
-// SUBJECT RESOLVER — matches TestBuilder logic exactly
-// ---------------------------------------------------------------------------
-// questionLoader overwrites q.subject with the folder-level name (e.g.
-// "Past-papers") and stores the question's REAL academic subject in q.category.
-// So q.category must be checked FIRST; q.subject is the folder name and means
-// nothing about the academic subject.
-//
-// This resolver is used for subject-based filtering in mixed papers.
-// It does NOT attempt to re-classify questions — it trusts the explicit data.
 const resolveSubject = (q) => {
-  // 1. q.category = the question's real academic subject (set by questionLoader)
   const cat = (q.category && q.category.toString().trim() !== '')
     ? q.category.toString().trim()
     : '';
@@ -35,10 +24,9 @@ const resolveSubject = (q) => {
     if (c.includes('phys'))    return 'Physics';
     if (c.includes('eng'))     return 'English';
     if (c.includes('log') || c.includes('reason')) return 'Logical Reasoning';
-    return cat; // non-standard subject, return as-is
+    return cat;
   }
 
-  // 2. No category at all — last-resort text scan (same keywords as TestBuilder)
   const text = `${q.question} ${q.optionA} ${q.optionB} ${q.optionC} ${q.optionD} ${q.explanation}`.toLowerCase();
 
   if (text.includes('photosynthesis') || text.includes('mitosis') || text.includes('dna') || text.includes('rna') || text.includes('enzyme') || text.includes('bacteria') || text.includes('virus') || text.includes('ecosystem')) return 'Biology';
@@ -50,10 +38,6 @@ const resolveSubject = (q) => {
   return 'Uncategorized';
 };
 
-// ---------------------------------------------------------------------------
-// RESOLVED SUBJECT CACHE — avoid re-scanning on every filter check
-// Maps question ID → resolved subject (memoized inside useEffect)
-// ---------------------------------------------------------------------------
 let subjectCache = new Map();
 
 const getCachedSubject = (q) => {
@@ -69,11 +53,10 @@ export default function TestEngine() {
   const navigate = useNavigate();
   const { progress, recordAnswer, toggleFavourite, isFavourite } = useProgress();
 
-  // FIX: Default filter is 'Mixed' (matching TestBuilder), NOT 'Unused'
   const filter = location.state?.filter || 'Mixed';
   const paperSubject = location.state?.paperSubject || 'All';
-  // FIX: Now actually using the difficulty from TestBuilder
   const difficulty = location.state?.difficulty || 'All';
+  const selectedOriginalChapters = location.state?.selectedOriginalChapters || null;
 
   const subject = structuredData.find(s => s.name === subjectName);
   const chapter = subject?.chapters.find(c => c.name === chapterName);
@@ -84,7 +67,6 @@ export default function TestEngine() {
   const [showExplanation, setShowExplanation] = useState(false); 
 
   useEffect(() => {
-    // Try to restore a saved test session first
     const savedTest = localStorage.getItem('ak_academy_active_test');
     if (savedTest) {
       const parsed = JSON.parse(savedTest);
@@ -100,21 +82,22 @@ export default function TestEngine() {
         setCurrentIndex(parsed.currentIndex);
         setUserAnswers(parsed.userAnswers);
         setShowExplanation(!!parsed.userAnswers[parsed.testQuestions[parsed.currentIndex]?.id]);
-        // Rebuild subject cache from saved questions
         parsed.testQuestions.forEach(q => subjectCache.set(q.id, resolveSubject(q)));
         return;
       }
     }
 
-    // --- BUILD QUESTION POOL ---
     let pool = chapter ? [...chapter.questions] : [];
 
-    // 1. Subject filter — uses q.category (the real academic subject), NOT q.subject
+    // Chapter filter: only include questions from selected original chapters
+    if (selectedOriginalChapters && selectedOriginalChapters.length > 0) {
+      pool = pool.filter(q => selectedOriginalChapters.includes(q.originalChapter));
+    }
+
     if (paperSubject !== 'All') {
       pool = pool.filter(q => getCachedSubject(q) === paperSubject);
     }
 
-    // 2. Difficulty filter — was completely missing before!
     if (difficulty !== 'All') {
       pool = pool.filter(q => {
         if (!q.difficulty) return false;
@@ -122,7 +105,6 @@ export default function TestEngine() {
       });
     }
 
-    // 3. Usage / accuracy filter
     if (filter === 'Used') {
       pool = pool.filter(q => progress.used.includes(q.id));
     } else if (filter === 'Unused') {
@@ -134,19 +116,15 @@ export default function TestEngine() {
     } else if (filter === 'Favourite') {
       pool = pool.filter(q => progress.favourites.includes(q.id));
     }
-    // filter === 'Mixed' → no filtering needed, keep all
 
-    // Shuffle and slice to the requested number
     const finalPool = shuffleArray(pool).slice(0, parseInt(numQuestions) || 0);
 
-    // Pre-build the subject cache for all selected questions
     finalPool.forEach(q => subjectCache.set(q.id, resolveSubject(q)));
 
     setTestQuestions(finalPool);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // Save test progress to localStorage
   useEffect(() => {
     if (testQuestions.length > 0) {
       localStorage.setItem('ak_academy_active_test', JSON.stringify({
@@ -162,6 +140,7 @@ export default function TestEngine() {
         <div>
           <h1 className="text-2xl font-bold text-red-400">No questions found for this filter!</h1>
           <p className="text-blue-200 mt-2">
+            {selectedOriginalChapters ? `${selectedOriginalChapters.length} chapters selected | ` : ''}
             {paperSubject !== 'All' && `Subject filter: ${paperSubject} | `}
             {difficulty !== 'All' && `Difficulty: ${difficulty} | `}
             Filter: {filter}
@@ -204,7 +183,7 @@ export default function TestEngine() {
 
   const handleEndTest = () => {
     localStorage.removeItem('ak_academy_active_test');
-    subjectCache.clear(); // Clear cache when test ends
+    subjectCache.clear();
     navigate('/results', { replace: true, state: { testQuestions, userAnswers, subjectName, chapterName } });
   };
 

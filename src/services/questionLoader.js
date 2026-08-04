@@ -51,6 +51,7 @@ Object.keys(textFiles).forEach((path) => {
     // q.subject gets OVERWRITTEN with the folder name (e.g. "Past-papers")
     // This is by design — the folder name is used for navigation.
     q.subject = formattedSubject;
+    q.originalChapter = q.chapter;
     q.chapter = chapterName;
 
     // q.category = the REAL academic subject (Biology, Chemistry, etc.)
