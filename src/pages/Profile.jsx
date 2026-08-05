@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
@@ -5,9 +6,30 @@ export default function Profile() {
   const { user, isPremium, expiryDate, logout } = useAuth();
   const navigate = useNavigate();
 
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [displayName, setDisplayName] = useState('');
+
   const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)) : 0;
-  const userName = user?.email ? user.email.split('@')[0] : 'Student';
+  const emailUserName = user?.email ? user.email.split('@')[0] : 'Student';
   const email = user?.email || 'Not logged in';
+
+  // Load custom name from localStorage or fallback to email username
+  useEffect(() => {
+    const savedName = localStorage.getItem('user_custom_name');
+    if (savedName) {
+      setDisplayName(savedName);
+    } else {
+      setDisplayName(emailUserName);
+    }
+  }, [emailUserName]);
+
+  const handleSaveName = () => {
+    const newName = nameInput.trim() || emailUserName; // Fallback if empty
+    localStorage.setItem('user_custom_name', newName);
+    setDisplayName(newName);
+    setIsEditingName(false);
+  };
 
   const handleLogout = async () => {
     await logout();
@@ -34,9 +56,39 @@ export default function Profile() {
 
           <div className="flex flex-col items-center text-center">
             <div className="w-24 h-24 bg-white/20 border-4 border-white/30 rounded-full flex items-center justify-center text-4xl font-bold text-white mb-4 uppercase shadow-lg">
-              {userName.charAt(0)}
+              {displayName.charAt(0)}
             </div>
-            <h2 className="text-2xl font-bold capitalize">{userName}</h2>
+            
+            {/* Editable Name Section */}
+            {isEditingName ? (
+              <div className="flex flex-col items-center gap-2 mt-1 w-full max-w-xs">
+                <input 
+                  type="text" 
+                  value={nameInput} 
+                  onChange={(e) => setNameInput(e.target.value)}
+                  className="w-full px-3 py-2 text-center text-slate-800 rounded-lg text-lg font-bold focus:outline-none focus:ring-2 focus:ring-white"
+                  autoFocus
+                />
+                <button 
+                  onClick={handleSaveName}
+                  className="bg-white text-indigo-600 px-5 py-1.5 rounded-lg text-xs font-bold hover:bg-indigo-50 transition-colors"
+                >
+                  Save Name
+                </button>
+              </div>
+            ) : (
+              <div className="flex items-center gap-2 justify-center">
+                <h2 className="text-2xl font-bold capitalize">{displayName}</h2>
+                <button 
+                  onClick={() => { setNameInput(displayName); setIsEditingName(true); }} 
+                  className="text-white/80 hover:text-white transition-colors"
+                  title="Edit Name"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                </button>
+              </div>
+            )}
+
             <p className="text-sm text-indigo-100 mt-1 break-all">{email}</p>
           </div>
         </div>
