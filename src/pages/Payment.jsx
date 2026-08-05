@@ -93,124 +93,102 @@ export default function Payment() {
   const bankInfo = paymentInfo?.faySalBank || paymentInfo?.faysalBank || null;
 
   return (
-    <div className="relative min-h-screen aurora-bg overflow-hidden p-3 md:p-6">
-      <style>{`
-        @keyframes auroraShift { 0% { background-position: 0% 30%; } 50% { background-position: 100% 70%; } 100% { background-position: 0% 30%; } }
-        @keyframes floatA { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(18px,26px) scale(1.08); } }
-        @keyframes floatB { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(-22px,18px) scale(0.94); } }
-        @keyframes floatC { 0%,100% { transform: translate(0,0) scale(1); } 50% { transform: translate(14px,-20px) scale(1.05); } }
-        .aurora-bg { background: linear-gradient(135deg, #1b0f42 0%, #3a1c71 28%, #4568dc 58%, #0fb8ad 88%, #35e0c4 100%); background-size: 260% 260%; animation: auroraShift 16s ease-in-out infinite; }
-        .aurora-blob { position: absolute; border-radius: 9999px; filter: blur(60px); pointer-events: none; }
-        .aurora-blob.b1 { width: 320px; height: 320px; top: -60px; left: -80px; background: radial-gradient(circle, rgba(255,138,216,0.5), transparent 70%); animation: floatA 13s ease-in-out infinite; }
-        .aurora-blob.b2 { width: 380px; height: 380px; top: 160px; right: -120px; background: radial-gradient(circle, rgba(90,224,255,0.45), transparent 70%); animation: floatB 17s ease-in-out infinite; }
-        .aurora-blob.b3 { width: 340px; height: 340px; bottom: 40px; left: -100px; background: radial-gradient(circle, rgba(255,214,120,0.35), transparent 70%); animation: floatC 15s ease-in-out infinite; }
-        .aurora-blob.b4 { width: 300px; height: 300px; bottom: -100px; right: -60px; background: radial-gradient(circle, rgba(151,255,214,0.35), transparent 70%); animation: floatA 19s ease-in-out infinite reverse; }
-        .aurora-card { background: linear-gradient(160deg, rgba(255,255,255,0.16), rgba(255,255,255,0.06)); backdrop-filter: blur(18px) saturate(160%); -webkit-backdrop-filter: blur(18px) saturate(160%); border: 1px solid rgba(255,255,255,0.28); box-shadow: 0 12px 34px rgba(15,8,45,0.28), inset 0 1px 0 rgba(255,255,255,0.3); }
-        .aurora-title { background: linear-gradient(90deg, #ffffff, #ffe9ff 40%, #d8f2ff); -webkit-background-clip: text; background-clip: text; color: transparent; text-shadow: 0 8px 40px rgba(69,104,220,0.4); }
-        .aurora-back { background: rgba(255,255,255,0.12); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.25); color: #ffffff; transition: background .2s ease, transform .2s ease; }
-        .aurora-back:hover { background: rgba(255,255,255,0.22); transform: translateX(-2px); }
-        .aurora-input { background: rgba(255,255,255,0.12); backdrop-filter: blur(10px); border: 1px solid rgba(255,255,255,0.25); color: #ffffff; font-weight: 600; transition: all .2s ease; }
-        .aurora-input::placeholder { color: rgba(255,255,255,0.6); }
-        .aurora-input:focus { outline: none; border-color: rgba(255,255,255,0.6); box-shadow: 0 0 0 3px rgba(255,255,255,0.15); }
-        .aurora-plan-inactive { background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15); transition: all .2s ease; }
-        .aurora-plan-inactive:hover { background: rgba(255,255,255,0.16); border-color: rgba(255,255,255,0.3); }
-        .aurora-plan-active { background: linear-gradient(135deg, #ffffff, #f1eaff); border: 2px solid transparent; box-shadow: 0 8px 24px rgba(69,104,220,0.4); }
-        .aurora-btn-submit { background: linear-gradient(135deg, #0fb8ad, #35e0c4); color: #102a43; box-shadow: 0 6px 18px rgba(15,184,173,0.4); transition: all .2s ease; }
-        .aurora-btn-submit:hover { box-shadow: 0 8px 22px rgba(15,184,173,0.6); transform: translateY(-1px); }
-      `}</style>
-
-      <div className="aurora-blob b1" />
-      <div className="aurora-blob b2" />
-      <div className="aurora-blob b3" />
-      <div className="aurora-blob b4" />
-
-      <div className="relative z-10 max-w-2xl mx-auto py-6">
-        <Link to="/" className="aurora-back mb-6 inline-block px-4 py-2 rounded-lg font-semibold text-sm">
-          &larr; Back to Home
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans pb-24">
+      <div className="max-w-2xl mx-auto">
+        <Link to="/" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 transition-colors text-sm font-semibold">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+          Back to Home
         </Link>
         
-        <div className="aurora-card rounded-2xl p-6 sm:p-8 mb-8">
-          <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight aurora-title mb-2">Unlock MedLife</h1>
-          <p className="text-gray-300 mb-6">Get access to 50,000+ MCQs, Mock Exams, and Performance Analytics.</p>
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-8 space-y-6">
+          <div>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-800 mb-1">Unlock MedLife</h1>
+            <p className="text-sm text-slate-500">Get access to 50,000+ MCQs, Mock Exams, and Performance Analytics.</p>
+          </div>
 
           {isUpgrade && (
-            <div className="mb-6 p-4 bg-blue-500/15 border border-blue-400/30 text-blue-100 rounded-lg text-sm">
+            <div className="p-4 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-sm">
               <p className="font-bold mb-1">Upgrade Calculation</p>
               <p>You've used <strong>{daysSpent} days</strong> of your current plan.</p>
               <p>Remaining value: <strong>{remainingValue} PKR</strong></p>
-              <p className="mt-2 text-green-300 font-bold">Amount due for upgrade: {amountToPay} PKR</p>
+              <p className="mt-2 text-green-600 font-bold">Amount due for upgrade: {amountToPay} PKR</p>
             </div>
           )}
 
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-3 mb-8">
-            {Object.entries(PLANS)
-              .filter(([key]) => key !== '3_Months') 
-              .map(([key, config]) => (
-              <div 
-                key={key}
-                className={`p-4 rounded-xl cursor-pointer flex flex-col justify-between ${plan === key ? 'aurora-plan-active' : 'aurora-plan-inactive'}`} 
-                onClick={() => setPlan(key)}
-              >
-                <h3 className={`font-bold text-lg ${plan === key ? 'text-gray-800' : 'text-white'}`}>{config.label}</h3>
-                <p className={`text-2xl font-extrabold mt-1 ${plan === key ? 'text-blue-800' : 'text-blue-300'}`}>{config.price} PKR</p>
-                <p className={`text-xs mt-2 ${plan === key ? 'text-gray-600' : 'text-gray-400'}`}>{config.desc}</p>
-              </div>
-            ))}
+          {/* Plans Grid - Compact for Mobile */}
+          <div>
+            <h3 className="text-sm font-bold text-slate-800 mb-3">Select a Plan</h3>
+            <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
+              {Object.entries(PLANS)
+                .filter(([key]) => key !== '3_Months') 
+                .map(([key, config]) => (
+                <div 
+                  key={key}
+                  className={`p-3 rounded-xl cursor-pointer flex flex-col justify-between transition-all ${plan === key ? 'bg-indigo-50 border-2 border-indigo-500 ring-2 ring-indigo-500/20' : 'bg-slate-50 border border-slate-200 hover:border-indigo-400'}`} 
+                  onClick={() => setPlan(key)}
+                >
+                  <h3 className={`font-bold text-sm ${plan === key ? 'text-indigo-700' : 'text-slate-700'}`}>{config.label}</h3>
+                  <p className={`text-lg font-extrabold mt-1 ${plan === key ? 'text-indigo-800' : 'text-slate-800'}`}>{config.price} PKR</p>
+                  <p className={`text-[10px] mt-1 ${plan === key ? 'text-indigo-500' : 'text-slate-400'}`}>{config.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          <div className="bg-white/5 border border-white/15 p-6 rounded-xl mb-8 space-y-4">
-            <h3 className="font-bold text-white mb-2">Transfer {isUpgrade ? 'the upgrade amount' : 'the amount'} to any of the following:</h3>
+          {/* Payment Info */}
+          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
+            <h3 className="font-bold text-slate-800 text-sm">Transfer {isUpgrade ? 'the upgrade amount' : 'the amount'} to:</h3>
             
             {paymentInfo?.jazzCashSadapay && (
-              <div className="border-b border-white/15 pb-4">
-                <p className="font-semibold text-white">JazzCash / SadaPay</p>
-                <p className="text-gray-300">Title: {paymentInfo.jazzCashSadapay.accountName}</p>
-                <p className="text-gray-300">Number: {paymentInfo.jazzCashSadapay.accountNumber}</p>
+              <div className="border-b border-slate-200 pb-3">
+                <p className="font-semibold text-slate-700 text-sm">JazzCash / SadaPay</p>
+                <p className="text-slate-500 text-xs mt-1">Title: {paymentInfo.jazzCashSadapay.accountName}</p>
+                <p className="text-slate-500 text-xs">Number: {paymentInfo.jazzCashSadapay.accountNumber}</p>
               </div>
             )}
 
             {bankInfo && (
               <div>
-                <p className="font-semibold text-white">Faysal Bank</p>
-                <p className="text-gray-300">Title: {bankInfo.accountName}</p>
-                <p className="text-gray-300">Account Number: {bankInfo.accountNumber}</p>
+                <p className="font-semibold text-slate-700 text-sm">Faysal Bank</p>
+                <p className="text-slate-500 text-xs mt-1">Title: {bankInfo.accountName}</p>
+                <p className="text-slate-500 text-xs">Account Number: {bankInfo.accountNumber}</p>
               </div>
             )}
 
-            <p className="text-sm text-red-300 mt-2">*After transferring <strong>{amountToPay} PKR</strong>, enter your Transaction ID below.</p>
+            <p className="text-xs text-red-500 mt-2">*After transferring <strong>{amountToPay} PKR</strong>, enter your Transaction ID below.</p>
           </div>
 
-          <div className="bg-blue-900/40 border border-blue-500/30 p-4 rounded-xl mb-8 text-center">
-            <p className="text-sm text-blue-100">
-              Having issues with your account, payments, or upgrades?
-            </p>
-            <p className="text-sm text-blue-100 mt-1">
-              Contact Admin: <a href={`mailto:${paymentInfo?.contactEmail || ''}`} className="font-bold text-blue-300 hover:text-white underline">{paymentInfo?.contactEmail || 'Loading...'}</a>
+          {/* Contact Admin */}
+          <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl text-center">
+            <p className="text-xs text-blue-800">Having issues with payments or upgrades?</p>
+            <p className="text-xs text-blue-800 mt-1">
+              Contact Admin: <a href={`mailto:${paymentInfo?.contactEmail || ''}`} className="font-bold text-blue-600 hover:text-blue-700 underline">{paymentInfo?.contactEmail || 'Loading...'}</a>
             </p>
           </div>
 
           {message && (
-            <div className="mb-4 p-3 bg-green-500/15 border border-green-400/30 text-green-100 rounded-lg text-sm text-center">
+            <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm text-center">
               {message}
             </div>
           )}
 
           {user?.paymentStatus === 'rejected' && (
-            <div className="mb-6 p-4 bg-red-600/20 border border-red-500 text-red-100 rounded-xl text-sm text-center font-bold">
+            <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm text-center font-bold">
               Your previous payment request was rejected (Invalid Transaction ID).<br /> 
               Please verify and submit the correct Transaction ID below.
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          {/* Form */}
+          <form onSubmit={handleSubmit} className="space-y-4 pt-2">
             <div>
-              <label className="block text-sm font-semibold text-white mb-2">JazzCash / Bank Transaction ID</label>
+              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">JazzCash / Bank Transaction ID</label>
               <input 
                 type="text" 
                 required 
                 value={trxId}
                 onChange={(e) => setTrxId(e.target.value)}
-                className="aurora-input w-full p-3 rounded-lg focus:outline-none"
+                className="w-full p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
                 placeholder="e.g. TXN123456789"
               />
             </div>
@@ -218,13 +196,32 @@ export default function Payment() {
             <button 
               type="submit" 
               disabled={loading}
-              className="aurora-btn-submit w-full py-3 rounded-lg font-bold text-lg transition-colors disabled:opacity-60"
+              className="w-full py-3.5 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {loading ? 'Submitting...' : `Submit Payment Request (${amountToPay} PKR)`}
             </button>
           </form>
         </div>
+      </div>
 
+      {/* Fixed Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-100 flex justify-around py-3 px-5 rounded-t-2xl shadow-2xl z-50">
+        <button onClick={() => navigate('/')} className="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+          <span className="text-[10px] mt-1 font-medium">Home</span>
+        </button>
+        <button onClick={() => navigate('/')} className="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+          <span className="text-[10px] mt-1 font-medium">Library</span>
+        </button>
+        <Link to="/dashboard" className="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+          <span className="text-[10px] mt-1 font-medium">Stats</span>
+        </Link>
+        <Link to="/profile" className="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          <span className="text-[10px] mt-1 font-medium">Profile</span>
+        </Link>
       </div>
     </div>
   );
