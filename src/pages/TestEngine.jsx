@@ -222,26 +222,16 @@ export default function TestEngine() {
             {chapterName}
           </h1>
           
-          {/* Right Side Actions: Favorite & End Test */}
-          <div className="flex items-center gap-3 flex-shrink-0">
-            <button 
-              onClick={() => toggleFavourite(currentQuestion.id)} 
-              className={`${isFavourite(currentQuestion.id) ? 'text-yellow-500' : 'text-slate-300 hover:text-yellow-400'} transition-colors`}
-              title="Mark as Favorite"
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={isFavourite(currentQuestion.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-            </button>
-            
-            <button 
-              onClick={handleEndTest}
-              className="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors border border-red-100"
-            >
-              End Test
-            </button>
-          </div>
+          {/* End Test Button */}
+          <button 
+            onClick={handleEndTest}
+            className="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors border border-red-100 flex-shrink-0"
+          >
+            End Test
+          </button>
         </div>
         
-        {/* Progress Bar & Counter (Small to save space) */}
+        {/* Progress Bar & Counter */}
         <div className="max-w-3xl mx-auto px-4 pb-2 flex items-center gap-3">
           <span className="text-xs font-bold text-slate-500 whitespace-nowrap">
             {currentIndex + 1} / {testQuestions.length}
@@ -257,9 +247,19 @@ export default function TestEngine() {
 
       <div className="flex-1 max-w-3xl w-full mx-auto p-4 md:p-6">
         
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8">
+        {/* MCQ Card */}
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8 relative">
           
-          <div className="mb-6">
+          {/* Favorite Button - Top Right Corner inside the box */}
+          <button 
+            onClick={() => toggleFavourite(currentQuestion.id)} 
+            className={`absolute top-5 right-5 md:top-7 md:right-7 ${isFavourite(currentQuestion.id) ? 'text-yellow-500' : 'text-slate-300 hover:text-yellow-400'} transition-colors z-10`}
+            title="Mark as Favorite"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={isFavourite(currentQuestion.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+          </button>
+
+          <div className="mb-6 pr-10"> {/* Added pr-10 to prevent question text from overlapping the icon */}
             <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md uppercase tracking-wider">
               Question {currentIndex + 1}
             </span>
