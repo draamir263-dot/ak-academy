@@ -30,38 +30,28 @@ const getQuestionSubject = (q) => {
 // Robust finder — handles URL encoding, case differences, and whitespace
 const findSubject = (name) => {
   if (!name) return null;
-  // 1. Exact match
   let found = structuredData.find(s => s.name === name);
   if (found) return found;
-  // 2. Decoded match (handles %20 etc.)
   found = structuredData.find(s => s.name === decodeURIComponent(name));
   if (found) return found;
-  // 3. Case-insensitive match
   found = structuredData.find(s => s.name.toLowerCase() === name.toLowerCase());
   if (found) return found;
-  // 4. Decoded + case-insensitive
   found = structuredData.find(s => decodeURIComponent(s.name).toLowerCase() === decodeURIComponent(name).toLowerCase());
   if (found) return found;
-  // 5. Trimmed match
   found = structuredData.find(s => s.name.trim().toLowerCase() === name.trim().toLowerCase());
   return found;
 };
 
 const findChapter = (subject, name) => {
   if (!subject || !subject.chapters || !name) return null;
-  // 1. Exact match
   let found = subject.chapters.find(c => c.name === name);
   if (found) return found;
-  // 2. Decoded match
   found = subject.chapters.find(c => c.name === decodeURIComponent(name));
   if (found) return found;
-  // 3. Case-insensitive match
   found = subject.chapters.find(c => c.name.toLowerCase() === name.toLowerCase());
   if (found) return found;
-  // 4. Decoded + case-insensitive
   found = subject.chapters.find(c => decodeURIComponent(c.name).toLowerCase() === decodeURIComponent(name).toLowerCase());
   if (found) return found;
-  // 5. Trimmed match
   found = subject.chapters.find(c => c.name.trim().toLowerCase() === name.trim().toLowerCase());
   return found;
 };
@@ -77,7 +67,7 @@ export default function TestBuilder() {
   const [numQuestions, setNumQuestions] = useState(10);
   const [filter, setFilter] = useState('Mixed');
   const [timerMode, setTimerMode] = useState('Practice');
-  const [timerMinutes, setTimerMinutes] = useState(15); // Added state for custom time
+  const [timerMinutes, setTimerMinutes] = useState(15); // State for custom time
   const [paperSubject, setPaperSubject] = useState('All'); 
   const [difficulty, setDifficulty] = useState('All');
   const [chapterFilter, setChapterFilter] = useState('All Chapters');
@@ -167,7 +157,6 @@ export default function TestBuilder() {
     else { setNumQuestions(Math.min(Math.max(1, num), maxQuestions)); }
   };
 
-  // Added handler for custom time input
   const handleCustomTimeChange = (e) => {
     const val = e.target.value;
     if (val === '') { setTimerMinutes(''); return; }
@@ -179,7 +168,6 @@ export default function TestBuilder() {
   const startTest = () => {
     if (maxQuestions === 0 || !numQuestions || numQuestions < 1) return;
 
-    // FIX: send as array to match what TestEngine expects
     const selectedChapters = (hasMultipleChapters && chapterFilter !== 'All Chapters') 
       ? [chapterFilter] 
       : null;
@@ -275,7 +263,9 @@ export default function TestBuilder() {
           {/* Subject Category */}
           {isSpecialPaper && availableSubjects.length > 2 && (
             <div>
-              <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Subject Category</label>
+              <label className="flex items-center gap-2 text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
+                <span>📚</span> Subject Category
+              </label>
               <select 
                 value={paperSubject}
                 onChange={(e) => setPaperSubject(e.target.value)}
@@ -295,10 +285,12 @@ export default function TestBuilder() {
             </div>
           )}
 
-          {/* Chapter Filter — dropdown that updates based on Subject Category */}
+          {/* Chapter Filter */}
           {hasMultipleChapters && (
             <div>
-              <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Chapter Filter</label>
+              <label className="flex items-center gap-2 text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
+                <span>📖</span> Chapter Filter
+              </label>
               <select 
                 value={chapterFilter}
                 onChange={(e) => setChapterFilter(e.target.value)}
@@ -318,7 +310,9 @@ export default function TestBuilder() {
 
           {/* Question Filter */}
           <div>
-            <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Question Filter</label>
+            <label className="flex items-center gap-2 text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
+              <span>🔍</span> Question Filter
+            </label>
             <select 
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
@@ -335,7 +329,9 @@ export default function TestBuilder() {
 
           {/* Difficulty Level */}
           <div>
-            <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Difficulty Level</label>
+            <label className="flex items-center gap-2 text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
+              <span>🎯</span> Difficulty Level
+            </label>
             <div className="flex flex-wrap gap-2">
               {['All', 'Easy', 'Medium', 'Hard'].map((level) => (
                 <button 
@@ -353,8 +349,8 @@ export default function TestBuilder() {
 
           {/* Number of Questions */}
           <div>
-            <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
-              Number of Questions
+            <label className="flex items-center gap-2 text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
+              <span>🔢</span> Number of Questions
               <span className="ml-2 text-sm font-medium" style={{ color: '#eee9ff', opacity: 0.8 }}>({maxQuestions} available for this filter)</span>
             </label>
             <div className="flex flex-wrap gap-2">
@@ -385,7 +381,9 @@ export default function TestBuilder() {
 
           {/* Timer Mode */}
           <div>
-            <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Timer Mode</label>
+            <label className="flex items-center gap-2 text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>
+              <span>⏱️</span> Timer Mode
+            </label>
             <div className="flex flex-wrap gap-2 mb-4">
               <button 
                 onClick={() => setTimerMode('Practice')}
@@ -405,7 +403,7 @@ export default function TestBuilder() {
                     className="aurora-input w-24 p-2 rounded-lg focus:outline-none font-bold text-center"
                     placeholder="Min"
                   />
-                  <span className="ml-2 text-sm" style={{ color: '#eee9ff', opacity: 0.8 }}>Minutes (Custom)</span>
+                  <span className="ml-2 text-sm" style={{ color: '#eee9ff', opacity: 0.8 }}>Minutes</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {[15, 30, 60, 90].map(min => (
