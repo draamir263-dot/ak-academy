@@ -97,7 +97,7 @@ export default function TestEngine() {
 
   if (testQuestions.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-8 text-center flex items-center justify-center">
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-8 text-center flex items-center justify-center transition-colors duration-300">
         <div className="bg-white dark:bg-slate-800 p-8 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 max-w-md transition-colors">
           <h1 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">No questions found for this filter!</h1>
           <p className="text-slate-500 dark:text-slate-400 text-sm mt-2 mb-4">{selectedOriginalChapters ? `${selectedOriginalChapters.length} chapters selected | ` : ''}{paperSubject !== 'All' && `Subject: ${paperSubject} | `}{difficulty !== 'All' && `Difficulty: ${difficulty} | `}Filter: {filter}</p>
@@ -141,7 +141,8 @@ export default function TestEngine() {
   const handleExitTest = () => {
     localStorage.removeItem('ak_academy_active_test');
     subjectCache.clear();
-    navigate(`/test-builder/${subjectName}/${chapterName}`, { replace: true });
+    // Use navigate(-1) to go back to the previous page cleanly
+    navigate(-1);
   };
 
   const getOptionClass = (option) => {
