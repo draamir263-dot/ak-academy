@@ -197,24 +197,24 @@ export default function TestBuilder() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-900 text-white p-4 md:p-8">
+    <div className="min-h-screen bg-slate-900 text-white p-3 sm:p-4 md:p-8">
       
       <div className="max-w-3xl mx-auto">
-        <Link to={`/subject/${encodeURIComponent(subject.name)}`} className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-8 transition-colors">
+        <Link to={`/subject/${encodeURIComponent(subject.name)}`} className="inline-flex items-center gap-2 text-slate-400 hover:text-white mb-4 sm:mb-8 transition-colors text-sm">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           Back to {subject.name}
         </Link>
         
-        {/* Header Section matching the image */}
-        <header className="mb-10 flex flex-col md:flex-row items-center justify-between gap-8">
+        {/* Header Section */}
+        <header className="mb-5 sm:mb-8 flex flex-col md:flex-row items-center justify-between gap-6">
           <div className="text-center md:text-left">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-white">
+            <h1 className="text-2xl sm:text-4xl md:text-5xl font-extrabold tracking-tight text-white">
               Build Your Perfect Test
             </h1>
-            <p className="text-base md:text-lg font-medium mt-3 text-slate-400">
+            <p className="text-sm sm:text-base md:text-lg font-medium mt-2 sm:mt-3 text-slate-400">
               Customize your test and start practicing smartly.
             </p>
-            <p className="text-lg font-semibold italic mt-4 text-indigo-400">
+            <p className="text-base sm:text-lg font-semibold italic mt-3 sm:mt-4 text-indigo-400">
               ✦ {chapter.questions?.length || 0} Total MCQs in {chapter.name} ✦
             </p>
           </div>
@@ -268,19 +268,19 @@ export default function TestBuilder() {
           </div>
         </header>
 
-        {/* Main Configuration Card */}
-        <div className="bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-2xl p-6 md:p-8 space-y-8 shadow-xl">
+        {/* Main Configuration Card - Optimized padding and spacing for mobile */}
+        <div className="bg-slate-800/50 backdrop-blur-md border border-slate-700 rounded-2xl p-4 sm:p-6 md:p-8 space-y-5 sm:space-y-6 shadow-xl">
           
           {/* Subject Category */}
           {isSpecialPaper && availableSubjects.length > 2 && (
             <div>
-              <label className="flex items-center gap-2 text-base font-bold text-slate-200 mb-3">
+              <label className="flex items-center gap-2 text-sm sm:text-base font-bold text-slate-200 mb-2">
                 <span>📚</span> Subject Category
               </label>
               <select 
                 value={paperSubject}
                 onChange={(e) => setPaperSubject(e.target.value)}
-                className="w-full p-3 rounded-lg bg-slate-900/80 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                className="w-full p-2.5 sm:p-3 rounded-lg bg-slate-900/80 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
               >
                 {availableSubjects.map(sub => (
                   <option key={sub} value={sub}>
@@ -289,7 +289,7 @@ export default function TestBuilder() {
                 ))}
               </select>
               {paperSubject !== 'All' && (
-                <p className="text-xs mt-2 text-indigo-300">
+                <p className="text-xs mt-1.5 text-indigo-300">
                   Showing {maxQuestions} {paperSubject} MCQs
                 </p>
               )}
@@ -299,20 +299,20 @@ export default function TestBuilder() {
           {/* Chapter Filter */}
           {hasMultipleChapters && (
             <div>
-              <label className="flex items-center gap-2 text-base font-bold text-slate-200 mb-3">
+              <label className="flex items-center gap-2 text-sm sm:text-base font-bold text-slate-200 mb-2">
                 <span>📖</span> Chapter Filter
               </label>
               <select 
                 value={chapterFilter}
                 onChange={(e) => setChapterFilter(e.target.value)}
-                className="w-full p-3 rounded-lg bg-slate-900/80 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+                className="w-full p-2.5 sm:p-3 rounded-lg bg-slate-900/80 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
               >
                 {availableChapters.map(ch => (
                   <option key={ch} value={ch}>{ch}</option>
                 ))}
               </select>
               {chapterFilter !== 'All Chapters' && (
-                <p className="text-xs mt-2 text-indigo-300">
+                <p className="text-xs mt-1.5 text-indigo-300">
                   Showing {maxQuestions} MCQs from chapter: {chapterFilter}
                 </p>
               )}
@@ -321,13 +321,13 @@ export default function TestBuilder() {
 
           {/* Question Filter */}
           <div>
-            <label className="flex items-center gap-2 text-base font-bold text-slate-200 mb-3">
+            <label className="flex items-center gap-2 text-sm sm:text-base font-bold text-slate-200 mb-2">
               <span>🔍</span> Question Filter
             </label>
             <select 
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
-              className="w-full p-3 rounded-lg bg-slate-900/80 border border-slate-700 text-white focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
+              className="w-full p-2.5 sm:p-3 rounded-lg bg-slate-900/80 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all"
             >
               <option value="Mixed">Mixed (All Questions)</option>
               <option value="Unused">Unused Questions</option>
@@ -340,15 +340,15 @@ export default function TestBuilder() {
 
           {/* Difficulty Level */}
           <div>
-            <label className="flex items-center gap-2 text-base font-bold text-slate-200 mb-3">
+            <label className="flex items-center gap-2 text-sm sm:text-base font-bold text-slate-200 mb-2">
               <span>🎯</span> Difficulty Level
             </label>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {['All', 'Easy', 'Medium', 'Hard'].map((level) => (
                 <button 
                   key={level}
                   onClick={() => setDifficulty(level)}
-                  className={`px-5 py-2.5 rounded-lg font-semibold transition-all ${
+                  className={`px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm font-semibold transition-all ${
                     difficulty === level 
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
                       : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 border border-slate-600'
@@ -362,16 +362,16 @@ export default function TestBuilder() {
 
           {/* Number of Questions */}
           <div>
-            <label className="flex items-center gap-2 text-base font-bold text-slate-200 mb-3">
+            <label className="flex items-center gap-2 text-sm sm:text-base font-bold text-slate-200 mb-2">
               <span>🔢</span> Number of Questions
-              <span className="ml-2 text-xs font-medium text-slate-400">({maxQuestions} available for this filter)</span>
+              <span className="ml-2 text-xs font-medium text-slate-400">({maxQuestions} available)</span>
             </label>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-2 sm:gap-3">
               {[10, 20, 30, 50, 75, 100].map(num => (
                 <button 
                   key={num}
                   onClick={() => handleNumQuestionsClick(num)}
-                  className={`px-5 py-2.5 rounded-lg font-semibold transition-all ${
+                  className={`px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm font-semibold transition-all ${
                     numQuestions === num 
                       ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
                       : num > maxQuestions 
@@ -384,34 +384,34 @@ export default function TestBuilder() {
                 </button>
               ))}
             </div>
-            <div className="flex items-center mt-4 gap-3">
+            <div className="flex items-center mt-3 gap-3">
               <input 
                 type="number" min="1" max={maxQuestions} value={numQuestions}
                 onChange={handleCustomInputChange}
                 disabled={maxQuestions === 0}
-                className="w-32 p-2.5 rounded-lg bg-slate-900/80 border border-slate-700 text-white text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
+                className="w-24 sm:w-32 p-2 sm:p-2.5 rounded-lg bg-slate-900/80 border border-slate-700 text-white text-center text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50"
               />
-              <span className="text-sm text-slate-400">Custom (Max: {maxQuestions})</span>
+              <span className="text-xs sm:text-sm text-slate-400">Custom (Max: {maxQuestions})</span>
             </div>
           </div>
 
           {/* Timer Mode */}
           <div>
-            <label className="flex items-center gap-2 text-base font-bold text-slate-200 mb-3">
+            <label className="flex items-center gap-2 text-sm sm:text-base font-bold text-slate-200 mb-2">
               <span>⏱️</span> Timer Mode
             </label>
-            <div className="flex flex-wrap gap-3 mb-4">
+            <div className="flex flex-wrap gap-2 sm:gap-3 mb-3 sm:mb-4">
               <button 
                 onClick={() => setTimerMode('Practice')}
-                className={`px-5 py-2.5 rounded-lg font-semibold transition-all ${
+                className={`px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm font-semibold transition-all ${
                   timerMode === 'Practice' 
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
                     : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 border border-slate-600'
                 }`}
-              >Practice Mode (No Timer)</button>
+              >Practice (No Timer)</button>
               <button 
                 onClick={() => setTimerMode('Timed')}
-                className={`px-5 py-2.5 rounded-lg font-semibold transition-all ${
+                className={`px-3.5 py-2 sm:px-5 sm:py-2.5 rounded-lg text-sm font-semibold transition-all ${
                   timerMode === 'Timed' 
                     ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
                     : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 border border-slate-600'
@@ -419,28 +419,28 @@ export default function TestBuilder() {
               >Timed Mode</button>
             </div>
             {timerMode === 'Timed' && (
-              <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-4">
+              <div className="mt-3 flex flex-col sm:flex-row sm:items-center gap-3">
                 <div className="flex items-center gap-2">
                   <input 
                     type="number" min="1" max="300" value={timerMinutes}
                     onChange={handleCustomTimeChange}
-                    className="w-24 p-2.5 rounded-lg bg-slate-900/80 border border-slate-700 text-white text-center focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    className="w-20 sm:w-24 p-2 sm:p-2.5 rounded-lg bg-slate-900/80 border border-slate-700 text-white text-center text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
                     placeholder="Min"
                   />
-                  <span className="text-sm text-slate-400">Minutes</span>
+                  <span className="text-xs sm:text-sm text-slate-400">Minutes</span>
                 </div>
                 <div className="flex flex-wrap gap-2">
                   {[15, 30, 60, 90].map(min => (
                     <button 
                       key={min}
                       onClick={() => setTimerMinutes(min)}
-                      className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${
+                      className={`px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs sm:text-sm font-semibold transition-all ${
                         timerMinutes === min 
                           ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' 
                           : 'bg-slate-700/50 text-slate-300 hover:bg-slate-700 border border-slate-600'
                       }`}
                     >
-                      {min} min
+                      {min}m
                     </button>
                   ))}
                 </div>
@@ -450,16 +450,16 @@ export default function TestBuilder() {
 
           {/* Start Button or Error */}
           {maxQuestions === 0 ? (
-            <div className="w-full py-4 rounded-xl font-bold text-lg text-center bg-red-500/10 text-red-400 border border-red-500/30">
+            <div className="w-full py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg text-center bg-red-500/10 text-red-400 border border-red-500/30">
               No questions match this filter yet!
             </div>
           ) : (
             <button 
               onClick={startTest} 
-              className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
+              className="w-full py-3 sm:py-4 rounded-xl font-bold text-base sm:text-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2"
             >
               Start Test
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+              <svg className="w-5 h-5 sm:w-6 sm:h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
             </button>
           )}
         </div>
