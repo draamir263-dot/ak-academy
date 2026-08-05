@@ -1,7 +1,8 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { structuredData } from '../services/questionLoader';
 import { useAuth } from '../context/AuthContext';
+import { useProgress } from '../context/ProgressContext'; // Import your progress hook
 
 // Helper component for the Circular Progress Ring
 const CircularProgress = ({ percentage, isLocked }) => {
@@ -36,19 +37,11 @@ const CircularProgress = ({ percentage, isLocked }) => {
 export default function Subject() {
   const { subjectName } = useParams();
   const { currentUser, isPremium } = useAuth();
+  const { progress } = useProgress(); // Fetch real progress
   const [searchQuery, setSearchQuery] = useState('');
-  const [progressData, setProgressData] = useState(null);
 
-  // Fetch user's actual progress
-  useEffect(() => {
-    if (currentUser) {
-      // TODO: Replace this localStorage mock with your actual DB fetch
-      const savedProgress = localStorage.getItem(`user_progress_${currentUser.uid}`);
-      setProgressData(savedProgress ? JSON.parse(savedProgress) : null);
-    } else {
-      setProgressData(null);
-    }
-  }, [currentUser]);
+  // Safely extract the 'used' array which contains all answered question IDs
+  const used = progress?.used || [];
 
   const subject = structuredData.find(s => s.name === subjectName);
 
@@ -73,14 +66,13 @@ export default function Subject() {
 
   const totalMcqsCount = subject.totalMcqs || subject.chapters.reduce((acc, ch) => acc + (ch.questions?.length || 0), 0);
   
-  // Calculate ACTUAL Overall Subject Progress
-  const subjectProgressData = progressData?.subjects?.[subjectName]?.chapters || {};
+  // Calculate ACTUAL Overall Subject Progress by checking how many questions are in the 'used' array
   let totalSolvedInSubject = 0;
   let totalQuestionsInSubject = 0;
 
   subject.chapters.forEach(ch => {
-    const solved = subjectProgressData[ch.name]?.solved || 0;
-    const total = ch.totalMcqs || ch.questions?.length || 0;
+    const total = ch.questions?.length || 0;
+    const solved = ch.questions?.filter(q => used.includes(q.id)).length || 0;
     totalSolvedInSubject += solved;
     totalQuestionsInSubject += total;
   });
@@ -101,10 +93,10 @@ export default function Subject() {
   });
 
   // Helper to get ACTUAL chapter progress
-  const getActualChapterProgress = (chapterName, totalQuestions) => {
-    if (!subjectProgressData[chapterName]) return 0;
-    const solved = subjectProgressData[chapterName].solved || 0;
-    return totalQuestions > 0 ? Math.round((solved / totalQuestions) * 100) : 0;
+  const getActualChapterProgress = (chapter) => {
+    if (!chapter.questions || chapter.questions.length === 0) return 0;
+    const solved = chapter.questions.filter(q => used.includes(q.id)).length;
+    return Math.round((solved / chapter.questions.length) * 100);
   };
 
   return (
@@ -172,7 +164,7 @@ export default function Subject() {
             const isLocked = !chapter.name.toLowerCase().includes("demo") && (!currentUser || !isPremium);
             const chapterMcqCount = chapter.totalMcqs || chapter.questions?.length || 0;
             // Get actual progress
-            const actualProgress = getActualChapterProgress(chapter.name, chapterMcqCount);
+            const actualProgress = getActualChapterProgress(chapter);
 
             return (
               <Link

@@ -1,7 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { structuredData } from '../services/questionLoader';
-import { useAuth } from '../context/AuthContext'; // Added to get current user
+import { useProgress } from '../context/ProgressContext'; // Import your progress hook
 import PullToRefresh from '../components/PullToRefresh';
 
 // 10 Motivational Quranic Verses about Hard Work & Knowledge
@@ -69,43 +69,41 @@ const fallbackIcon = (
 
 export default function Home() {
   const [showAll, setShowAll] = useState(false);
-  const { currentUser } = useAuth(); // Get current logged-in user
-  const [progressData, setProgressData] = useState(null);
+  const { progress } = useProgress(); // Fetch actual progress
   const randomVerse = quranVerses[Math.floor(Math.random() * quranVerses.length)];
 
-  // Fetch user's actual progress from database
-  useEffect(() => {
-    if (currentUser) {
-      // TODO: Replace this localStorage mock with your actual DB fetch
-      // Example: const docRef = firestore().collection('users').doc(currentUser.uid).get();
-      const savedProgress = localStorage.getItem(`user_progress_${currentUser.uid}`);
-      setProgressData(savedProgress ? JSON.parse(savedProgress) : null);
-    } else {
-      setProgressData(null);
-    }
-  }, [currentUser]);
-
-  // Calculate actual stats with fallback to 0 if no data exists yet
+  // Safely extract arrays from progress context
+  const used = progress?.used || [];
+  const correct = progress?.correct || [];
+  
+  // Calculate real stats
   const stats = {
-    streak: progressData?.streak || 0,
-    accuracy: progressData?.accuracy || 0,
-    totalSolved: progressData?.totalSolved || 0,
-    studyHours: progressData?.studyHours || 0,
-    dailyGoalCurrent: progressData?.dailyGoalCurrent || 0,
-    dailyGoalTarget: progressData?.dailyGoalTarget || 50, // Default target 50
+    streak: 0, // Streak isn't tracked in your progress context, leaving as 0
+    accuracy: used.length > 0 ? Math.round((correct.length / used.length) * 100) : 0,
+    totalSolved: used.length,
+    studyHours: 0, // Study hours aren't tracked, leaving as 0
+    dailyGoalCurrent: 0, 
+    dailyGoalTarget: 50,
   };
 
   const dailyGoalPercentage = (stats.dailyGoalCurrent / stats.dailyGoalTarget) * 100;
 
-  // Find the actual "Continue Learning" chapter based on progress
+  // Find the most recent chapter the user has started but not finished
   const findContinueLearning = () => {
-    if (!progressData?.subjects) return null;
-    for (const subjectName in progressData.subjects) {
-      for (const chapterName in progressData.subjects[subjectName].chapters) {
-        const ch = progressData.subjects[subjectName].chapters[chapterName];
-        // Return the first chapter that is started but not 100% complete
-        if (ch.solved > 0 && ch.solved < ch.total) {
-          return { subjectName, chapterName, solved: ch.solved, total: ch.total };
+    for (const subject of structuredData) {
+      for (const chapter of subject.chapters) {
+        if (!chapter.questions) continue;
+        const total = chapter.questions.length;
+        // Count how many questions in this chapter are in the 'used' array
+        const solved = chapter.questions.filter(q => used.includes(q.id)).length;
+        // If started but not 100% finished
+        if (solved > 0 && solved < total) {
+          return { 
+            subjectName: subject.name, 
+            chapterName: chapter.name, 
+            solved, 
+            total 
+          };
         }
       }
     }
@@ -130,7 +128,7 @@ export default function Home() {
             <div className="flex justify-between items-center mb-5">
               <div>
                 <p className="text-indigo-200 text-sm font-medium">Good Evening,</p>
-                <h1 className="text-2xl font-bold tracking-tight">{currentUser?.name || 'Student'} 👋</h1>
+                <h1 className="text-2xl font-bold tracking-tight">Student 👋</h1>
               </div>
               <button className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 relative">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -155,7 +153,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Floating Stats Card - Actual Data */}
+        {/* Floating Stats Card */}
         <div className="px-5 -mt-12 relative z-20">
           <div className="bg-white p-4 rounded-2xl shadow-lg grid grid-cols-4 gap-2 border border-slate-100">
             <div className="flex flex-col items-center text-center">
@@ -184,7 +182,7 @@ export default function Home() {
         {/* Main Content */}
         <div className="px-5 mt-6">
 
-          {/* Daily Goal - Actual Data */}
+          {/* Daily Goal */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
               <h2 className="font-bold text-slate-800 text-base">Daily Goal</h2>
@@ -203,7 +201,7 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Continue Learning - Actual Data */}
+          {/* Continue Learning - Dynamic */}
           {continueLearning ? (
             <div className="mb-6">
               <h2 className="font-bold text-slate-800 text-base mb-3">Continue Learning</h2>
