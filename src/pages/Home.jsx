@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { structuredData } from '../services/questionLoader';
-import { useProgress } from '../context/ProgressContext'; // Import your progress hook
+import { useProgress } from '../context/ProgressContext';
+import { useAuth } from '../context/AuthContext'; // Added to get user info
 import PullToRefresh from '../components/PullToRefresh';
 
 // 10 Motivational Quranic Verses about Hard Work & Knowledge
@@ -69,51 +70,95 @@ const fallbackIcon = (
 
 export default function Home() {
   const [showAll, setShowAll] = useState(false);
-  const { progress } = useProgress(); // Fetch actual progress
+  const [showProfile, setShowProfile] = useState(false);
+  const [isEditingGoal, setIsEditingGoal] = useState(false);
+  const [goalInput, setGoalInput] = useState(50);
+  
+  const { progress } = useProgress();
+  const { user, currentUser, isPremium, expiryDate, logout } = useAuth();
+  const navigate = useNavigate();
   const randomVerse = quranVerses[Math.floor(Math.random() * quranVerses.length)];
 
-  // Safely extract arrays from progress context
+  const [stats, setStats] = useState({
+    streak: 0,
+    studyHours: 0,
+    dailyGoalTarget: 50,
+    dailyGoalCurrent: 0, // Mocking with total used for now
+  });
+
+  // Fetch Stats & Streak from localStorage
+  useEffect(() => {
+    const today = new Date().toDateString();
+    const lastActive = localStorage.getItem('lastActiveDate');
+    let currentStreak = parseInt(localStorage.getItem('streak') || '0');
+
+    // Streak Logic
+    if (lastActive !== today) {
+      const yesterday = new Date(Date.now() - 86400000).toDateString();
+      if (lastActive === yesterday) {
+        currentStreak += 1;
+      } else if (lastActive !== yesterday) {
+        currentStreak = 1; // Reset streak
+      }
+      localStorage.setItem('lastActiveDate', today);
+      localStorage.setItem('streak', currentStreak);
+    }
+
+    const savedStats = JSON.parse(localStorage.getItem('user_stats')) || {};
+    setStats({
+      streak: currentStreak,
+      studyHours: savedStats.studyHours || 0,
+      dailyGoalTarget: savedStats.dailyGoalTarget || 50,
+      dailyGoalCurrent: progress?.used?.length || 0, 
+    });
+    setGoalInput(savedStats.dailyGoalTarget || 50);
+  }, [progress]);
+
   const used = progress?.used || [];
   const correct = progress?.correct || [];
-  
-  // Calculate real stats
-  const stats = {
-    streak: 0, // Streak isn't tracked in your progress context, leaving as 0
-    accuracy: used.length > 0 ? Math.round((correct.length / used.length) * 100) : 0,
-    totalSolved: used.length,
-    studyHours: 0, // Study hours aren't tracked, leaving as 0
-    dailyGoalCurrent: 0, 
-    dailyGoalTarget: 50,
+  const accuracy = used.length > 0 ? Math.round((correct.length / used.length) * 100) : 0;
+  const dailyGoalPercentage = stats.dailyGoalTarget > 0 ? (stats.dailyGoalCurrent / stats.dailyGoalTarget) * 100 : 0;
+
+  const saveDailyGoal = () => {
+    const newTarget = Math.max(1, Math.min(500, goalInput)); // Clamp between 1 and 500
+    const savedStats = JSON.parse(localStorage.getItem('user_stats')) || {};
+    savedStats.dailyGoalTarget = newTarget;
+    localStorage.setItem('user_stats', JSON.stringify(savedStats));
+    setStats(prev => ({ ...prev, dailyGoalTarget: newTarget }));
+    setIsEditingGoal(false);
   };
 
-  const dailyGoalPercentage = (stats.dailyGoalCurrent / stats.dailyGoalTarget) * 100;
-
-  // Find the most recent chapter the user has started but not finished
+  // Find Continue Learning
   const findContinueLearning = () => {
     for (const subject of structuredData) {
       for (const chapter of subject.chapters) {
         if (!chapter.questions) continue;
         const total = chapter.questions.length;
-        // Count how many questions in this chapter are in the 'used' array
         const solved = chapter.questions.filter(q => used.includes(q.id)).length;
-        // If started but not 100% finished
         if (solved > 0 && solved < total) {
-          return { 
-            subjectName: subject.name, 
-            chapterName: chapter.name, 
-            solved, 
-            total 
-          };
+          return { subjectName: subject.name, chapterName: chapter.name, solved, total };
         }
       }
     }
     return null;
   };
-
   const continueLearning = findContinueLearning();
 
-  // Show only 6 subjects initially, or all if showAll is true
   const visibleSubjects = showAll ? structuredData : structuredData.slice(0, 6);
+  const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+  const userName = user?.email ? user.email.split('@')[0] : 'Student';
+
+  // Handle Library Click (Last Opened)
+  const handleLibraryClick = () => {
+    const lastPath = localStorage.getItem('lastOpenedPath');
+    navigate(lastPath || '/');
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    setShowProfile(false);
+    navigate('/');
+  };
 
   return (
     <PullToRefresh>
@@ -128,27 +173,21 @@ export default function Home() {
             <div className="flex justify-between items-center mb-5">
               <div>
                 <p className="text-indigo-200 text-sm font-medium">Good Evening,</p>
-                <h1 className="text-2xl font-bold tracking-tight">Student 👋</h1>
+                <h1 className="text-2xl font-bold tracking-tight capitalize">{userName} 👋</h1>
               </div>
-              <button className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 relative">
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-                </svg>
-                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-indigo-600"></span>
+              <button onClick={() => setShowProfile(true)} className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 relative">
+                <span className="w-6 h-6 bg-white text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold uppercase">
+                  {userName.charAt(0)}
+                </span>
               </button>
             </div>
 
             {/* Quranic Verse Section */}
             <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl">
-              <p 
-                className="text-right text-lg font-bold mb-2 leading-relaxed" 
-                style={{ fontFamily: 'serif', direction: 'rtl', color: '#ffe9a8' }}
-              >
+              <p className="text-right text-lg font-bold mb-2 leading-relaxed" style={{ fontFamily: 'serif', direction: 'rtl', color: '#ffe9a8' }}>
                 {randomVerse.arabic}
               </p>
-              <p className="text-xs italic text-indigo-100 opacity-90">
-                "{randomVerse.english}"
-              </p>
+              <p className="text-xs italic text-indigo-100 opacity-90">"{randomVerse.english}"</p>
             </div>
           </div>
         </div>
@@ -163,12 +202,12 @@ export default function Home() {
             </div>
             <div className="flex flex-col items-center text-center border-l border-slate-100">
               <span className="text-xl">🎯</span>
-              <p className="text-lg font-extrabold text-slate-800 mt-1">{stats.accuracy}%</p>
+              <p className="text-lg font-extrabold text-slate-800 mt-1">{accuracy}%</p>
               <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5 leading-tight">Accuracy</p>
             </div>
             <div className="flex flex-col items-center text-center border-l border-slate-100">
               <span className="text-xl">📝</span>
-              <p className="text-lg font-extrabold text-slate-800 mt-1">{stats.totalSolved.toLocaleString()}</p>
+              <p className="text-lg font-extrabold text-slate-800 mt-1">{used.length}</p>
               <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5 leading-tight">MCQs Solved</p>
             </div>
             <div className="flex flex-col items-center text-center border-l border-slate-100">
@@ -182,16 +221,31 @@ export default function Home() {
         {/* Main Content */}
         <div className="px-5 mt-6">
 
-          {/* Daily Goal */}
+          {/* Daily Goal (Editable) */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
-              <h2 className="font-bold text-slate-800 text-base">Daily Goal</h2>
-              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
-                {stats.dailyGoalCurrent} / {stats.dailyGoalTarget} MCQs
-              </span>
+              <div className="flex items-center gap-2">
+                <h2 className="font-bold text-slate-800 text-base">Daily Goal</h2>
+                <button onClick={() => setIsEditingGoal(!isEditingGoal)} className="text-slate-400 hover:text-indigo-600">
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" /></svg>
+                </button>
+              </div>
+              {!isEditingGoal ? (
+                <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">{stats.dailyGoalCurrent} / {stats.dailyGoalTarget} MCQs</span>
+              ) : (
+                <div className="flex items-center gap-2">
+                  <input 
+                    type="number" 
+                    value={goalInput} 
+                    onChange={(e) => setGoalInput(parseInt(e.target.value) || 0)}
+                    className="w-16 px-2 py-1 border border-indigo-200 rounded-lg text-xs text-center text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+                  />
+                  <button onClick={saveDailyGoal} className="text-xs font-bold text-white bg-indigo-600 px-3 py-1 rounded-lg">Set</button>
+                </div>
+              )}
             </div>
             <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500" style={{ width: `${dailyGoalPercentage}%` }}></div>
+              <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500" style={{ width: `${Math.min(dailyGoalPercentage, 100)}%` }}></div>
             </div>
             <p className="text-xs text-slate-500 mt-2">
               {stats.dailyGoalTarget - stats.dailyGoalCurrent > 0 
@@ -201,7 +255,7 @@ export default function Home() {
             </p>
           </div>
 
-          {/* Continue Learning - Dynamic */}
+          {/* Continue Learning */}
           {continueLearning ? (
             <div className="mb-6">
               <h2 className="font-bold text-slate-800 text-base mb-3">Continue Learning</h2>
@@ -219,9 +273,7 @@ export default function Home() {
                   </div>
                 </div>
                 <Link to={`/test-builder/${encodeURIComponent(continueLearning.subjectName)}/${encodeURIComponent(continueLearning.chapterName)}`} className="ml-4 w-12 h-12 flex items-center justify-center bg-white text-indigo-600 rounded-full shadow-md hover:scale-110 transition-transform">
-                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                  </svg>
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" /></svg>
                 </Link>
               </div>
             </div>
@@ -249,15 +301,11 @@ export default function Home() {
                   const iconColor = colors[subject.name] || "bg-indigo-100 text-indigo-600";
 
                   return (
-                    <div 
-                      key={subject.name} 
-                      className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center hover:shadow-md transition-shadow"
-                    >
+                    <div key={subject.name} className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center hover:shadow-md transition-shadow">
                       <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${iconColor}`}>
                         <div className="w-5 h-5">{subjectIcons[subject.name] || fallbackIcon}</div>
                       </div>
                       <h3 className="font-bold text-slate-800 text-xs mb-2 leading-tight">{subject.name}</h3>
-                      
                       <div className="flex justify-between w-full py-1.5 border-t border-slate-100 text-center">
                         <div className="flex-1">
                           <p className="text-xs font-extrabold text-slate-800">{subject.totalMcqs}</p>
@@ -269,13 +317,7 @@ export default function Home() {
                           <p className="text-[8px] text-slate-400 font-semibold uppercase mt-0.5">Chapters</p>
                         </div>
                       </div>
-
-                      <Link 
-                        to={`/subject/${subject.name}`}
-                        className="mt-2 w-full py-1.5 rounded-lg font-bold text-center text-[10px] bg-slate-800 text-white hover:bg-slate-900 transition-colors"
-                      >
-                        Start
-                      </Link>
+                      <Link to={`/subject/${subject.name}`} className="mt-2 w-full py-1.5 rounded-lg font-bold text-center text-[10px] bg-slate-800 text-white hover:bg-slate-900 transition-colors">Start</Link>
                     </div>
                   );
                 })
@@ -284,18 +326,13 @@ export default function Home() {
               )}
             </div>
 
-            {/* Show All / Show Less Button */}
             {structuredData && structuredData.length > 6 && (
-              <button 
-                onClick={() => setShowAll(!showAll)}
-                className="mt-4 w-full text-center text-sm font-bold text-indigo-600 bg-indigo-50 py-2.5 rounded-xl hover:bg-indigo-100 transition-colors"
-              >
+              <button onClick={() => setShowAll(!showAll)} className="mt-4 w-full text-center text-sm font-bold text-indigo-600 bg-indigo-50 py-2.5 rounded-xl hover:bg-indigo-100 transition-colors">
                 {showAll ? 'Show Less' : 'Show All'}
               </button>
             )}
           </div>
 
-          {/* Bottom Banner */}
           <div className="mt-8">
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-5 text-center text-white shadow-lg relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-10 rounded-full -mr-8 -mt-8"></div>
@@ -304,7 +341,6 @@ export default function Home() {
               <p className="text-indigo-100 text-xs mt-1 relative z-10">Consistency is the key to success. Keep going!</p>
             </div>
           </div>
-
         </div>
 
         {/* Fixed Bottom Navigation */}
@@ -313,19 +349,58 @@ export default function Home() {
             <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>
             <span className="text-[10px] mt-1 font-bold">Home</span>
           </button>
-          <button className="flex flex-col items-center text-slate-400">
+          <button onClick={handleLibraryClick} className="flex flex-col items-center text-slate-400">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
             <span className="text-[10px] mt-1 font-medium">Library</span>
           </button>
-          <button className="flex flex-col items-center text-slate-400">
+          <Link to="/dashboard" className="flex flex-col items-center text-slate-400">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
             <span className="text-[10px] mt-1 font-medium">Stats</span>
-          </button>
-          <button className="flex flex-col items-center text-slate-400">
+          </Link>
+          <button onClick={() => setShowProfile(true)} className="flex flex-col items-center text-slate-400">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
             <span className="text-[10px] mt-1 font-medium">Profile</span>
           </button>
         </div>
+
+        {/* Profile Bottom Sheet Modal */}
+        {showProfile && (
+          <div className="fixed inset-0 z-[100] flex items-end justify-center" onClick={() => setShowProfile(false)}>
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
+            <div className="relative bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl transition-transform transform translate-y-0" onClick={(e) => e.stopPropagation()}>
+              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
+              
+              <div className="flex flex-col items-center text-center mb-6">
+                <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center text-3xl font-bold text-indigo-600 mb-3 uppercase">
+                  {userName.charAt(0)}
+                </div>
+                <h2 className="text-xl font-bold text-slate-800 capitalize">{userName}</h2>
+                <p className="text-sm text-slate-500">{user?.email}</p>
+              </div>
+
+              {/* Premium Status Card */}
+              <div className={`rounded-2xl border p-4 mb-6 ${isPremium ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <h3 className={`font-bold ${isPremium ? 'text-green-800' : 'text-red-800'}`}>
+                      {isPremium ? "⭐ Premium Active" : "🔒 Account Expired"}
+                    </h3>
+                    {isPremium && <p className="text-xs text-gray-500 mt-1">{daysLeft} days remaining</p>}
+                  </div>
+                  {isPremium ? (
+                     <Link to="/payment" onClick={() => setShowProfile(false)} className="text-xs font-bold text-indigo-600 bg-white px-3 py-2 rounded-lg border border-indigo-100">Upgrade</Link>
+                  ) : (
+                     <Link to="/payment" onClick={() => setShowProfile(false)} className="text-xs font-bold text-white bg-red-500 px-3 py-2 rounded-lg">Recharge</Link>
+                  )}
+                </div>
+              </div>
+
+              <button onClick={handleLogout} className="w-full bg-slate-800 text-white py-3 rounded-xl font-semibold hover:bg-slate-900 transition-colors">
+                Log Out
+              </button>
+            </div>
+          </div>
+        )}
 
       </div>
     </PullToRefresh>

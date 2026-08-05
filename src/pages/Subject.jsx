@@ -1,8 +1,8 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { structuredData } from '../services/questionLoader';
 import { useAuth } from '../context/AuthContext';
-import { useProgress } from '../context/ProgressContext'; // Import your progress hook
+import { useProgress } from '../context/ProgressContext';
 
 // Helper component for the Circular Progress Ring
 const CircularProgress = ({ percentage, isLocked }) => {
@@ -37,8 +37,15 @@ const CircularProgress = ({ percentage, isLocked }) => {
 export default function Subject() {
   const { subjectName } = useParams();
   const { currentUser, isPremium } = useAuth();
-  const { progress } = useProgress(); // Fetch real progress
+  const { progress } = useProgress();
   const [searchQuery, setSearchQuery] = useState('');
+
+  // Save the last opened subject path to localStorage for the "Library" button on Home
+  useEffect(() => {
+    if (subjectName) {
+      localStorage.setItem('lastOpenedPath', `/subject/${subjectName}`);
+    }
+  }, [subjectName]);
 
   // Safely extract the 'used' array which contains all answered question IDs
   const used = progress?.used || [];
@@ -66,7 +73,7 @@ export default function Subject() {
 
   const totalMcqsCount = subject.totalMcqs || subject.chapters.reduce((acc, ch) => acc + (ch.questions?.length || 0), 0);
   
-  // Calculate ACTUAL Overall Subject Progress by checking how many questions are in the 'used' array
+  // Calculate ACTUAL Overall Subject Progress
   let totalSolvedInSubject = 0;
   let totalQuestionsInSubject = 0;
 
@@ -217,10 +224,10 @@ export default function Subject() {
           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" /></svg>
           <span className="text-[10px] mt-1 font-bold">Library</span>
         </button>
-        <button className="flex flex-col items-center text-slate-400">
+        <Link to="/dashboard" className="flex flex-col items-center text-slate-400">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
           <span className="text-[10px] mt-1 font-medium">Stats</span>
-        </button>
+        </Link>
         <button className="flex flex-col items-center text-slate-400">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
           <span className="text-[10px] mt-1 font-medium">Profile</span>
