@@ -67,6 +67,12 @@ export default function Results() {
     }, 100);
   };
 
+  // New handler to trigger filter from the Performance Overview boxes
+  const handleFilterClick = (newFilter) => {
+    setFilter(newFilter);
+    handleShowReview();
+  };
+
   return (
     <div className="min-h-screen bg-slate-900 text-white flex flex-col p-4">
       
@@ -125,30 +131,51 @@ export default function Results() {
           </div>
         </div>
 
-        {/* Performance Overview (4 Module Grid) - Larger for Mobile */}
+        {/* Performance Overview (4 Module Grid) - Now fully clickable! */}
         <div className="bg-slate-800/50 border border-slate-700 rounded-3xl p-4 shadow-lg">
           <h2 className="text-xs font-bold text-slate-400 mb-3 uppercase tracking-wider text-center">Performance Overview</h2>
           <div className="grid grid-cols-4 gap-2 sm:gap-3 text-center">
-            <div className="bg-slate-900 p-3 rounded-xl border border-slate-700 flex flex-col justify-center">
+            
+            {/* Correct Box */}
+            <button 
+              onClick={() => handleFilterClick('correct')}
+              className={`bg-slate-900 p-3 rounded-xl border flex flex-col justify-center transition-all hover:bg-slate-800 ${filter === 'correct' && showReview ? 'border-green-500 ring-2 ring-green-500/30' : 'border-slate-700'}`}
+            >
               <p className="text-xl font-bold text-green-400">{correct}</p>
               <p className="text-[10px] text-slate-500 font-semibold uppercase mt-1">Correct</p>
               <p className="text-[9px] text-slate-600 mt-0.5">{percentage}%</p>
-            </div>
-            <div className="bg-slate-900 p-3 rounded-xl border border-slate-700 flex flex-col justify-center">
+            </button>
+            
+            {/* Incorrect Box */}
+            <button 
+              onClick={() => handleFilterClick('incorrect')}
+              className={`bg-slate-900 p-3 rounded-xl border flex flex-col justify-center transition-all hover:bg-slate-800 ${filter === 'incorrect' && showReview ? 'border-red-500 ring-2 ring-red-500/30' : 'border-slate-700'}`}
+            >
               <p className="text-xl font-bold text-red-400">{incorrect}</p>
               <p className="text-[10px] text-slate-500 font-semibold uppercase mt-1">Incorrect</p>
               <p className="text-[9px] text-slate-600 mt-0.5">{incorrectPercentage}%</p>
-            </div>
-            <div className="bg-slate-900 p-3 rounded-xl border border-slate-700 flex flex-col justify-center">
+            </button>
+            
+            {/* Skipped Box */}
+            <button 
+              onClick={() => handleFilterClick('skipped')}
+              className={`bg-slate-900 p-3 rounded-xl border flex flex-col justify-center transition-all hover:bg-slate-800 ${filter === 'skipped' && showReview ? 'border-slate-400 ring-2 ring-slate-400/30' : 'border-slate-700'}`}
+            >
               <p className="text-xl font-bold text-slate-400">{skipped}</p>
               <p className="text-[10px] text-slate-500 font-semibold uppercase mt-1">Skipped</p>
               <p className="text-[9px] text-slate-600 mt-0.5">{skippedPercentage}%</p>
-            </div>
-            <div className="bg-slate-900 p-3 rounded-xl border border-slate-700 flex flex-col justify-center">
+            </button>
+            
+            {/* Total Box */}
+            <button 
+              onClick={() => handleFilterClick('all')}
+              className={`bg-slate-900 p-3 rounded-xl border flex flex-col justify-center transition-all hover:bg-slate-800 ${filter === 'all' && showReview ? 'border-indigo-500 ring-2 ring-indigo-500/30' : 'border-slate-700'}`}
+            >
               <p className="text-xl font-bold text-indigo-400">{total}</p>
               <p className="text-[10px] text-slate-500 font-semibold uppercase mt-1">Total</p>
               <p className="text-[9px] text-slate-600 mt-0.5">100%</p>
-            </div>
+            </button>
+
           </div>
         </div>
 
