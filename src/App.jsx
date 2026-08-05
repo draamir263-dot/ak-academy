@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Routes, Route } from 'react-router-dom';
+import { ThemeProvider } from './context/ThemeContext'; // <-- Added ThemeProvider import
 import Home from './pages/Home';
 import Subject from './pages/Subject';
 import TestBuilder from './pages/TestBuilder';
@@ -12,7 +13,7 @@ import Payment from './pages/Payment';
 import Admin from './pages/Admin';
 import Navbar from './components/Navbar';
 import About from './pages/About';
-import Profile from './pages/Profile'; // <-- Added Profile import here
+import Profile from './pages/Profile';
 
 function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -48,34 +49,38 @@ function App() {
 
   if (!isOnline && !hasInitialized) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-blue-900 p-8 text-center">
-        <div>
-          <div className="text-6xl mb-4">📡</div>
-          <h1 className="text-2xl font-bold text-red-400 mb-2">No Internet Connection</h1>
-          <p className="text-blue-200">AK Academy requires an active internet connection to load the latest MCQs and sync your progress.</p>
+      <ThemeProvider>
+        <div className="min-h-screen flex items-center justify-center bg-blue-900 dark:bg-slate-900 p-8 text-center transition-colors duration-300">
+          <div>
+            <div className="text-6xl mb-4">📡</div>
+            <h1 className="text-2xl font-bold text-red-400 mb-2">No Internet Connection</h1>
+            <p className="text-blue-200 dark:text-slate-300">AK Academy requires an active internet connection to load the latest MCQs and sync your progress.</p>
+          </div>
         </div>
-      </div>
+      </ThemeProvider>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/payment" element={<Payment />} />
-        <Route path="/admin" element={<Admin />} />
-        <Route path="/subject/:subjectName" element={<Subject />} />
-        <Route path="/test-builder/:subjectName/:chapterName" element={<TestBuilder />} />
-        <Route path="/test-engine/:subjectName/:chapterName/:numQuestions" element={<TestEngine />} />
-        <Route path="/results" element={<Results />} />
-        <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/about" element={<About />} />
-        <Route path="/profile" element={<Profile />} /> {/* <-- Added Profile route here */}
-        <Route path="*" element={<NotFound />} />
-      </Routes>
-    </div>
+    <ThemeProvider>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 transition-colors duration-300">
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/payment" element={<Payment />} />
+          <Route path="/admin" element={<Admin />} />
+          <Route path="/subject/:subjectName" element={<Subject />} />
+          <Route path="/test-builder/:subjectName/:chapterName" element={<TestBuilder />} />
+          <Route path="/test-engine/:subjectName/:chapterName/:numQuestions" element={<TestEngine />} />
+          <Route path="/results" element={<Results />} />
+          <Route path="/dashboard" element={<Dashboard />} />
+          <Route path="/about" element={<About />} />
+          <Route path="/profile" element={<Profile />} />
+          <Route path="*" element={<NotFound />} />
+        </Routes>
+      </div>
+    </ThemeProvider>
   );
 }
 
