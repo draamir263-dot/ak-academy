@@ -67,7 +67,7 @@ export default function TestBuilder() {
   const [numQuestions, setNumQuestions] = useState(10);
   const [filter, setFilter] = useState('Mixed');
   const [timerMode, setTimerMode] = useState('Practice');
-  const [timerMinutes, setTimerMinutes] = useState(15); // State for custom time
+  const [timerMinutes, setTimerMinutes] = useState(15);
   const [paperSubject, setPaperSubject] = useState('All'); 
   const [difficulty, setDifficulty] = useState('All');
   const [chapterFilter, setChapterFilter] = useState('All Chapters');
@@ -162,7 +162,7 @@ export default function TestBuilder() {
     if (val === '') { setTimerMinutes(''); return; }
     const num = parseInt(val, 10);
     if (isNaN(num)) { setTimerMinutes(''); }
-    else { setTimerMinutes(Math.max(1, num)); } // Minimum 1 minute
+    else { setTimerMinutes(Math.max(1, num)); }
   };
 
   const startTest = () => {
@@ -179,7 +179,7 @@ export default function TestBuilder() {
         difficulty,
         selectedOriginalChapters: selectedChapters,
         timerMode,
-        timerMinutes: timerMode === 'Timed' ? timerMinutes : null // Pass custom time if Timed
+        timerMinutes: timerMode === 'Timed' ? timerMinutes : null
       }
     });
   };
@@ -250,12 +250,41 @@ export default function TestBuilder() {
           &larr; Back to {subject.name}
         </Link>
         
-        <header className="mb-8 text-center">
-          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight aurora-title">MedLife</h1>
-          <p className="text-sm md:text-lg font-semibold italic mt-2" style={{ color: '#ffe9a8' }}>
-            ✦ Build Your Perfect Test ✦
-          </p>
-          <p className="text-xs text-indigo-200 mt-2 opacity-80">{chapter.name}</p>
+        {/* New Header Section matching the image */}
+        <header className="mb-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="text-center md:text-left">
+            <h1 className="text-3xl md:text-4xl font-extrabold tracking-tight aurora-title">
+              Build Your Perfect Test
+            </h1>
+            <p className="text-sm md:text-base font-medium mt-2 text-indigo-100">
+              Customize your test and start practicing smartly.
+            </p>
+            <p className="text-sm md:text-lg font-semibold italic mt-3" style={{ color: '#ffe9a8' }}>
+              ✦ {chapter.questions?.length || 0} Total MCQs in {chapter.name} ✦
+            </p>
+          </div>
+          
+          {/* 3D-style Illustration */}
+          <div className="hidden md:flex relative w-44 h-44 items-center justify-center flex-shrink-0">
+            {/* Books Stack */}
+            <div className="absolute bottom-2 left-2 w-20 h-20 rounded-2xl bg-gradient-to-br from-indigo-400 to-purple-600 opacity-90 shadow-xl flex items-center justify-center transform rotate-6 border border-white/20">
+              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+            </div>
+            
+            {/* Stopwatch */}
+            <div className="absolute top-0 right-2 w-16 h-16 rounded-full bg-gradient-to-br from-pink-400 to-red-500 opacity-90 shadow-xl flex items-center justify-center border border-white/20">
+              <svg className="w-8 h-8 text-white" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path><path d="M9 2h6"></path><path d="M12 2v3"></path></svg>
+            </div>
+            
+            {/* Clipboard with Checklist */}
+            <div className="w-28 h-28 rounded-2xl bg-white/15 backdrop-blur-md border border-white/30 shadow-2xl flex items-center justify-center transform -rotate-3">
+              <svg className="w-14 h-14 text-cyan-300" fill="none" stroke="currentColor" strokeWidth="1.5" viewBox="0 0 24 24">
+                <path d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2"></path>
+                <rect x="9" y="3" width="6" height="4" rx="1"></rect>
+                <path d="M9 12l2 2 4-4"></path>
+              </svg>
+            </div>
+          </div>
         </header>
 
         <div className="aurora-card rounded-2xl p-6 sm:p-8 space-y-8">
