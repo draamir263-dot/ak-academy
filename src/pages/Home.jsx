@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { structuredData } from '../services/questionLoader';
 import { useProgress } from '../context/ProgressContext';
@@ -80,10 +80,39 @@ export default function Home() {
 
   const [stats, setStats] = useState({
     streak: 0,
-    studyHours: 0,
     dailyGoalTarget: 50,
     dailyGoalCurrent: 0,
   });
+
+  const [liveStudySeconds, setLiveStudySeconds] = useState(0);
+
+  // Live Study Timer
+  useEffect(() => {
+    const savedStats = JSON.parse(localStorage.getItem('user_stats')) || {};
+    let totalSeconds = savedStats.studySeconds || 0;
+    setLiveStudySeconds(totalSeconds);
+
+    const timerInterval = setInterval(() => {
+      totalSeconds += 1;
+      setLiveStudySeconds(totalSeconds);
+      
+      // Save to localStorage every 5 seconds to avoid performance issues
+      if (totalSeconds % 5 === 0) {
+        const updatedStats = JSON.parse(localStorage.getItem('user_stats')) || {};
+        updatedStats.studySeconds = totalSeconds;
+        localStorage.setItem('user_stats', JSON.stringify(updatedStats));
+      }
+    }, 1000);
+
+    return () => clearInterval(timerInterval);
+  }, []);
+
+  // Format live timer into Hours and Minutes
+  const formatStudyTime = (totalSeconds) => {
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    return `${hours}h ${minutes}m`;
+  };
 
   useEffect(() => {
     const today = new Date().toDateString();
@@ -104,7 +133,6 @@ export default function Home() {
     const savedStats = JSON.parse(localStorage.getItem('user_stats')) || {};
     setStats({
       streak: currentStreak,
-      studyHours: savedStats.studyHours || 0,
       dailyGoalTarget: savedStats.dailyGoalTarget || 50,
       dailyGoalCurrent: progress?.used?.length || 0, 
     });
@@ -154,7 +182,7 @@ export default function Home() {
       <PullToRefresh>
         <div className="min-h-screen bg-slate-50 font-sans pb-28">
           
-          {/* Header Section - Reduced top/bottom padding */}
+          {/* Header Section */}
           <div className="bg-gradient-to-br from-indigo-600 to-purple-700 px-5 pt-8 pb-14 rounded-b-[2.5rem] text-white relative overflow-hidden shadow-xl">
             <div className="absolute top-0 right-0 w-48 h-48 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
             <div className="absolute bottom-10 left-0 w-32 h-32 bg-white opacity-10 rounded-full -ml-12 -mb-12"></div>
@@ -181,7 +209,7 @@ export default function Home() {
             </div>
           </div>
 
-          {/* Floating Stats Card - Reduced padding and negative margin */}
+          {/* Floating Stats Card - With Live Study Timer */}
           <div className="px-5 -mt-10 relative z-20">
             <div className="bg-white p-3 rounded-2xl shadow-lg grid grid-cols-4 gap-2 border border-slate-100">
               <div className="flex flex-col items-center text-center">
@@ -201,14 +229,15 @@ export default function Home() {
               </div>
               <div className="flex flex-col items-center text-center border-l border-slate-100">
                 <span className="text-lg">⏱️</span>
-                <p className="text-base font-extrabold text-slate-800 mt-0.5">{stats.studyHours}</p>
-                <p className="text-[8px] text-slate-400 font-semibold uppercase mt-0.5 leading-tight">Study Hrs</p>
+                {/* Live updating Study Time */}
+                <p className="text-base font-extrabold text-slate-800 mt-0.5">{formatStudyTime(liveStudySeconds)}</p>
+                <p className="text-[8px] text-slate-400 font-semibold uppercase mt-0.5 leading-tight">Study Time</p>
               </div>
             </div>
           </div>
 
           <div className="px-5 mt-4">
-            {/* Daily Goal (Editable) - Reduced margins and size */}
+            {/* Daily Goal (Editable) */}
             <div className="mb-4">
               <div className="flex justify-between items-center mb-1.5">
                 <div className="flex items-center gap-2">
@@ -242,7 +271,7 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Continue Learning - Compacted to save vertical space */}
+            {/* Continue Learning */}
             {continueLearning ? (
               <div className="mb-4">
                 <h2 className="font-bold text-slate-800 text-sm mb-2">Continue Learning</h2>
@@ -271,10 +300,10 @@ export default function Home() {
               </div>
             )}
 
-            {/* Subjects Grid */}
+            {/* Subjects Grid - Restored to Normal Readable Size */}
             <div className="mb-2">
               <h2 className="font-bold text-slate-800 text-sm mb-2">Subjects</h2>
-              <div className="grid grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-3 gap-3">
                 {visibleSubjects && visibleSubjects.length > 0 ? (
                   visibleSubjects.map((subject) => {
                     const colors = {
@@ -288,23 +317,23 @@ export default function Home() {
                     const iconColor = colors[subject.name] || "bg-indigo-100 text-indigo-600";
 
                     return (
-                      <div key={subject.name} className="bg-white p-2.5 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center hover:shadow-md transition-shadow">
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center mb-1.5 ${iconColor}`}>
+                      <div key={subject.name} className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center hover:shadow-md transition-shadow">
+                        <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${iconColor}`}>
                           <div className="w-5 h-5">{subjectIcons[subject.name] || fallbackIcon}</div>
                         </div>
-                        <h3 className="font-bold text-slate-800 text-[11px] mb-1.5 leading-tight">{subject.name}</h3>
-                        <div className="flex justify-between w-full py-1 border-t border-slate-100 text-center">
+                        <h3 className="font-bold text-slate-800 text-xs mb-2 leading-tight">{subject.name}</h3>
+                        <div className="flex justify-between w-full py-1.5 border-t border-slate-100 text-center">
                           <div className="flex-1">
-                            <p className="text-[11px] font-extrabold text-slate-800">{subject.totalMcqs}</p>
-                            <p className="text-[7px] text-slate-400 font-semibold uppercase mt-0.5">MCQs</p>
+                            <p className="text-xs font-extrabold text-slate-800">{subject.totalMcqs}</p>
+                            <p className="text-[8px] text-slate-400 font-semibold uppercase mt-0.5">MCQs</p>
                           </div>
                           <div className="w-px bg-slate-100 mx-1"></div>
                           <div className="flex-1">
-                            <p className="text-[11px] font-extrabold text-slate-800">{subject.chapters.length}</p>
-                            <p className="text-[7px] text-slate-400 font-semibold uppercase mt-0.5">Chapters</p>
+                            <p className="text-xs font-extrabold text-slate-800">{subject.chapters.length}</p>
+                            <p className="text-[8px] text-slate-400 font-semibold uppercase mt-0.5">Chapters</p>
                           </div>
                         </div>
-                        <Link to={`/subject/${subject.name}`} className="mt-1.5 w-full py-1 rounded-lg font-bold text-center text-[9px] bg-slate-800 text-white hover:bg-slate-900 transition-colors">Start</Link>
+                        <Link to={`/subject/${subject.name}`} className="mt-2 w-full py-1.5 rounded-lg font-bold text-center text-[10px] bg-slate-800 text-white hover:bg-slate-900 transition-colors">Start</Link>
                       </div>
                     );
                   })
@@ -332,7 +361,7 @@ export default function Home() {
         </div>
       </PullToRefresh>
 
-      {/* Fixed Bottom Navigation - Moved OUTSIDE of PullToRefresh wrapper */}
+      {/* Fixed Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-100 flex justify-around py-3 px-5 rounded-t-2xl shadow-2xl z-50">
         <button onClick={() => navigate('/')} className="flex flex-col items-center text-indigo-600">
           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>
@@ -346,7 +375,6 @@ export default function Home() {
           <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
           <span className="text-[10px] mt-1 font-medium">Stats</span>
         </Link>
-        {/* Profile Link triggers navigation to separate page */}
         <Link to="/profile" className="flex flex-col items-center text-slate-400">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
           <span className="text-[10px] mt-1 font-medium">Profile</span>
