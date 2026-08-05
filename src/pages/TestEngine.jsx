@@ -25,22 +25,24 @@ const TestEngine = () => {
   const filteredQuestions = useMemo(() => {
     if (!passedQuestions || passedQuestions.length === 0) return [];
 
+    // TestBuilder already filtered before passing, so just use them directly.
+    // This safety filter only re-checks if user had selected specific filters.
     return passedQuestions.filter((q) => {
-      // 1. CHAPTER: strictly match JSON's "chapter" field
-      const chapterMatch =
-        selectedOriginalChapters && selectedOriginalChapters.length > 0
-          ? selectedOriginalChapters.includes(q.originalChapter)
-          : q.originalChapter === stateChapterName;
+      // 1. CHAPTER: only filter if user picked a specific chapter
+      let chapterMatch = true;
+      if (selectedOriginalChapters && selectedOriginalChapters.length > 0) {
+        chapterMatch = selectedOriginalChapters.includes(q.originalChapter);
+      }
 
-      // 2. SUBJECT: strictly match JSON's "subject" field
+      // 2. SUBJECT: only filter if user picked a specific subject
       const subjectMatch = !subjectCategory || q.category === subjectCategory;
 
-      // 3. DIFFICULTY: strictly match JSON's "difficulty" field
+      // 3. DIFFICULTY: only filter if user picked a specific difficulty
       const difficultyMatch = !difficulty || q.difficulty === difficulty;
 
       return chapterMatch && subjectMatch && difficultyMatch;
     });
-  }, [passedQuestions, stateChapterName, selectedOriginalChapters, subjectCategory, difficulty]);
+  }, [passedQuestions, selectedOriginalChapters, subjectCategory, difficulty]);
 
   // ============================================
   // TEST STATE

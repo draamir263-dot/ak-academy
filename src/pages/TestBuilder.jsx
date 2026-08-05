@@ -73,11 +73,13 @@ const TestBuilder = () => {
   ) => {
     if (!questions) return [];
     return questions.filter((q) => {
-      // 1. CHAPTER FILTER: strictly match JSON's "chapter" field
-      const chapterMatch =
-        selectedOrigChapters && selectedOrigChapters.length > 0
-          ? selectedOrigChapters.includes(q.originalChapter)
-          : q.originalChapter === clickedChapterName;
+      // 1. CHAPTER FILTER
+      //    If user picked a specific chapter from dropdown -> match that
+      //    If user picked "All Chapters" -> show ALL (no chapter filter)
+      let chapterMatch = true;
+      if (selectedOrigChapters && selectedOrigChapters.length > 0) {
+        chapterMatch = selectedOrigChapters.includes(q.originalChapter);
+      }
 
       // 2. SUBJECT FILTER: strictly match JSON's "subject" field
       const subjectMatch = !subjectFilter || q.category === subjectFilter;
