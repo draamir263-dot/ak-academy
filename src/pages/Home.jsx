@@ -73,10 +73,12 @@ export default function Home() {
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState(50);
   
+  // FIX: Only pick a random verse ONCE when the component mounts
+  const [randomVerse] = useState(() => quranVerses[Math.floor(Math.random() * quranVerses.length)]);
+
   const { progress } = useProgress();
   const { user } = useAuth();
   const navigate = useNavigate();
-  const randomVerse = quranVerses[Math.floor(Math.random() * quranVerses.length)];
 
   const [stats, setStats] = useState({
     streak: 0,
@@ -300,7 +302,7 @@ export default function Home() {
               </div>
             )}
 
-            {/* Subjects Grid - Restored to Normal Readable Size */}
+            {/* Subjects Grid */}
             <div className="mb-2">
               <h2 className="font-bold text-slate-800 text-sm mb-2">Subjects</h2>
               <div className="grid grid-cols-3 gap-3">
