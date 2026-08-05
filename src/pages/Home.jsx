@@ -87,6 +87,20 @@ export default function Home() {
   });
 
   const [liveStudySeconds, setLiveStudySeconds] = useState(0);
+  
+  // Get name from localStorage or fallback to email username
+  const [userName, setUserName] = useState(() => {
+    const savedName = localStorage.getItem('user_custom_name');
+    const emailName = user?.email ? user.email.split('@')[0] : 'Student';
+    return savedName || emailName;
+  });
+
+  // Update name if user context changes (e.g., on login)
+  useEffect(() => {
+    const savedName = localStorage.getItem('user_custom_name');
+    const emailName = user?.email ? user.email.split('@')[0] : 'Student';
+    setUserName(savedName || emailName);
+  }, [user]);
 
   // Live Study Timer
   useEffect(() => {
@@ -171,7 +185,6 @@ export default function Home() {
   const continueLearning = findContinueLearning();
 
   const visibleSubjects = showAll ? structuredData : structuredData.slice(0, 6);
-  const userName = user?.email ? user.email.split('@')[0] : 'Student';
 
   const handleLibraryClick = () => {
     const lastPath = localStorage.getItem('lastOpenedPath');
