@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { structuredData } from '../services/questionLoader';
+import { useAuth } from '../context/AuthContext'; // Added to get current user
 import PullToRefresh from '../components/PullToRefresh';
 
 // 10 Motivational Quranic Verses about Hard Work & Knowledge
@@ -68,7 +69,50 @@ const fallbackIcon = (
 
 export default function Home() {
   const [showAll, setShowAll] = useState(false);
+  const { currentUser } = useAuth(); // Get current logged-in user
+  const [progressData, setProgressData] = useState(null);
   const randomVerse = quranVerses[Math.floor(Math.random() * quranVerses.length)];
+
+  // Fetch user's actual progress from database
+  useEffect(() => {
+    if (currentUser) {
+      // TODO: Replace this localStorage mock with your actual DB fetch
+      // Example: const docRef = firestore().collection('users').doc(currentUser.uid).get();
+      const savedProgress = localStorage.getItem(`user_progress_${currentUser.uid}`);
+      setProgressData(savedProgress ? JSON.parse(savedProgress) : null);
+    } else {
+      setProgressData(null);
+    }
+  }, [currentUser]);
+
+  // Calculate actual stats with fallback to 0 if no data exists yet
+  const stats = {
+    streak: progressData?.streak || 0,
+    accuracy: progressData?.accuracy || 0,
+    totalSolved: progressData?.totalSolved || 0,
+    studyHours: progressData?.studyHours || 0,
+    dailyGoalCurrent: progressData?.dailyGoalCurrent || 0,
+    dailyGoalTarget: progressData?.dailyGoalTarget || 50, // Default target 50
+  };
+
+  const dailyGoalPercentage = (stats.dailyGoalCurrent / stats.dailyGoalTarget) * 100;
+
+  // Find the actual "Continue Learning" chapter based on progress
+  const findContinueLearning = () => {
+    if (!progressData?.subjects) return null;
+    for (const subjectName in progressData.subjects) {
+      for (const chapterName in progressData.subjects[subjectName].chapters) {
+        const ch = progressData.subjects[subjectName].chapters[chapterName];
+        // Return the first chapter that is started but not 100% complete
+        if (ch.solved > 0 && ch.solved < ch.total) {
+          return { subjectName, chapterName, solved: ch.solved, total: ch.total };
+        }
+      }
+    }
+    return null;
+  };
+
+  const continueLearning = findContinueLearning();
 
   // Show only 6 subjects initially, or all if showAll is true
   const visibleSubjects = showAll ? structuredData : structuredData.slice(0, 6);
@@ -86,7 +130,7 @@ export default function Home() {
             <div className="flex justify-between items-center mb-5">
               <div>
                 <p className="text-indigo-200 text-sm font-medium">Good Evening,</p>
-                <h1 className="text-2xl font-bold tracking-tight">Aamir 👋</h1>
+                <h1 className="text-2xl font-bold tracking-tight">{currentUser?.name || 'Student'} 👋</h1>
               </div>
               <button className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 relative">
                 <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
@@ -111,27 +155,27 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Floating Stats Card */}
+        {/* Floating Stats Card - Actual Data */}
         <div className="px-5 -mt-12 relative z-20">
           <div className="bg-white p-4 rounded-2xl shadow-lg grid grid-cols-4 gap-2 border border-slate-100">
             <div className="flex flex-col items-center text-center">
               <span className="text-xl">🔥</span>
-              <p className="text-lg font-extrabold text-slate-800 mt-1">25</p>
+              <p className="text-lg font-extrabold text-slate-800 mt-1">{stats.streak}</p>
               <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5 leading-tight">Day Streak</p>
             </div>
             <div className="flex flex-col items-center text-center border-l border-slate-100">
               <span className="text-xl">🎯</span>
-              <p className="text-lg font-extrabold text-slate-800 mt-1">86%</p>
+              <p className="text-lg font-extrabold text-slate-800 mt-1">{stats.accuracy}%</p>
               <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5 leading-tight">Accuracy</p>
             </div>
             <div className="flex flex-col items-center text-center border-l border-slate-100">
               <span className="text-xl">📝</span>
-              <p className="text-lg font-extrabold text-slate-800 mt-1">15,420</p>
+              <p className="text-lg font-extrabold text-slate-800 mt-1">{stats.totalSolved.toLocaleString()}</p>
               <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5 leading-tight">MCQs Solved</p>
             </div>
             <div className="flex flex-col items-center text-center border-l border-slate-100">
               <span className="text-xl">⏱️</span>
-              <p className="text-lg font-extrabold text-slate-800 mt-1">120</p>
+              <p className="text-lg font-extrabold text-slate-800 mt-1">{stats.studyHours}</p>
               <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5 leading-tight">Study Hrs</p>
             </div>
           </div>
@@ -140,41 +184,55 @@ export default function Home() {
         {/* Main Content */}
         <div className="px-5 mt-6">
 
-          {/* Daily Goal */}
+          {/* Daily Goal - Actual Data */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
               <h2 className="font-bold text-slate-800 text-base">Daily Goal</h2>
-              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">34 / 50 MCQs</span>
+              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">
+                {stats.dailyGoalCurrent} / {stats.dailyGoalTarget} MCQs
+              </span>
             </div>
             <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
-              <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" style={{ width: '68%' }}></div>
+              <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500" style={{ width: `${dailyGoalPercentage}%` }}></div>
             </div>
-            <p className="text-xs text-slate-500 mt-2">You're doing great! Just 16 MCQs left to hit your target.</p>
+            <p className="text-xs text-slate-500 mt-2">
+              {stats.dailyGoalTarget - stats.dailyGoalCurrent > 0 
+                ? `You're doing great! Just ${stats.dailyGoalTarget - stats.dailyGoalCurrent} MCQs left to hit your target.`
+                : "Amazing! You've smashed your daily goal! 🎉"
+              }
+            </p>
           </div>
 
-          {/* Continue Learning */}
-          <div className="mb-6">
-            <h2 className="font-bold text-slate-800 text-base mb-3">Continue Learning</h2>
-            <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-5 rounded-2xl text-white shadow-lg flex items-center justify-between">
-              <div className="flex-1">
-                <span className="text-[10px] bg-indigo-500 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Biology</span>
-                <h3 className="text-lg font-bold mt-2">Ch 12: Cell Cycle</h3>
-                <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
-                  <span>18 Questions left</span>
-                  <span className="w-1 h-1 bg-slate-500 rounded-full"></span>
-                  <span>72% Completed</span>
+          {/* Continue Learning - Actual Data */}
+          {continueLearning ? (
+            <div className="mb-6">
+              <h2 className="font-bold text-slate-800 text-base mb-3">Continue Learning</h2>
+              <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-5 rounded-2xl text-white shadow-lg flex items-center justify-between">
+                <div className="flex-1">
+                  <span className="text-[10px] bg-indigo-500 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">{continueLearning.subjectName}</span>
+                  <h3 className="text-lg font-bold mt-2">{continueLearning.chapterName}</h3>
+                  <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
+                    <span>{continueLearning.total - continueLearning.solved} Questions left</span>
+                    <span className="w-1 h-1 bg-slate-500 rounded-full"></span>
+                    <span>{Math.round((continueLearning.solved / continueLearning.total) * 100)}% Completed</span>
+                  </div>
+                  <div className="w-full h-1.5 bg-slate-700 rounded-full mt-3">
+                    <div className="h-full bg-indigo-500 rounded-full transition-all duration-500" style={{ width: `${(continueLearning.solved / continueLearning.total) * 100}%` }}></div>
+                  </div>
                 </div>
-                <div className="w-full h-1.5 bg-slate-700 rounded-full mt-3">
-                  <div className="h-full bg-indigo-500 rounded-full" style={{ width: '72%' }}></div>
-                </div>
+                <Link to={`/test-builder/${encodeURIComponent(continueLearning.subjectName)}/${encodeURIComponent(continueLearning.chapterName)}`} className="ml-4 w-12 h-12 flex items-center justify-center bg-white text-indigo-600 rounded-full shadow-md hover:scale-110 transition-transform">
+                  <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                    <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                  </svg>
+                </Link>
               </div>
-              <Link to="/subject/Biology" className="ml-4 w-12 h-12 flex items-center justify-center bg-white text-indigo-600 rounded-full shadow-md hover:scale-110 transition-transform">
-                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
-                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
-                </svg>
-              </Link>
             </div>
-          </div>
+          ) : (
+            <div className="mb-6 bg-indigo-50 p-5 rounded-2xl text-center">
+              <h3 className="font-bold text-indigo-800 text-base">Ready to start?</h3>
+              <p className="text-xs text-indigo-500 mt-1">Pick a subject below to begin your journey!</p>
+            </div>
+          )}
 
           {/* Subjects Grid */}
           <div className="mb-2">

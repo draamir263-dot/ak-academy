@@ -1,5 +1,5 @@
 import { useParams, Link } from 'react-router-dom';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { structuredData } from '../services/questionLoader';
 import { useAuth } from '../context/AuthContext';
 
@@ -37,6 +37,18 @@ export default function Subject() {
   const { subjectName } = useParams();
   const { currentUser, isPremium } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
+  const [progressData, setProgressData] = useState(null);
+
+  // Fetch user's actual progress
+  useEffect(() => {
+    if (currentUser) {
+      // TODO: Replace this localStorage mock with your actual DB fetch
+      const savedProgress = localStorage.getItem(`user_progress_${currentUser.uid}`);
+      setProgressData(savedProgress ? JSON.parse(savedProgress) : null);
+    } else {
+      setProgressData(null);
+    }
+  }, [currentUser]);
 
   const subject = structuredData.find(s => s.name === subjectName);
 
@@ -60,7 +72,20 @@ export default function Subject() {
   }
 
   const totalMcqsCount = subject.totalMcqs || subject.chapters.reduce((acc, ch) => acc + (ch.questions?.length || 0), 0);
-  const overallProgress = 72; 
+  
+  // Calculate ACTUAL Overall Subject Progress
+  const subjectProgressData = progressData?.subjects?.[subjectName]?.chapters || {};
+  let totalSolvedInSubject = 0;
+  let totalQuestionsInSubject = 0;
+
+  subject.chapters.forEach(ch => {
+    const solved = subjectProgressData[ch.name]?.solved || 0;
+    const total = ch.totalMcqs || ch.questions?.length || 0;
+    totalSolvedInSubject += solved;
+    totalQuestionsInSubject += total;
+  });
+
+  const overallProgress = totalQuestionsInSubject > 0 ? Math.round((totalSolvedInSubject / totalQuestionsInSubject) * 100) : 0;
 
   const sortedChapters = [...subject.chapters].sort((a, b) => {
     const aIsDemo = a.name.toLowerCase().includes("demo");
@@ -75,14 +100,11 @@ export default function Subject() {
     return chapter.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
-  // Helper to generate a mock stable progress percentage for UI display
-  const getMockProgress = (name) => {
-    if (name.toLowerCase().includes('demo')) return 100;
-    let hash = 0;
-    for (let i = 0; i < name.length; i++) {
-      hash = name.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    return Math.abs(hash % 100);
+  // Helper to get ACTUAL chapter progress
+  const getActualChapterProgress = (chapterName, totalQuestions) => {
+    if (!subjectProgressData[chapterName]) return 0;
+    const solved = subjectProgressData[chapterName].solved || 0;
+    return totalQuestions > 0 ? Math.round((solved / totalQuestions) * 100) : 0;
   };
 
   return (
@@ -114,14 +136,14 @@ export default function Subject() {
             </div>
           </div>
 
-          {/* Overall Progress */}
+          {/* Overall Progress - Actual */}
           <div className="mt-6">
             <div className="flex justify-between text-xs font-medium mb-1.5">
               <span className="opacity-90">Overall Progress</span>
               <span className="font-bold">{overallProgress}%</span>
             </div>
             <div className="w-full h-2.5 bg-white/30 rounded-full overflow-hidden">
-              <div className="h-full bg-white rounded-full" style={{ width: `${overallProgress}%` }}></div>
+              <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${overallProgress}%` }}></div>
             </div>
           </div>
         </div>
@@ -149,7 +171,8 @@ export default function Subject() {
           filteredChapters.map((chapter, index) => {
             const isLocked = !chapter.name.toLowerCase().includes("demo") && (!currentUser || !isPremium);
             const chapterMcqCount = chapter.totalMcqs || chapter.questions?.length || 0;
-            const mockProgress = getMockProgress(chapter.name);
+            // Get actual progress
+            const actualProgress = getActualChapterProgress(chapter.name, chapterMcqCount);
 
             return (
               <Link
@@ -169,7 +192,7 @@ export default function Subject() {
 
                 <div className="flex items-center gap-3 ml-2">
                   <div className={config.ring}>
-                    <CircularProgress percentage={mockProgress} isLocked={isLocked} />
+                    <CircularProgress percentage={actualProgress} isLocked={isLocked} />
                   </div>
                   {!isLocked && (
                     <svg className="w-5 h-5 text-slate-300" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
