@@ -13,9 +13,9 @@ export default function Results() {
   // If someone tries to visit /results directly without taking a test, send them home
   if (testQuestions.length === 0) {
     return (
-      <div className="min-h-screen bg-slate-50 p-8 text-center flex flex-col items-center justify-center">
-        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 max-w-md">
-          <h1 className="text-2xl font-bold text-red-500 mb-4">No test data found!</h1>
+      <div className="min-h-screen bg-slate-900 p-8 text-center flex flex-col items-center justify-center">
+        <div className="bg-slate-800 p-8 rounded-2xl border border-slate-700 max-w-md">
+          <h1 className="text-2xl font-bold text-red-400 mb-4">No test data found!</h1>
           <Link to="/" className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 inline-block">
             Go Home
           </Link>
@@ -27,7 +27,7 @@ export default function Results() {
   // Calculate Scores
   let correct = 0;
   let incorrect = 0;
-  let skipped = 0;
+  let skipped = 0; // Unattempted
 
   testQuestions.forEach(q => {
     const userAnswer = userAnswers[q.id];
@@ -42,8 +42,12 @@ export default function Results() {
 
   const total = testQuestions.length;
   const percentage = Math.round((correct / total) * 100);
-  const accuracyColor = percentage >= 70 ? 'text-green-500' : percentage >= 50 ? 'text-yellow-500' : 'text-red-500';
-  const accuracyStroke = percentage >= 70 ? '#10b981' : percentage >= 50 ? '#eab308' : '#ef4444';
+  const incorrectPercentage = Math.round((incorrect / total) * 100);
+  const skippedPercentage = Math.round((skipped / total) * 100);
+
+  // Circle Math
+  const circumference = 2 * Math.PI * 16;
+  const offset = circumference - (percentage / 100) * circumference;
 
   // State for Review Filter
   const [filter, setFilter] = useState('all'); // 'all', 'correct', 'incorrect', 'skipped'
@@ -59,161 +63,111 @@ export default function Results() {
 
   const handleShowReview = () => {
     setShowReview(true);
-    // Use setTimeout to ensure the DOM is updated before scrolling
     setTimeout(() => {
       reviewRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }, 100);
   };
 
-  // Circle Math
-  const circumference = 2 * Math.PI * 16;
-  const offset = circumference - (percentage / 100) * circumference;
-
   return (
-    <div className="min-h-screen bg-slate-50 py-8 px-4">
+    <div className="min-h-screen bg-slate-900 text-white py-8 px-4">
       <div className="max-w-2xl mx-auto space-y-6">
         
         {/* Header */}
         <div className="text-center pt-4">
-          <h1 className="text-3xl font-extrabold text-green-500">Test Completed!</h1>
-          <p className="text-slate-500 mt-1 text-sm font-medium">{subjectName} - {chapterName}</p>
+          <h1 className="text-3xl font-extrabold text-green-400">Test Completed!</h1>
+          <p className="text-slate-400 mt-1 text-sm font-medium">{subjectName} - {chapterName}</p>
         </div>
 
-        {/* Score & Accuracy Card */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+        {/* Score & Accuracy Card (Dark Theme matches picture) */}
+        <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
+          <div className="flex flex-col md:flex-row items-center justify-between gap-8">
             
-            {/* Left: Score */}
-            <div className="flex flex-col items-center justify-center text-center">
-              <span className="text-xs font-bold text-slate-400 uppercase tracking-wider mb-1">Your Score</span>
-              <div className="flex items-start">
-                <span className="text-5xl font-extrabold text-slate-800 leading-none">{correct}</span>
-                <span className="text-2xl text-slate-400 font-bold mt-1">/{total}</span>
+            {/* Left: Circular Progress */}
+            <div className="flex flex-col items-center justify-center text-center flex-shrink-0">
+              <div className="relative w-32 h-32 flex items-center justify-center">
+                <svg className="w-32 h-32 transform -rotate-90" viewBox="0 0 36 36">
+                  <circle cx="18" cy="18" r="16" fill="none" stroke="#334155" strokeWidth="3"></circle>
+                  <circle 
+                    cx="18" cy="18" r="16" 
+                    fill="none" 
+                    stroke="#10b981" 
+                    strokeWidth="3" 
+                    strokeDasharray={circumference} 
+                    strokeDashoffset={offset} 
+                    strokeLinecap="round"
+                    className="transition-all duration-1000 ease-out"
+                  ></circle>
+                </svg>
+                <div className="absolute text-center">
+                  <span className="text-3xl font-extrabold text-white">{percentage}%</span>
+                </div>
               </div>
+              <span className="mt-2 text-slate-400 text-sm font-semibold uppercase tracking-wider">Your Score</span>
             </div>
 
-            {/* Middle: Stats */}
-            <div className="grid grid-cols-3 gap-3 flex-1 w-full max-w-xs">
-              <div className="bg-green-50 p-3 rounded-xl text-center flex flex-col justify-center">
-                <p className="text-2xl font-bold text-green-600">{correct}</p>
-                <p className="text-[10px] text-slate-500 font-semibold mt-1 uppercase tracking-wide">Correct</p>
+            {/* Right: Stats Breakdown */}
+            <div className="flex-1 w-full">
+              <div className="flex justify-between items-baseline border-b border-slate-700 pb-3 mb-4">
+                <span className="text-slate-400 font-semibold text-sm uppercase tracking-wider">Total Score</span>
+                <span className="text-2xl font-bold text-white">{correct} / {total}</span>
               </div>
-              <div className="bg-red-50 p-3 rounded-xl text-center flex flex-col justify-center">
-                <p className="text-2xl font-bold text-red-600">{incorrect}</p>
-                <p className="text-[10px] text-slate-500 font-semibold mt-1 uppercase tracking-wide">Incorrect</p>
+              
+              <div className="grid grid-cols-2 gap-y-3 gap-x-6 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-green-400 font-medium">Correct</span>
+                  <span className="font-bold text-white">{correct}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-red-400 font-medium">Incorrect</span>
+                  <span className="font-bold text-white">{incorrect}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 font-medium">Unattempted</span>
+                  <span className="font-bold text-white">{skipped}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <span className="text-indigo-400 font-medium">Accuracy</span>
+                  <span className="font-bold text-white">{percentage}%</span>
+                </div>
               </div>
-              <div className="bg-slate-100 p-3 rounded-xl text-center flex flex-col justify-center">
-                <p className="text-2xl font-bold text-slate-500">{skipped}</p>
-                <p className="text-[10px] text-slate-500 font-semibold mt-1 uppercase tracking-wide">Skipped</p>
-              </div>
-            </div>
 
-            {/* Right: Circular Progress */}
-            <div className="relative w-24 h-24 flex items-center justify-center flex-shrink-0">
-              <svg className="w-24 h-24 transform -rotate-90" viewBox="0 0 36 36">
-                <circle cx="18" cy="18" r="16" fill="none" stroke="#e2e8f0" strokeWidth="3"></circle>
-                <circle 
-                  cx="18" cy="18" r="16" 
-                  fill="none" 
-                  stroke={accuracyStroke} 
-                  strokeWidth="3" 
-                  strokeDasharray={circumference} 
-                  strokeDashoffset={offset} 
-                  strokeLinecap="round"
-                  className="transition-all duration-1000 ease-out"
-                ></circle>
-              </svg>
-              <div className="absolute text-center">
-                <span className={`text-xl font-extrabold ${accuracyColor}`}>{percentage}%</span>
-                <span className="block text-[9px] font-bold text-slate-400 uppercase tracking-wider">Accuracy</span>
-              </div>
-            </div>
-          </div>
-
-          {/* Review Answers Button (Right side of Score) */}
-          <div className="mt-6 flex justify-end border-t border-slate-100 pt-4">
-            <button 
-              onClick={handleShowReview}
-              className="text-sm font-bold text-indigo-600 bg-indigo-50 px-4 py-2 rounded-lg hover:bg-indigo-100 transition-colors flex items-center gap-2"
-            >
-              Review Answers
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
-            </button>
-          </div>
-        </div>
-
-        {/* Performance Overview */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-          <h2 className="font-bold text-slate-800 mb-4">Performance Overview</h2>
-          <div className="w-full h-4 bg-slate-100 rounded-full overflow-hidden flex">
-            <div className="h-full bg-green-500 transition-all duration-700" style={{ width: `${(correct/total)*100}%` }}></div>
-            <div className="h-full bg-red-500 transition-all duration-700" style={{ width: `${(incorrect/total)*100}%` }}></div>
-            <div className="h-full bg-slate-300 transition-all duration-700" style={{ width: `${(skipped/total)*100}%` }}></div>
-          </div>
-          <div className="flex justify-between mt-3 text-xs text-slate-500 font-medium">
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-green-500 rounded-full"></span> Correct ({correct})</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-red-500 rounded-full"></span> Incorrect ({incorrect})</span>
-            <span className="flex items-center gap-1.5"><span className="w-2.5 h-2.5 bg-slate-300 rounded-full"></span> Skipped ({skipped})</span>
-          </div>
-        </div>
-
-        {/* Subject & Chapter Performance */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-          <h2 className="font-bold text-slate-800 mb-4">Subject & Chapter Performance</h2>
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-sm mb-1.5">
-                <span className="font-semibold text-slate-700">{subjectName}</span>
-                <span className="text-slate-500 font-medium">{percentage}% Accuracy</span>
-              </div>
-              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-indigo-500 rounded-full transition-all duration-700" style={{ width: `${percentage}%` }}></div>
-              </div>
-            </div>
-            <div>
-              <div className="flex justify-between text-sm mb-1.5">
-                <span className="font-semibold text-slate-700">{chapterName}</span>
-                <span className="text-slate-500 font-medium">{percentage}% Accuracy</span>
-              </div>
-              <div className="w-full h-2.5 bg-slate-100 rounded-full overflow-hidden">
-                <div className="h-full bg-indigo-500 rounded-full transition-all duration-700" style={{ width: `${percentage}%` }}></div>
+              {/* Review Answers Button (Right Side) */}
+              <div className="mt-6 text-right">
+                <button 
+                  onClick={handleShowReview}
+                  className="text-sm font-bold text-white bg-indigo-600 px-5 py-2.5 rounded-lg hover:bg-indigo-500 transition-colors inline-flex items-center gap-2 shadow-md shadow-indigo-600/20"
+                >
+                  Review Answers
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 14l-7 7m0 0l-7-7m7 7V3" /></svg>
+                </button>
               </div>
             </div>
           </div>
         </div>
 
-        {/* Strengths & Weaknesses */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6">
-          <h2 className="font-bold text-slate-800 mb-4">Strengths & Weaknesses</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Strengths */}
-            <div className="bg-green-50 border border-green-100 rounded-xl p-4">
-              <h3 className="font-bold text-green-800 flex items-center gap-2 mb-3">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
-                Strengths
-              </h3>
-              <ul className="text-sm text-green-700 space-y-1.5 list-disc list-inside">
-                {percentage >= 70 ? (
-                  <li>{chapterName}</li>
-                ) : (
-                  <li className="text-slate-400 italic list-none">Needs more practice to build strengths.</li>
-                )}
-              </ul>
+        {/* Performance Overview (4 Module Grid) */}
+        <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 shadow-lg">
+          <h2 className="font-bold text-slate-200 mb-4">Performance Overview</h2>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-slate-900 p-4 rounded-xl text-center border border-slate-700">
+              <p className="text-2xl font-bold text-green-400">{correct}</p>
+              <p className="text-xs text-slate-500 font-semibold mt-1 uppercase tracking-wide">Correct</p>
+              <p className="text-[10px] text-slate-600 mt-1">{percentage}%</p>
             </div>
-            
-            {/* Needs Improvement */}
-            <div className="bg-red-50 border border-red-100 rounded-xl p-4">
-              <h3 className="font-bold text-red-800 flex items-center gap-2 mb-3">
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="3" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                Needs Improvement
-              </h3>
-              <ul className="text-sm text-red-700 space-y-1.5 list-disc list-inside">
-                {percentage < 70 ? (
-                  <li>{chapterName}</li>
-                ) : (
-                  <li className="text-slate-400 italic list-none">Great job! Keep up the good work.</li>
-                )}
-              </ul>
+            <div className="bg-slate-900 p-4 rounded-xl text-center border border-slate-700">
+              <p className="text-2xl font-bold text-red-400">{incorrect}</p>
+              <p className="text-xs text-slate-500 font-semibold mt-1 uppercase tracking-wide">Incorrect</p>
+              <p className="text-[10px] text-slate-600 mt-1">{incorrectPercentage}%</p>
+            </div>
+            <div className="bg-slate-900 p-4 rounded-xl text-center border border-slate-700">
+              <p className="text-2xl font-bold text-slate-400">{skipped}</p>
+              <p className="text-xs text-slate-500 font-semibold mt-1 uppercase tracking-wide">Unattempted</p>
+              <p className="text-[10px] text-slate-600 mt-1">{skippedPercentage}%</p>
+            </div>
+            <div className="bg-slate-900 p-4 rounded-xl text-center border border-slate-700">
+              <p className="text-2xl font-bold text-indigo-400">{total}</p>
+              <p className="text-xs text-slate-500 font-semibold mt-1 uppercase tracking-wide">Total Questions</p>
+              <p className="text-[10px] text-slate-600 mt-1">100%</p>
             </div>
           </div>
         </div>
@@ -229,7 +183,7 @@ export default function Results() {
           </button>
           <button 
             onClick={() => navigate(`/subject/${subjectName}`)}
-            className="flex-1 bg-white border border-slate-200 text-slate-700 py-3.5 rounded-xl font-semibold hover:bg-slate-50 transition-colors flex items-center justify-center gap-2"
+            className="flex-1 bg-slate-800 border border-slate-700 text-slate-200 py-3.5 rounded-xl font-semibold hover:bg-slate-700 transition-colors flex items-center justify-center gap-2"
           >
             Back to Chapters
           </button>
@@ -237,15 +191,15 @@ export default function Results() {
 
         {/* Review Section (Conditionally Rendered) */}
         {showReview && (
-          <div ref={reviewRef} className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 mb-8 scroll-mt-8">
-            <h2 className="text-lg font-bold text-slate-800 mb-4">Review Answers</h2>
+          <div ref={reviewRef} className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 mb-8 scroll-mt-8">
+            <h2 className="text-lg font-bold text-white mb-4">Review Answers</h2>
             
             {/* Filter Buttons */}
             <div className="flex flex-wrap gap-2 mb-6">
-              <button onClick={() => setFilter('all')} className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === 'all' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-600 hover:bg-slate-200'}`}>All ({total})</button>
-              <button onClick={() => setFilter('correct')} className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === 'correct' ? 'bg-green-600 text-white' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>Correct ({correct})</button>
-              <button onClick={() => setFilter('incorrect')} className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === 'incorrect' ? 'bg-red-600 text-white' : 'bg-red-100 text-red-700 hover:bg-red-200'}`}>Incorrect ({incorrect})</button>
-              <button onClick={() => setFilter('skipped')} className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === 'skipped' ? 'bg-slate-600 text-white' : 'bg-slate-100 text-slate-700 hover:bg-slate-200'}`}>Skipped ({skipped})</button>
+              <button onClick={() => setFilter('all')} className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === 'all' ? 'bg-slate-200 text-slate-900' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>All ({total})</button>
+              <button onClick={() => setFilter('correct')} className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === 'correct' ? 'bg-green-500 text-white' : 'bg-green-900/50 text-green-300 hover:bg-green-800'}`}>Correct ({correct})</button>
+              <button onClick={() => setFilter('incorrect')} className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === 'incorrect' ? 'bg-red-500 text-white' : 'bg-red-900/50 text-red-300 hover:bg-red-800'}`}>Incorrect ({incorrect})</button>
+              <button onClick={() => setFilter('skipped')} className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-colors ${filter === 'skipped' ? 'bg-slate-500 text-white' : 'bg-slate-700 text-slate-300 hover:bg-slate-600'}`}>Skipped ({skipped})</button>
             </div>
 
             {/* Question List */}
@@ -253,26 +207,26 @@ export default function Results() {
               {filteredQuestions.map((q, index) => {
                 const userAnswer = userAnswers[q.id];
                 return (
-                  <div key={q.id} className="border border-slate-200 rounded-xl p-5 bg-slate-50/50">
-                    <p className="font-bold text-slate-800 mb-4 text-sm">{index + 1}. {q.question}</p>
+                  <div key={q.id} className="border border-slate-700 rounded-xl p-5 bg-slate-900/50">
+                    <p className="font-bold text-slate-100 mb-4 text-sm">{index + 1}. {q.question}</p>
                     <div className="space-y-2 mb-4">
                       {['A', 'B', 'C', 'D'].map(opt => {
-                        let bgClass = "bg-white border-slate-200 text-slate-600";
-                        if (opt === q.correctAnswer) bgClass = "bg-green-50 border-green-400 text-green-800 font-semibold";
-                        else if (opt === userAnswer) bgClass = "bg-red-50 border-red-400 text-red-800 font-semibold";
+                        let bgClass = "bg-slate-800 border-slate-700 text-slate-400";
+                        if (opt === q.correctAnswer) bgClass = "bg-green-900/30 border-green-500 text-green-300 font-semibold";
+                        else if (opt === userAnswer) bgClass = "bg-red-900/30 border-red-500 text-red-300 font-semibold";
                         
                         return (
                           <div key={opt} className={`p-3 rounded-lg border text-sm flex items-center ${bgClass}`}>
-                            <span className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-200 text-slate-700 font-bold mr-3 text-xs flex-shrink-0">{opt}</span>
+                            <span className="w-6 h-6 flex items-center justify-center rounded-full bg-slate-700 text-slate-200 font-bold mr-3 text-xs flex-shrink-0">{opt}</span>
                             {q[`option${opt}`]}
                           </div>
                         );
                       })}
                     </div>
                     
-                    <div className="bg-indigo-50 p-4 rounded-lg border-l-4 border-indigo-500">
-                      <p className="text-sm text-slate-700"><strong>Explanation:</strong> {q.explanation}</p>
-                      <p className="text-sm text-slate-500 mt-2"><strong>Summary:</strong> {q.summary}</p>
+                    <div className="bg-indigo-900/20 border-l-4 border-indigo-500 p-4 rounded-lg">
+                      <p className="text-sm text-slate-300"><strong className="text-indigo-400">Explanation:</strong> {q.explanation}</p>
+                      <p className="text-sm text-slate-400 mt-2"><strong className="text-indigo-400">Summary:</strong> {q.summary}</p>
                     </div>
                   </div>
                 );
