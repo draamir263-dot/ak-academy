@@ -1,268 +1,576 @@
-import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
-import { structuredData } from '../services/questionLoader';
-import { useState, useEffect } from 'react';
-import { useProgress } from '../context/ProgressContext';
+import React, { useState, useMemo, useEffect, useCallback } from 'react';
+import { useParams, useLocation, Link } from 'react-router-dom';
 
-const shuffleArray = (array) => {
-  let shuffled = [...array];
-  for (let i = shuffled.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1));
-    [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-  }
-  return shuffled;
-};
-
-const resolveSubject = (q) => {
-  const cat = (q.category && q.category.toString().trim() !== '')
-    ? q.category.toString().trim()
-    : '';
-
-  if (cat) {
-    const c = cat.toLowerCase();
-    if (c.includes('bio'))     return 'Biology';
-    if (c.includes('chem'))    return 'Chemistry';
-    if (c.includes('phys'))    return 'Physics';
-    if (c.includes('eng'))     return 'English';
-    if (c.includes('log') || c.includes('reason')) return 'Logical Reasoning';
-    return cat;
-  }
-
-  const text = `${q.question} ${q.optionA} ${q.optionB} ${q.optionC} ${q.optionD} ${q.explanation}`.toLowerCase();
-
-  if (text.includes('photosynthesis') || text.includes('mitosis') || text.includes('dna') || text.includes('rna') || text.includes('enzyme') || text.includes('bacteria') || text.includes('virus') || text.includes('ecosystem')) return 'Biology';
-  if (text.includes('periodic') || text.includes('mole') || text.includes('oxidation') || text.includes('alkane') || text.includes('titration') || text.includes('catalyst')) return 'Chemistry';
-  if (text.includes('velocity') || text.includes('momentum') || text.includes('newton') || text.includes('circuit') || text.includes('kinematics') || text.includes('projectile')) return 'Physics';
-  if (text.includes('tense') || text.includes('preposition') || text.includes('synonym') || text.includes('grammar') || text.includes('antonym')) return 'English';
-  if (text.includes('syllogism') || text.includes('deductive') || text.includes('logical') || text.includes('premise')) return 'Logical Reasoning';
-
-  return 'Uncategorized';
-};
-
-let subjectCache = new Map();
-
-const getCachedSubject = (q) => {
-  if (subjectCache.has(q.id)) return subjectCache.get(q.id);
-  const resolved = resolveSubject(q);
-  subjectCache.set(q.id, resolved);
-  return resolved;
-};
-
-export default function TestEngine() {
-  const { subjectName, chapterName, numQuestions } = useParams();
+const TestEngine = () => {
+  const { subjectName, chapterName, numQuestions: numQuestionsParam } = useParams();
   const location = useLocation();
-  const navigate = useNavigate();
-  const { progress, recordAnswer, toggleFavourite, isFavourite } = useProgress();
 
-  const filter = location.state?.filter || 'Mixed';
-  const paperSubject = location.state?.paperSubject || 'All';
-  const difficulty = location.state?.difficulty || 'All';
-  const selectedOriginalChapter = location.state?.selectedOriginalChapter || null;
+  const {
+    questions: passedQuestions,
+    subjectName: stateSubjectName,
+    chapterName: stateChapterName,
+    selectedOriginalChapters,
+    subjectCategory,
+    difficulty,
+  } = location.state || {};
 
-  const subject = structuredData.find(s => s.name === subjectName);
-  const chapter = subject?.chapters.find(c => c.name === chapterName);
-  
-  const [testQuestions, setTestQuestions] = useState([]);
+  // ============================================
+  // STRICT SAFETY FILTER
+  // Even though TestBuilder already filters,
+  // we filter again here as a safety net.
+  // Subject  -> q.category        (JSON "subject" field)
+  // Chapter  -> q.originalChapter  (JSON "chapter" field)
+  // Difficulty-> q.difficulty       (JSON "difficulty" field)
+  // ============================================
+  const filteredQuestions = useMemo(() => {
+    if (!passedQuestions || passedQuestions.length === 0) return [];
+
+    return passedQuestions.filter((q) => {
+      // 1. CHAPTER: strictly match JSON's "chapter" field
+      const chapterMatch =
+        selectedOriginalChapters && selectedOriginalChapters.length > 0
+          ? selectedOriginalChapters.includes(q.originalChapter)
+          : q.originalChapter === stateChapterName;
+
+      // 2. SUBJECT: strictly match JSON's "subject" field
+      const subjectMatch = !subjectCategory || q.category === subjectCategory;
+
+      // 3. DIFFICULTY: strictly match JSON's "difficulty" field
+      const difficultyMatch = !difficulty || q.difficulty === difficulty;
+
+      return chapterMatch && subjectMatch && difficultyMatch;
+    });
+  }, [passedQuestions, stateChapterName, selectedOriginalChapters, subjectCategory, difficulty]);
+
+  // ============================================
+  // TEST STATE
+  // ============================================
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState({}); 
-  const [showExplanation, setShowExplanation] = useState(false); 
+  const [selectedAnswers, setSelectedAnswers] = useState({});
+  const [showResults, setShowResults] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(null); // seconds, null = no timer
 
+  const questions = filteredQuestions;
+  const totalQuestions = questions.length;
+
+  // ============================================
+  // TIMER (optional - 60 seconds per question)
+  // ============================================
   useEffect(() => {
-    const savedTest = localStorage.getItem('ak_academy_active_test');
-    if (savedTest) {
-      const parsed = JSON.parse(savedTest);
-      if (
-        parsed.subjectName === subjectName &&
-        parsed.chapterName === chapterName &&
-        parsed.numQuestions === numQuestions &&
-        parsed.paperSubject === paperSubject &&
-        parsed.filter === filter &&
-        parsed.difficulty === difficulty
-      ) {
-        setTestQuestions(parsed.testQuestions);
-        setCurrentIndex(parsed.currentIndex);
-        setUserAnswers(parsed.userAnswers);
-        setShowExplanation(!!parsed.userAnswers[parsed.testQuestions[parsed.currentIndex]?.id]);
-        parsed.testQuestions.forEach(q => subjectCache.set(q.id, resolveSubject(q)));
-        return;
-      }
-    }
+    if (showResults || timeLeft === null || timeLeft <= 0) return;
 
-    let pool = chapter ? [...chapter.questions] : [];
-
-    // Chapter filter: only include questions from the selected chapter
-    if (selectedOriginalChapter) {
-      pool = pool.filter(q => q.originalChapter === selectedOriginalChapter);
-    }
-
-    if (paperSubject !== 'All') {
-      pool = pool.filter(q => getCachedSubject(q) === paperSubject);
-    }
-
-    if (difficulty !== 'All') {
-      pool = pool.filter(q => {
-        if (!q.difficulty) return false;
-        return q.difficulty.toLowerCase() === difficulty.toLowerCase();
+    const timer = setInterval(() => {
+      setTimeLeft((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          // Auto-move to next or finish
+          if (currentIndex < totalQuestions - 1) {
+            setCurrentIndex((i) => i + 1);
+            return 60;
+          } else {
+            setShowResults(true);
+            return 0;
+          }
+        }
+        return prev - 1;
       });
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, [currentIndex, showResults, totalQuestions, timeLeft]);
+
+  // Reset timer when moving to next question
+  useEffect(() => {
+    if (!showResults) {
+      setTimeLeft(60);
     }
+  }, [currentIndex, showResults]);
 
-    if (filter === 'Used') {
-      pool = pool.filter(q => progress.used.includes(q.id));
-    } else if (filter === 'Unused') {
-      pool = pool.filter(q => !progress.used.includes(q.id));
-    } else if (filter === 'Correct') {
-      pool = pool.filter(q => progress.correct.includes(q.id));
-    } else if (filter === 'Incorrect') {
-      pool = pool.filter(q => progress.incorrect.includes(q.id));
-    } else if (filter === 'Favourite') {
-      pool = pool.filter(q => progress.favourites.includes(q.id));
+  // ============================================
+  // HANDLE ANSWER SELECTION
+  // ============================================
+  const handleAnswerSelect = (questionIndex, option) => {
+    setSelectedAnswers((prev) => ({
+      ...prev,
+      [questionIndex]: option,
+    }));
+  };
+
+  // ============================================
+  // NAVIGATION
+  // ============================================
+  const goToNext = useCallback(() => {
+    if (currentIndex < totalQuestions - 1) {
+      setCurrentIndex((i) => i + 1);
+    } else {
+      setShowResults(true);
     }
+  }, [currentIndex, totalQuestions]);
 
-    const finalPool = shuffleArray(pool).slice(0, parseInt(numQuestions) || 0);
+  const goToPrev = useCallback(() => {
+    if (currentIndex > 0) {
+      setCurrentIndex((i) => i - 1);
+    }
+  }, [currentIndex]);
 
-    finalPool.forEach(q => subjectCache.set(q.id, resolveSubject(q)));
-
-    setTestQuestions(finalPool);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+  const goToQuestion = useCallback((index) => {
+    setCurrentIndex(index);
   }, []);
 
-  useEffect(() => {
-    if (testQuestions.length > 0) {
-      localStorage.setItem('ak_academy_active_test', JSON.stringify({
-        subjectName, chapterName, numQuestions, paperSubject, filter, difficulty,
-        testQuestions, currentIndex, userAnswers
-      }));
-    }
-  }, [testQuestions, currentIndex, userAnswers, subjectName, chapterName, numQuestions, paperSubject, filter, difficulty]);
+  // ============================================
+  // CALCULATE RESULTS
+  // ============================================
+  const results = useMemo(() => {
+    if (!showResults) return null;
 
-  if (testQuestions.length === 0) {
+    let correct = 0;
+    let wrong = 0;
+    let unanswered = 0;
+    const details = [];
+
+    questions.forEach((q, index) => {
+      const userAnswer = selectedAnswers[index];
+      const isCorrect = userAnswer === q.correctAnswer;
+      const isUnanswered = !userAnswer;
+
+      if (isUnanswered) unanswered++;
+      else if (isCorrect) correct++;
+      else wrong++;
+
+      details.push({
+        question: q,
+        userAnswer,
+        isCorrect,
+        isUnanswered,
+      });
+    });
+
+    return {
+      total: totalQuestions,
+      correct,
+      wrong,
+      unanswered,
+      percentage: totalQuestions > 0 ? ((correct / totalQuestions) * 100).toFixed(1) : 0,
+      details,
+    };
+  }, [showResults, questions, selectedAnswers, totalQuestions]);
+
+  // ============================================
+  // ERROR: NO QUESTIONS
+  // ============================================
+  if (questions.length === 0 && !showResults) {
     return (
-      <div className="min-h-screen bg-blue-900 p-8 text-center flex items-center justify-center">
-        <div>
-          <h1 className="text-2xl font-bold text-red-400">No questions found for this filter!</h1>
-          <p className="text-blue-200 mt-2">
-            {selectedOriginalChapter ? `Chapter: ${selectedOriginalChapter} | ` : ''}
-            {paperSubject !== 'All' && `Subject: ${paperSubject} | `}
-            {difficulty !== 'All' && `Difficulty: ${difficulty} | `}
-            Filter: {filter}
-          </p>
-          <Link to={`/test-builder/${subjectName}/${chapterName}`} className="text-yellow-400 underline mt-4 inline-block">Go Back</Link>
-        </div>
+      <div style={{ padding: '2rem', textAlign: 'center' }}>
+        <h2>No Questions Available</h2>
+        <p style={{ color: '#6b7280', marginBottom: '1rem' }}>
+          No MCQs found matching the selected filters for this chapter.
+        </p>
+        <p style={{ color: '#6b7280', marginBottom: '1.5rem', fontSize: '0.85rem' }}>
+          {selectedOriginalChapters?.length > 0 && (
+            <span>Chapter filter: {selectedOriginalChapters.join(', ')}<br /></span>
+          )}
+          {subjectCategory && <span>Subject filter: {subjectCategory}<br /></span>}
+          {difficulty && <span>Difficulty filter: {difficulty}<br /></span>}
+        </p>
+        <Link
+          to={`/test-builder/${encodeURIComponent(stateSubjectName || subjectName)}/${encodeURIComponent(stateChapterName || chapterName)}`}
+          style={{ color: '#6366f1', textDecoration: 'none' }}
+        >
+          &larr; Back to Test Builder
+        </Link>
       </div>
     );
   }
 
-  const currentQuestion = testQuestions[currentIndex];
-  const selectedOption = userAnswers[currentQuestion.id];
+  // ============================================
+  // RESULTS SCREEN
+  // ============================================
+  if (showResults && results) {
+    return (
+      <div style={{ maxWidth: '700px', margin: '0 auto', padding: '1.5rem' }}>
+        <h2 style={{ marginBottom: '1rem' }}>Test Results</h2>
 
-  const handleSelectOption = (option) => {
-    if (selectedOption) return; 
-    setUserAnswers({ ...userAnswers, [currentQuestion.id]: option });
-    setShowExplanation(true);
-    const isCorrect = option === currentQuestion.correctAnswer;
-    recordAnswer(currentQuestion.id, isCorrect);
-  };
+        {/* Score Card */}
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(2, 1fr)',
+            gap: '0.8rem',
+            marginBottom: '1.5rem',
+          }}
+        >
+          <div
+            style={{
+              padding: '1rem',
+              backgroundColor: '#f0fdf4',
+              borderRadius: '8px',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#16a34a' }}>
+              {results.correct}
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Correct</div>
+          </div>
+          <div
+            style={{
+              padding: '1rem',
+              backgroundColor: '#fef2f2',
+              borderRadius: '8px',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#dc2626' }}>
+              {results.wrong}
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Wrong</div>
+          </div>
+          <div
+            style={{
+              padding: '1rem',
+              backgroundColor: '#f8fafc',
+              borderRadius: '8px',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#6b7280' }}>
+              {results.unanswered}
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Unanswered</div>
+          </div>
+          <div
+            style={{
+              padding: '1rem',
+              backgroundColor: '#eff6ff',
+              borderRadius: '8px',
+              textAlign: 'center',
+            }}
+          >
+            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#2563eb' }}>
+              {results.percentage}%
+            </div>
+            <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>Score</div>
+          </div>
+        </div>
 
-  const handleNext = () => {
-    if (currentIndex < testQuestions.length - 1) {
-      setCurrentIndex(currentIndex + 1);
-      setShowExplanation(!!userAnswers[testQuestions[currentIndex + 1].id]); 
-    }
-  };
+        {/* Question Review */}
+        <h3 style={{ marginBottom: '0.8rem' }}>Question Review</h3>
+        {results.details.map((detail, index) => {
+          const q = detail.question;
+          const optionLabels = {
+            A: q.optionA,
+            B: q.optionB,
+            C: q.optionC,
+            D: q.optionD,
+          };
 
-  const handlePrevious = () => {
-    if (currentIndex > 0) {
-      setCurrentIndex(currentIndex - 1);
-      setShowExplanation(!!userAnswers[testQuestions[currentIndex - 1].id]); 
-    }
-  };
+          return (
+            <div
+              key={index}
+              style={{
+                padding: '1rem',
+                marginBottom: '0.8rem',
+                border: '1px solid #e5e7eb',
+                borderRadius: '8px',
+                backgroundColor: detail.isCorrect
+                  ? '#f0fdf4'
+                  : detail.isUnanswered
+                  ? '#f8fafc'
+                  : '#fef2f2',
+              }}
+            >
+              <div style={{ fontWeight: 600, marginBottom: '0.5rem' }}>
+                Q{index + 1}. {q.question}
+              </div>
 
-  const handleEndTest = () => {
-    localStorage.removeItem('ak_academy_active_test');
-    subjectCache.clear();
-    navigate('/results', { replace: true, state: { testQuestions, userAnswers, subjectName, chapterName } });
-  };
+              {/* Chapter & Difficulty info */}
+              <div style={{ fontSize: '0.75rem', color: '#9ca3af', marginBottom: '0.5rem' }}>
+                Chapter: {q.originalChapter || 'N/A'} | Subject: {q.category || 'N/A'} | Difficulty: {q.difficulty || 'N/A'}
+              </div>
 
-  const handleExitTest = () => {
-    localStorage.removeItem('ak_academy_active_test');
-    subjectCache.clear();
-    navigate(`/test-builder/${subjectName}/${chapterName}`, { replace: true });
-  };
+              {/* Options */}
+              {['A', 'B', 'C', 'D'].map((opt) => (
+                <div
+                  key={opt}
+                  style={{
+                    padding: '0.4rem 0.6rem',
+                    marginBottom: '0.3rem',
+                    borderRadius: '4px',
+                    fontSize: '0.9rem',
+                    backgroundColor:
+                      opt === q.correctAnswer
+                        ? '#dcfce7'
+                        : opt === detail.userAnswer && opt !== q.correctAnswer
+                        ? '#fee2e2'
+                        : 'transparent',
+                    border:
+                      opt === q.correctAnswer
+                        ? '1px solid #22c55e'
+                        : opt === detail.userAnswer && opt !== q.correctAnswer
+                        ? '1px solid #ef4444'
+                        : '1px solid #e5e7eb',
+                  }}
+                >
+                  <strong>{opt}.</strong> {optionLabels[opt]}
+                  {opt === q.correctAnswer && ' ✓'}
+                  {opt === detail.userAnswer && opt !== q.correctAnswer && ' ✗'}
+                </div>
+              ))}
 
-  const getOptionClass = (option) => {
-    if (!selectedOption) return "bg-white border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-800";
-    if (option === currentQuestion.correctAnswer) return "bg-green-50 border-green-500 text-green-800 font-semibold";
-    if (option === selectedOption) return "bg-red-50 border-red-500 text-red-800 font-semibold";
-    return "bg-white border-gray-200 text-gray-400 opacity-60";
+              {/* Explanation */}
+              {q.explanation && (
+                <div
+                  style={{
+                    marginTop: '0.5rem',
+                    fontSize: '0.85rem',
+                    color: '#4b5563',
+                    padding: '0.5rem',
+                    backgroundColor: '#f9fafb',
+                    borderRadius: '4px',
+                  }}
+                >
+                  <strong>Explanation:</strong> {q.explanation}
+                </div>
+              )}
+            </div>
+          );
+        })}
+
+        {/* Back Button */}
+        <Link
+          to={`/test-builder/${encodeURIComponent(stateSubjectName || subjectName)}/${encodeURIComponent(stateChapterName || chapterName)}`}
+          style={{
+            display: 'inline-block',
+            marginTop: '1rem',
+            padding: '0.7rem 1.5rem',
+            backgroundColor: '#6366f1',
+            color: 'white',
+            borderRadius: '8px',
+            textDecoration: 'none',
+            fontWeight: 600,
+          }}
+        >
+          Back to Test Builder
+        </Link>
+      </div>
+    );
+  }
+
+  // ============================================
+  // QUESTION SCREEN
+  // ============================================
+  const currentQuestion = questions[currentIndex];
+  const currentAnswer = selectedAnswers[currentIndex];
+  const optionMap = {
+    A: currentQuestion?.optionA,
+    B: currentQuestion?.optionB,
+    C: currentQuestion?.optionC,
+    D: currentQuestion?.optionD,
   };
 
   return (
-    <div className="min-h-screen bg-blue-900 p-4 md:p-8">
-      <div className="max-w-3xl mx-auto">
-        
-        <div className="flex justify-between items-center mb-6">
-          <button onClick={handleExitTest} className="text-yellow-400 text-sm font-medium">&larr; Exit Test</button>
-          <button onClick={handleEndTest} className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 text-sm">End Test</button>
+    <div style={{ maxWidth: '700px', margin: '0 auto', padding: '1.5rem' }}>
+      {/* Header */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '1rem',
+        }}
+      >
+        <div>
+          <h3 style={{ margin: 0 }}>{stateChapterName || decodeURIComponent(chapterName)}</h3>
+          <p style={{ margin: 0, fontSize: '0.85rem', color: '#6b7280' }}>
+            {stateSubjectName || decodeURIComponent(subjectName)}
+          </p>
         </div>
-
-        <div className="w-full bg-blue-700 rounded-full h-2.5 mb-6">
-          <div className="bg-yellow-400 h-2.5 rounded-full transition-all duration-300" style={{ width: `${((currentIndex + 1) / testQuestions.length) * 100}%` }}></div>
-        </div>
-
-        <div className="bg-white rounded-2xl shadow-xl border border-blue-800 p-6 md:p-8">
-          <div className="flex justify-between items-start mb-4">
-            <span className="text-sm font-bold text-gray-400">Question {currentIndex + 1} of {testQuestions.length}</span>
-            <button onClick={() => toggleFavourite(currentQuestion.id)} className={`${isFavourite(currentQuestion.id) ? 'text-yellow-500' : 'text-gray-300 hover:text-yellow-400'}`}>
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={isFavourite(currentQuestion.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-            </button>
-          </div>
-
-          <h1 className="text-base md:text-lg font-bold text-blue-900 mb-6 leading-relaxed">{currentQuestion.question}</h1>
-
-          <div className="space-y-3">
-            {['A', 'B', 'C', 'D'].map((option) => (
-              <button key={option} onClick={() => handleSelectOption(option)} disabled={!!selectedOption}
-                className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center ${getOptionClass(option)}`}>
-                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 font-bold mr-4">{option}</span>
-                <span>{currentQuestion[`option${option}`]}</span>
-              </button>
-            ))}
-          </div>
-
-          {showExplanation && (
-            <div className="mt-6 p-5 bg-blue-50 border-l-4 border-blue-500 rounded-r-xl space-y-4">
-              <div>
-                <h3 className="font-bold text-blue-900 mb-1">Explanation</h3>
-                <p className="text-gray-700">{currentQuestion.explanation}</p>
-              </div>
-              <div className="border-t border-blue-200 pt-3 space-y-3">
-                <h4 className="font-semibold text-gray-700 text-sm">Option Breakdown:</h4>
-                {['A', 'B', 'C', 'D'].map(opt => (
-                  <div key={opt} className={`p-3 rounded-lg ${opt === currentQuestion.correctAnswer ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                    <p className={`font-bold text-sm ${opt === currentQuestion.correctAnswer ? 'text-green-800' : 'text-red-800'}`}>
-                      {opt}. {currentQuestion[`option${opt}`]} {opt === currentQuestion.correctAnswer ? '(Correct)' : ''}
-                    </p>
-                    <p className="text-gray-600 text-sm mt-1">{currentQuestion[`explanation${opt}`] || "No specific explanation provided for this option."}</p>
-                  </div>
-                ))}
-              </div>
-              <div className="bg-white p-3 rounded-lg border border-gray-100">
-                <p className="text-sm font-semibold text-gray-500">Summary:</p>
-                <p className="text-sm text-gray-700">{currentQuestion.summary}</p>
-              </div>
+        <div style={{ textAlign: 'right' }}>
+          {timeLeft !== null && (
+            <div
+              style={{
+                fontSize: '1.2rem',
+                fontWeight: 700,
+                color: timeLeft <= 10 ? '#dc2626' : '#16a34a',
+              }}
+            >
+              {Math.floor(timeLeft / 60)}:{String(timeLeft % 60).padStart(2, '0')}
             </div>
           )}
+          <div style={{ fontSize: '0.85rem', color: '#6b7280' }}>
+            {currentIndex + 1} / {totalQuestions}
+          </div>
+        </div>
+      </div>
+
+      {/* Progress Bar */}
+      <div
+        style={{
+          width: '100%',
+          height: '4px',
+          backgroundColor: '#e5e7eb',
+          borderRadius: '2px',
+          marginBottom: '1.5rem',
+        }}
+      >
+        <div
+          style={{
+            width: `${((currentIndex + 1) / totalQuestions) * 100}%`,
+            height: '100%',
+            backgroundColor: '#6366f1',
+            borderRadius: '2px',
+            transition: 'width 0.3s ease',
+          }}
+        />
+      </div>
+
+      {/* Question */}
+      <div
+        style={{
+          padding: '1.5rem',
+          backgroundColor: '#f9fafb',
+          borderRadius: '12px',
+          marginBottom: '1.5rem',
+        }}
+      >
+        <div style={{ fontSize: '1.05rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+          Q{currentIndex + 1}. {currentQuestion.question}
         </div>
 
-        <div className="flex justify-between mt-6">
-          <button onClick={handlePrevious} disabled={currentIndex === 0}
-            className="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed">&larr; Previous</button>
-          {currentIndex < testQuestions.length - 1 ? (
-            <button onClick={handleNext} className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700">Next &rarr;</button>
-          ) : (
-            <button onClick={handleEndTest} className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700">Finish Test</button>
+        {/* MCQ info tags */}
+        <div style={{ fontSize: '0.75rem', color: '#9ca3af' }}>
+          {currentQuestion.originalChapter && (
+            <span style={{ marginRight: '0.8rem' }}>
+              Chapter: {currentQuestion.originalChapter}
+            </span>
           )}
+          {currentQuestion.category && (
+            <span style={{ marginRight: '0.8rem' }}>
+              Subject: {currentQuestion.category}
+            </span>
+          )}
+          {currentQuestion.difficulty && (
+            <span>Difficulty: {currentQuestion.difficulty}</span>
+          )}
+        </div>
+      </div>
+
+      {/* Options */}
+      <div style={{ marginBottom: '1.5rem' }}>
+        {['A', 'B', 'C', 'D'].map((opt) => (
+          <button
+            key={opt}
+            onClick={() => handleAnswerSelect(currentIndex, opt)}
+            style={{
+              display: 'block',
+              width: '100%',
+              padding: '0.8rem 1rem',
+              marginBottom: '0.5rem',
+              border:
+                currentAnswer === opt
+                  ? '2px solid #6366f1'
+                  : '1px solid #d1d5db',
+              borderRadius: '8px',
+              backgroundColor: currentAnswer === opt ? '#eef2ff' : 'white',
+              cursor: 'pointer',
+              textAlign: 'left',
+              fontSize: '0.95rem',
+              transition: 'all 0.2s ease',
+            }}
+          >
+            <strong style={{ marginRight: '0.5rem', color: '#6366f1' }}>{opt}.</strong>
+            {optionMap[opt]}
+          </button>
+        ))}
+      </div>
+
+      {/* Navigation Buttons */}
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          gap: '0.8rem',
+          marginBottom: '1.5rem',
+        }}
+      >
+        <button
+          onClick={goToPrev}
+          disabled={currentIndex === 0}
+          style={{
+            flex: 1,
+            padding: '0.7rem',
+            borderRadius: '8px',
+            border: '1px solid #d1d5db',
+            backgroundColor: currentIndex === 0 ? '#f3f4f6' : 'white',
+            cursor: currentIndex === 0 ? 'not-allowed' : 'pointer',
+            fontWeight: 600,
+          }}
+        >
+          &larr; Previous
+        </button>
+
+        <button
+          onClick={goToNext}
+          style={{
+            flex: 1,
+            padding: '0.7rem',
+            borderRadius: '8px',
+            border: 'none',
+            backgroundColor: '#6366f1',
+            color: 'white',
+            cursor: 'pointer',
+            fontWeight: 600,
+          }}
+        >
+          {currentIndex === totalQuestions - 1 ? 'Finish Test' : 'Next &rarr;'}
+        </button>
+      </div>
+
+      {/* Question Palette */}
+      <div>
+        <div style={{ fontSize: '0.85rem', fontWeight: 600, marginBottom: '0.5rem' }}>
+          Question Navigator
+        </div>
+        <div
+          style={{
+            display: 'flex',
+            flexWrap: 'wrap',
+            gap: '0.4rem',
+          }}
+        >
+          {questions.map((_, index) => {
+            const isAnswered = selectedAnswers[index] !== undefined;
+            const isCurrent = index === currentIndex;
+            return (
+              <button
+                key={index}
+                onClick={() => goToQuestion(index)}
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '6px',
+                  border: isCurrent
+                    ? '2px solid #6366f1'
+                    : '1px solid #d1d5db',
+                  backgroundColor: isAnswered
+                    ? '#6366f1'
+                    : isCurrent
+                    ? '#eef2ff'
+                    : 'white',
+                  color: isAnswered ? 'white' : '#374151',
+                  fontSize: '0.8rem',
+                  fontWeight: isCurrent ? 700 : 400,
+                  cursor: 'pointer',
+                }}
+              >
+                {index + 1}
+              </button>
+            );
+          })}
         </div>
       </div>
     </div>
   );
-}
+};
+
+export default TestEngine;
