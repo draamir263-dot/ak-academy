@@ -12,41 +12,6 @@ const shuffleArray = (array) => {
   return shuffled;
 };
 
-const resolveSubject = (q) => {
-  const cat = (q.category && q.category.toString().trim() !== '')
-    ? q.category.toString().trim()
-    : '';
-
-  if (cat) {
-    const c = cat.toLowerCase();
-    if (c.includes('bio'))     return 'Biology';
-    if (c.includes('chem'))    return 'Chemistry';
-    if (c.includes('phys'))    return 'Physics';
-    if (c.includes('eng'))     return 'English';
-    if (c.includes('log') || c.includes('reason')) return 'Logical Reasoning';
-    return cat;
-  }
-
-  const text = `${q.question} ${q.optionA} ${q.optionB} ${q.optionC} ${q.optionD} ${q.explanation}`.toLowerCase();
-
-  if (text.includes('photosynthesis') || text.includes('mitosis') || text.includes('dna') || text.includes('rna') || text.includes('enzyme') || text.includes('bacteria') || text.includes('virus') || text.includes('ecosystem')) return 'Biology';
-  if (text.includes('periodic') || text.includes('mole') || text.includes('oxidation') || text.includes('alkane') || text.includes('titration') || text.includes('catalyst')) return 'Chemistry';
-  if (text.includes('velocity') || text.includes('momentum') || text.includes('newton') || text.includes('circuit') || text.includes('kinematics') || text.includes('projectile')) return 'Physics';
-  if (text.includes('tense') || text.includes('preposition') || text.includes('synonym') || text.includes('grammar') || text.includes('antonym')) return 'English';
-  if (text.includes('syllogism') || text.includes('deductive') || text.includes('logical') || text.includes('premise')) return 'Logical Reasoning';
-
-  return 'Uncategorized';
-};
-
-let subjectCache = new Map();
-
-const getCachedSubject = (q) => {
-  if (subjectCache.has(q.id)) return subjectCache.get(q.id);
-  const resolved = resolveSubject(q);
-  subjectCache.set(q.id, resolved);
-  return resolved;
-};
-
 export default function TestEngine() {
   const { subjectName, chapterName, numQuestions } = useParams();
   const location = useLocation();
@@ -54,17 +19,15 @@ export default function TestEngine() {
   const { progress, recordAnswer, toggleFavourite, isFavourite } = useProgress();
 
   const filter = location.state?.filter || 'Mixed';
-  const paperSubject = location.state?.paperSubject || 'All';
   const difficulty = location.state?.difficulty || 'All';
-  const selectedOriginalChapter = location.state?.selectedOriginalChapter || null;
 
   const subject = structuredData.find(s => s.name === subjectName);
   const chapter = subject?.chapters.find(c => c.name === chapterName);
-  
+
   const [testQuestions, setTestQuestions] = useState([]);
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [userAnswers, setUserAnswers] = useState({}); 
-  const [showExplanation, setShowExplanation] = useState(false); 
+  const [userAnswers, setUserAnswers] = useState({});
+  const [showExplanation, setShowExplanation] = useState(false);
 
   useEffect(() => {
     const savedTest = localStorage.getItem('ak_academy_active_test');
@@ -74,7 +37,6 @@ export default function TestEngine() {
         parsed.subjectName === subjectName &&
         parsed.chapterName === chapterName &&
         parsed.numQuestions === numQuestions &&
-        parsed.paperSubject === paperSubject &&
         parsed.filter === filter &&
         parsed.difficulty === difficulty
       ) {
@@ -82,26 +44,19 @@ export default function TestEngine() {
         setCurrentIndex(parsed.currentIndex);
         setUserAnswers(parsed.userAnswers);
         setShowExplanation(!!parsed.userAnswers[parsed.testQuestions[parsed.currentIndex]?.id]);
-        parsed.testQuestions.forEach(q => subjectCache.set(q.id, resolveSubject(q)));
         return;
       }
     }
 
+    // chapter.questions already contains ONLY the mcqs whose JSON "subject"
+    // and "chapter" fields match this page — no extra filtering needed there.
     let pool = chapter ? [...chapter.questions] : [];
 
-    // Chapter filter: only include questions from the selected chapter
-    if (selectedOriginalChapter) {
-      pool = pool.filter(q => q.originalChapter === selectedOriginalChapter);
-    }
-
-    if (paperSubject !== 'All') {
-      pool = pool.filter(q => getCachedSubject(q) === paperSubject);
-    }
-
+    // STRICT difficulty match against q.difficulty
     if (difficulty !== 'All') {
       pool = pool.filter(q => {
         if (!q.difficulty) return false;
-        return q.difficulty.toLowerCase() === difficulty.toLowerCase();
+        return q.difficulty.toString().trim().toLowerCase() === difficulty.toLowerCase();
       });
     }
 
@@ -119,8 +74,6 @@ export default function TestEngine() {
 
     const finalPool = shuffleArray(pool).slice(0, parseInt(numQuestions) || 0);
 
-    finalPool.forEach(q => subjectCache.set(q.id, resolveSubject(q)));
-
     setTestQuestions(finalPool);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -128,11 +81,11 @@ export default function TestEngine() {
   useEffect(() => {
     if (testQuestions.length > 0) {
       localStorage.setItem('ak_academy_active_test', JSON.stringify({
-        subjectName, chapterName, numQuestions, paperSubject, filter, difficulty,
+        subjectName, chapterName, numQuestions, filter, difficulty,
         testQuestions, currentIndex, userAnswers
       }));
     }
-  }, [testQuestions, currentIndex, userAnswers, subjectName, chapterName, numQuestions, paperSubject, filter, difficulty]);
+  }, [testQuestions, currentIndex, userAnswers, subjectName, chapterName, numQuestions, filter, difficulty]);
 
   if (testQuestions.length === 0) {
     return (
@@ -140,8 +93,6 @@ export default function TestEngine() {
         <div>
           <h1 className="text-2xl font-bold text-red-400">No questions found for this filter!</h1>
           <p className="text-blue-200 mt-2">
-            {selectedOriginalChapter ? `Chapter: ${selectedOriginalChapter} | ` : ''}
-            {paperSubject !== 'All' && `Subject: ${paperSubject} | `}
             {difficulty !== 'All' && `Difficulty: ${difficulty} | `}
             Filter: {filter}
           </p>
@@ -155,7 +106,7 @@ export default function TestEngine() {
   const selectedOption = userAnswers[currentQuestion.id];
 
   const handleSelectOption = (option) => {
-    if (selectedOption) return; 
+    if (selectedOption) return;
     setUserAnswers({ ...userAnswers, [currentQuestion.id]: option });
     setShowExplanation(true);
     const isCorrect = option === currentQuestion.correctAnswer;
@@ -165,26 +116,24 @@ export default function TestEngine() {
   const handleNext = () => {
     if (currentIndex < testQuestions.length - 1) {
       setCurrentIndex(currentIndex + 1);
-      setShowExplanation(!!userAnswers[testQuestions[currentIndex + 1].id]); 
+      setShowExplanation(!!userAnswers[testQuestions[currentIndex + 1].id]);
     }
   };
 
   const handlePrevious = () => {
     if (currentIndex > 0) {
       setCurrentIndex(currentIndex - 1);
-      setShowExplanation(!!userAnswers[testQuestions[currentIndex - 1].id]); 
+      setShowExplanation(!!userAnswers[testQuestions[currentIndex - 1].id]);
     }
   };
 
   const handleEndTest = () => {
     localStorage.removeItem('ak_academy_active_test');
-    subjectCache.clear();
     navigate('/results', { replace: true, state: { testQuestions, userAnswers, subjectName, chapterName } });
   };
 
   const handleExitTest = () => {
     localStorage.removeItem('ak_academy_active_test');
-    subjectCache.clear();
     navigate(`/test-builder/${subjectName}/${chapterName}`, { replace: true });
   };
 
@@ -198,7 +147,7 @@ export default function TestEngine() {
   return (
     <div className="min-h-screen bg-blue-900 p-4 md:p-8">
       <div className="max-w-3xl mx-auto">
-        
+
         <div className="flex justify-between items-center mb-6">
           <button onClick={handleExitTest} className="text-yellow-400 text-sm font-medium">&larr; Exit Test</button>
           <button onClick={handleEndTest} className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 text-sm">End Test</button>

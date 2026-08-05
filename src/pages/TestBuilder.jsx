@@ -3,65 +3,31 @@ import { structuredData } from '../services/questionLoader';
 import { useState, useEffect, useMemo } from 'react';
 import { useProgress } from '../context/ProgressContext';
 
-const getQuestionSubjectFromText = (q) => {
-  const text = `${q.question} ${q.optionA} ${q.optionB} ${q.optionC} ${q.optionD} ${q.explanation}`.toLowerCase();
-  if (text.includes('photosynthesis') || text.includes('mitosis') || text.includes('dna') || text.includes('rna') || text.includes('enzyme') || text.includes('bacteria') || text.includes('virus') || text.includes('ecosystem')) return 'Biology';
-  if (text.includes('periodic') || text.includes('mole') || text.includes('oxidation') || text.includes('alkane') || text.includes('titration') || text.includes('catalyst')) return 'Chemistry';
-  if (text.includes('velocity') || text.includes('momentum') || text.includes('newton') || text.includes('circuit') || text.includes('kinematics') || text.includes('projectile')) return 'Physics';
-  if (text.includes('tense') || text.includes('preposition') || text.includes('synonym') || text.includes('grammar') || text.includes('antonym')) return 'English';
-  if (text.includes('syllogism') || text.includes('deductive') || text.includes('logical') || text.includes('premise')) return 'Logical Reasoning';
-  return 'Uncategorized';
-};
-
-const getQuestionSubject = (q) => {
-  const cat = (q.category && q.category.toString().trim() !== '') ? q.category.toString().trim() : '';
-  if (cat) {
-    const c = cat.toLowerCase();
-    if (c.includes('bio'))     return 'Biology';
-    if (c.includes('chem'))    return 'Chemistry';
-    if (c.includes('phys'))    return 'Physics';
-    if (c.includes('eng'))     return 'English';
-    if (c.includes('log') || c.includes('reason')) return 'Logical Reasoning';
-    return cat;
-  }
-  return getQuestionSubjectFromText(q);
-};
-
 // Robust finder — handles URL encoding, case differences, and whitespace
 const findSubject = (name) => {
   if (!name) return null;
-  // 1. Exact match
   let found = structuredData.find(s => s.name === name);
   if (found) return found;
-  // 2. Decoded match (handles %20 etc.)
   found = structuredData.find(s => s.name === decodeURIComponent(name));
   if (found) return found;
-  // 3. Case-insensitive match
   found = structuredData.find(s => s.name.toLowerCase() === name.toLowerCase());
   if (found) return found;
-  // 4. Decoded + case-insensitive
   found = structuredData.find(s => decodeURIComponent(s.name).toLowerCase() === decodeURIComponent(name).toLowerCase());
   if (found) return found;
-  // 5. Trimmed match
   found = structuredData.find(s => s.name.trim().toLowerCase() === name.trim().toLowerCase());
   return found;
 };
 
 const findChapter = (subject, name) => {
   if (!subject || !subject.chapters || !name) return null;
-  // 1. Exact match
   let found = subject.chapters.find(c => c.name === name);
   if (found) return found;
-  // 2. Decoded match
   found = subject.chapters.find(c => c.name === decodeURIComponent(name));
   if (found) return found;
-  // 3. Case-insensitive match
   found = subject.chapters.find(c => c.name.toLowerCase() === name.toLowerCase());
   if (found) return found;
-  // 4. Decoded + case-insensitive
   found = subject.chapters.find(c => decodeURIComponent(c.name).toLowerCase() === decodeURIComponent(name).toLowerCase());
   if (found) return found;
-  // 5. Trimmed match
   found = subject.chapters.find(c => c.name.trim().toLowerCase() === name.trim().toLowerCase());
   return found;
 };
@@ -70,66 +36,36 @@ export default function TestBuilder() {
   const { subjectName, chapterName } = useParams();
   const navigate = useNavigate();
   const { progress } = useProgress();
-  
+
   const subject = findSubject(subjectName);
   const chapter = findChapter(subject, chapterName);
 
   const [numQuestions, setNumQuestions] = useState(10);
   const [filter, setFilter] = useState('Mixed');
   const [timerMode, setTimerMode] = useState('Practice');
-  const [paperSubject, setPaperSubject] = useState('All'); 
   const [difficulty, setDifficulty] = useState('All');
-  const [chapterFilter, setChapterFilter] = useState('All Chapters');
 
-  const CORE_SUBJECTS = ['biology', 'chemistry', 'physics', 'english', 'logical reasoning'];
-  const isSpecialPaper = !CORE_SUBJECTS.some(core => subjectName?.toLowerCase().trim() === core);
-
-  const questionSubjects = useMemo(() => {
-    if (!chapter?.questions) return [];
-    return chapter.questions.map(getQuestionSubject);
-  }, [chapter]);
-
-  const availableSubjects = useMemo(() => {
-    const set = new Set(questionSubjects);
-    set.delete('Uncategorized');
-    return ['All', ...Array.from(set).sort()];
-  }, [questionSubjects]);
-
-  const availableChapters = useMemo(() => {
-    if (!chapter?.questions) return [];
-    const chapters = new Set();
-    chapter.questions.forEach((q, idx) => {
-      if (paperSubject !== 'All') {
-        const qSubject = questionSubjects[idx];
-        if (qSubject !== paperSubject) return;
+  // Difficulty options are derived strictly from the "difficulty" field
+  // present on the questions in THIS chapter — nothing else.
+  const availableDifficulties = useMemo(() => {
+    if (!chapter?.questions) return ['All'];
+    const set = new Set();
+    chapter.questions.forEach(q => {
+      if (q.difficulty && q.difficulty.toString().trim() !== '') {
+        set.add(q.difficulty.toString().trim());
       }
-      if (q.originalChapter) chapters.add(q.originalChapter);
     });
-    return ['All Chapters', ...Array.from(chapters).sort()];
-  }, [chapter, paperSubject, questionSubjects]);
-
-  const hasMultipleChapters = availableChapters.length > 2;
-
-  useEffect(() => {
-    setChapterFilter('All Chapters');
-  }, [paperSubject]);
+    return ['All', ...Array.from(set).sort()];
+  }, [chapter]);
 
   const calculateMaxQuestions = () => {
     if (!chapter || !chapter.questions) return 0;
-    return chapter.questions.filter((q, idx) => {
-      if (hasMultipleChapters && chapterFilter !== 'All Chapters') {
-        if (q.originalChapter !== chapterFilter) return false;
-      }
-
-      if (paperSubject !== 'All') {
-        const qSubject = questionSubjects[idx];
-        if (qSubject !== paperSubject) return false;
-      }
-
+    return chapter.questions.filter((q) => {
+      // STRICT difficulty match against q.difficulty
       if (difficulty !== 'All') {
-        if (!q.difficulty || q.difficulty.toLowerCase() !== difficulty.toLowerCase()) return false;
+        if (!q.difficulty || q.difficulty.toString().trim().toLowerCase() !== difficulty.toLowerCase()) return false;
       }
-      
+
       if (filter === 'Mixed') return true;
       if (filter === 'Used') return progress.used.includes(q.id);
       if (filter === 'Unused') return !progress.used.includes(q.id);
@@ -148,11 +84,8 @@ export default function TestBuilder() {
     } else if (numQuestions > maxQuestions || numQuestions === 0) {
       setNumQuestions(maxQuestions);
     }
-  }, [filter, maxQuestions, paperSubject, numQuestions, difficulty, chapterFilter]);
-
-  useEffect(() => {
-    if (!isSpecialPaper) setPaperSubject('All');
-  }, [isSpecialPaper]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filter, maxQuestions, difficulty]);
 
   const handleNumQuestionsClick = (num) => {
     setNumQuestions(Math.min(num, maxQuestions));
@@ -169,26 +102,19 @@ export default function TestBuilder() {
   const startTest = () => {
     if (maxQuestions === 0 || !numQuestions || numQuestions < 1) return;
 
-    // FIX: send as array to match what TestEngine expects
-    const selectedChapters = (hasMultipleChapters && chapterFilter !== 'All Chapters') 
-      ? [chapterFilter] 
-      : null;
-
     navigate(`/test-engine/${encodeURIComponent(subjectName)}/${encodeURIComponent(chapterName)}/${numQuestions}`, {
       state: {
         filter,
-        paperSubject,
         difficulty,
-        selectedOriginalChapters: selectedChapters
       }
     });
   };
 
   if (!subject || !chapter) {
-    const debugInfo = subject 
+    const debugInfo = subject
       ? `Chapters available: ${subject.chapters.map(c => `"${c.name}"`).join(', ')}`
       : `Subjects available: ${structuredData.map(s => `"${s.name}"`).join(', ')}`;
-    
+
     return (
       <div className="min-h-screen aurora-bg p-8 text-center flex items-center justify-center relative overflow-hidden">
         <div className="aurora-blob b1" />
@@ -249,7 +175,7 @@ export default function TestBuilder() {
         <Link to={`/subject/${encodeURIComponent(subject.name)}`} className="aurora-back mb-6 inline-block px-4 py-2 rounded-lg font-semibold text-sm">
           &larr; Back to {subject.name}
         </Link>
-        
+
         <header className="mb-8 text-center">
           <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight aurora-title">{chapter.name}</h1>
           <p className="text-sm md:text-lg font-semibold italic mt-2" style={{ color: '#ffe9a8' }}>
@@ -258,55 +184,11 @@ export default function TestBuilder() {
         </header>
 
         <div className="aurora-card rounded-2xl p-6 sm:p-8 space-y-8">
-          
-          {/* Subject Category */}
-          {isSpecialPaper && availableSubjects.length > 2 && (
-            <div>
-              <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Subject Category</label>
-              <select 
-                value={paperSubject}
-                onChange={(e) => setPaperSubject(e.target.value)}
-                className="aurora-input w-full p-2.5 rounded-lg focus:outline-none"
-              >
-                {availableSubjects.map(sub => (
-                  <option key={sub} value={sub}>
-                    {sub === 'All' ? 'All Subjects' : `${sub} Only`}
-                  </option>
-                ))}
-              </select>
-              {paperSubject !== 'All' && (
-                <p className="text-xs mt-1.5" style={{ color: '#b8d4ff', opacity: 0.8 }}>
-                  Showing {maxQuestions} {paperSubject} MCQs
-                </p>
-              )}
-            </div>
-          )}
-
-          {/* Chapter Filter — dropdown that updates based on Subject Category */}
-          {hasMultipleChapters && (
-            <div>
-              <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Chapter Filter</label>
-              <select 
-                value={chapterFilter}
-                onChange={(e) => setChapterFilter(e.target.value)}
-                className="aurora-input w-full p-2.5 rounded-lg focus:outline-none"
-              >
-                {availableChapters.map(ch => (
-                  <option key={ch} value={ch}>{ch}</option>
-                ))}
-              </select>
-              {chapterFilter !== 'All Chapters' && (
-                <p className="text-xs mt-1.5" style={{ color: '#b8d4ff', opacity: 0.8 }}>
-                  Showing {maxQuestions} MCQs from chapter: {chapterFilter}
-                </p>
-              )}
-            </div>
-          )}
 
           {/* Question Filter */}
           <div>
             <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Question Filter</label>
-            <select 
+            <select
               value={filter}
               onChange={(e) => setFilter(e.target.value)}
               className="aurora-input w-full p-2.5 rounded-lg focus:outline-none"
@@ -320,23 +202,25 @@ export default function TestBuilder() {
             </select>
           </div>
 
-          {/* Difficulty Level */}
-          <div>
-            <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Difficulty Level</label>
-            <div className="flex flex-wrap gap-2">
-              {['All', 'Easy', 'Medium', 'Hard'].map((level) => (
-                <button 
-                  key={level}
-                  onClick={() => setDifficulty(level)}
-                  className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                    difficulty === level ? 'aurora-chip-active' : 'aurora-chip'
-                  }`}
-                >
-                  {level === 'All' ? 'All Levels' : level}
-                </button>
-              ))}
+          {/* Difficulty Level — strictly from q.difficulty */}
+          {availableDifficulties.length > 1 && (
+            <div>
+              <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Difficulty Level</label>
+              <div className="flex flex-wrap gap-2">
+                {availableDifficulties.map((level) => (
+                  <button
+                    key={level}
+                    onClick={() => setDifficulty(level)}
+                    className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
+                      difficulty === level ? 'aurora-chip-active' : 'aurora-chip'
+                    }`}
+                  >
+                    {level === 'All' ? 'All Levels' : level}
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Number of Questions */}
           <div>
@@ -346,11 +230,11 @@ export default function TestBuilder() {
             </label>
             <div className="flex flex-wrap gap-2">
               {[10, 20, 30, 50, 75, 100].map(num => (
-                <button 
+                <button
                   key={num}
                   onClick={() => handleNumQuestionsClick(num)}
                   className={`px-4 py-2 rounded-lg font-semibold transition-colors ${
-                    numQuestions === num ? 'aurora-chip-active' : 
+                    numQuestions === num ? 'aurora-chip-active' :
                     num > maxQuestions ? 'aurora-chip-disabled' : 'aurora-chip'
                   }`}
                   disabled={num > maxQuestions}
@@ -360,7 +244,7 @@ export default function TestBuilder() {
               ))}
             </div>
             <div className="flex items-center mt-4">
-              <input 
+              <input
                 type="number" min="1" max={maxQuestions} value={numQuestions}
                 onChange={handleCustomInputChange}
                 disabled={maxQuestions === 0}
@@ -374,11 +258,11 @@ export default function TestBuilder() {
           <div>
             <label className="block text-lg font-bold text-white mb-3" style={{ textShadow: '0 2px 10px rgba(0,0,0,0.15)' }}>Timer Mode</label>
             <div className="flex flex-wrap gap-2 mb-4">
-              <button 
+              <button
                 onClick={() => setTimerMode('Practice')}
                 className={`px-4 py-2 rounded-lg font-semibold ${timerMode === 'Practice' ? 'aurora-chip-active' : 'aurora-chip'}`}
               >Practice Mode (No Timer)</button>
-              <button 
+              <button
                 onClick={() => setTimerMode('Timed')}
                 className={`px-4 py-2 rounded-lg font-semibold ${timerMode === 'Timed' ? 'aurora-chip-active' : 'aurora-chip'}`}
               >Timed Mode</button>
