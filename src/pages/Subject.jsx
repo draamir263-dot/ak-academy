@@ -1,32 +1,40 @@
 import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
 import { structuredData } from '../services/questionLoader';
-import { useState, useEffect, useMemo } from 'react';
+import { useAuth } from '../context/AuthContext';
 import { useProgress } from '../context/ProgressContext';
 
-const getQuestionSubjectFromText = (q) => {
-  const text = `${q.question} ${q.optionA} ${q.optionB} ${q.optionC} ${q.optionD} ${q.explanation}`.toLowerCase();
-  if (text.includes('photosynthesis') || text.includes('mitosis') || text.includes('dna') || text.includes('rna') || text.includes('enzyme') || text.includes('bacteria') || text.includes('virus') || text.includes('ecosystem')) return 'Biology';
-  if (text.includes('periodic') || text.includes('mole') || text.includes('oxidation') || text.includes('alkane') || text.includes('titration') || text.includes('catalyst')) return 'Chemistry';
-  if (text.includes('velocity') || text.includes('momentum') || text.includes('newton') || text.includes('circuit') || text.includes('kinematics') || text.includes('projectile')) return 'Physics';
-  if (text.includes('tense') || text.includes('preposition') || text.includes('synonym') || text.includes('grammar') || text.includes('antonym')) return 'English';
-  if (text.includes('syllogism') || text.includes('deductive') || text.includes('logical') || text.includes('premise')) return 'Logical Reasoning';
-  return 'Uncategorized';
+// Helper component for the Circular Progress Ring
+const CircularProgress = ({ percentage, isLocked }) => {
+  const r = 16;
+  const c = 2 * Math.PI * r;
+  const offset = c - (percentage / 100) * c;
+
+  return (
+    <div className="relative w-12 h-12 flex items-center justify-center flex-shrink-0">
+      <svg className="w-12 h-12 transform -rotate-90" viewBox="0 0 36 36">
+        <circle cx="18" cy="18" r="16" fill="none" stroke="currentColor" strokeWidth="3" className="text-slate-200 dark:text-slate-700"></circle>
+        {!isLocked && (
+          <circle 
+            cx="18" cy="18" r="16" 
+            fill="none" 
+            strokeDasharray={c} 
+            strokeDashoffset={offset} 
+            strokeLinecap="round" 
+            strokeWidth="3" 
+            className="text-indigo-600 dark:text-indigo-400"
+            style={{ stroke: 'currentColor' }}
+          ></circle>
+        )}
+      </svg>
+      <span className="absolute text-[10px] font-bold text-slate-700 dark:text-slate-200">
+        {isLocked ? '🔒' : `${percentage}%`}
+      </span>
+    </div>
+  );
 };
 
-const getQuestionSubject = (q) => {
-  const cat = (q.category && q.category.toString().trim() !== '') ? q.category.toString().trim() : '';
-  if (cat) {
-    const c = cat.toLowerCase();
-    if (c.includes('bio')) return 'Biology';
-    if (c.includes('chem')) return 'Chemistry';
-    if (c.includes('phys')) return 'Physics';
-    if (c.includes('eng')) return 'English';
-    if (c.includes('log') || c.includes('reason')) return 'Logical Reasoning';
-    return cat;
-  }
-  return getQuestionSubjectFromText(q);
-};
-
+// Robust finder — handles URL encoding, case differences, and whitespace
 const findSubject = (name) => {
   if (!name) return null;
   let found = structuredData.find(s => s.name === name);
@@ -41,259 +49,213 @@ const findSubject = (name) => {
   return found;
 };
 
-const findChapter = (subject, name) => {
-  if (!subject || !subject.chapters || !name) return null;
-  let found = subject.chapters.find(c => c.name === name);
-  if (found) return found;
-  found = subject.chapters.find(c => c.name === decodeURIComponent(name));
-  if (found) return found;
-  found = subject.chapters.find(c => c.name.toLowerCase() === name.toLowerCase());
-  if (found) return found;
-  found = subject.chapters.find(c => decodeURIComponent(c.name).toLowerCase() === decodeURIComponent(name).toLowerCase());
-  if (found) return found;
-  found = subject.chapters.find(c => c.name.trim().toLowerCase() === name.trim().toLowerCase());
-  return found;
-};
-
-export default function TestBuilder() {
-  const { subjectName, chapterName } = useParams();
+export default function Subject() {
+  const { subjectName } = useParams();
   const navigate = useNavigate();
+  const { currentUser, isPremium } = useAuth();
   const { progress } = useProgress();
-  
-  const subject = findSubject(subjectName);
-  const chapter = findChapter(subject, chapterName);
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const [numQuestions, setNumQuestions] = useState(10);
-  const [filter, setFilter] = useState('Mixed');
-  const [timerMode, setTimerMode] = useState('Practice');
-  const [timerMinutes, setTimerMinutes] = useState(15);
-  const [paperSubject, setPaperSubject] = useState('All'); 
-  const [difficulty, setDifficulty] = useState('All');
-  const [chapterFilter, setChapterFilter] = useState('All Chapters');
-
-  const CORE_SUBJECTS = ['biology', 'chemistry', 'physics', 'english', 'logical reasoning'];
-  const isSpecialPaper = !CORE_SUBJECTS.some(core => subjectName?.toLowerCase().trim() === core);
-
-  const questionSubjects = useMemo(() => {
-    if (!chapter?.questions) return [];
-    return chapter.questions.map(getQuestionSubject);
-  }, [chapter]);
-
-  const availableSubjects = useMemo(() => {
-    const set = new Set(questionSubjects);
-    set.delete('Uncategorized');
-    return ['All', ...Array.from(set).sort()];
-  }, [questionSubjects]);
-
-  const availableChapters = useMemo(() => {
-    if (!chapter?.questions) return [];
-    const chapters = new Set();
-    chapter.questions.forEach((q, idx) => {
-      if (paperSubject !== 'All') {
-        const qSubject = questionSubjects[idx];
-        if (qSubject !== paperSubject) return;
-      }
-      if (q.originalChapter) chapters.add(q.originalChapter);
-    });
-    return ['All Chapters', ...Array.from(chapters).sort()];
-  }, [chapter, paperSubject, questionSubjects]);
-
-  const hasMultipleChapters = availableChapters.length > 2;
-
-  useEffect(() => { setChapterFilter('All Chapters'); }, [paperSubject]);
-
-  const calculateMaxQuestions = () => {
-    if (!chapter || !chapter.questions) return 0;
-    return chapter.questions.filter((q, idx) => {
-      if (hasMultipleChapters && chapterFilter !== 'All Chapters') {
-        if (q.originalChapter !== chapterFilter) return false;
-      }
-      if (paperSubject !== 'All') {
-        const qSubject = questionSubjects[idx];
-        if (qSubject !== paperSubject) return false;
-      }
-      if (difficulty !== 'All') {
-        if (!q.difficulty || q.difficulty.toLowerCase() !== difficulty.toLowerCase()) return false;
-      }
-      if (filter === 'Mixed') return true;
-      if (filter === 'Used') return progress.used.includes(q.id);
-      if (filter === 'Unused') return !progress.used.includes(q.id);
-      if (filter === 'Correct') return progress.correct.includes(q.id);
-      if (filter === 'Incorrect') return progress.incorrect.includes(q.id);
-      if (filter === 'Favourite') return progress.favourites.includes(q.id);
-      return true;
-    }).length;
-  };
-
-  const maxQuestions = calculateMaxQuestions();
-
+  // Save the last opened subject path to localStorage for the "Library" button on Home
   useEffect(() => {
-    if (maxQuestions === 0) setNumQuestions(0);
-    else if (numQuestions > maxQuestions || numQuestions === 0) setNumQuestions(maxQuestions);
-  }, [filter, maxQuestions, paperSubject, numQuestions, difficulty, chapterFilter]);
+    if (subjectName) {
+      localStorage.setItem('lastOpenedPath', `/subject/${subjectName}`);
+    }
+  }, [subjectName]);
 
-  useEffect(() => { if (!isSpecialPaper) setPaperSubject('All'); }, [isSpecialPaper]);
+  // Safely extract the 'used' array which contains all answered question IDs
+  const used = progress?.used || [];
 
-  const handleNumQuestionsClick = (num) => setNumQuestions(Math.min(num, maxQuestions));
+  // Use the robust finder function here
+  const subject = findSubject(subjectName);
 
-  const handleCustomInputChange = (e) => {
-    const val = e.target.value;
-    if (val === '') { setNumQuestions(''); return; }
-    const num = parseInt(val, 10);
-    if (isNaN(num)) { setNumQuestions(''); }
-    else { setNumQuestions(Math.min(Math.max(1, num), maxQuestions)); }
+  // Fallback colors for different subjects
+  const subjectConfig = {
+    "Biology": { bg: "from-green-500 to-emerald-600", text: "text-green-600 dark:text-green-400", bgLight: "bg-green-50 dark:bg-green-900/20", ring: "text-green-500" },
+    "Chemistry": { bg: "from-orange-500 to-amber-600", text: "text-orange-600 dark:text-orange-400", bgLight: "bg-orange-50 dark:bg-orange-900/20", ring: "text-orange-500" },
+    "Physics": { bg: "from-blue-500 to-indigo-600", text: "text-blue-600 dark:text-blue-400", bgLight: "bg-blue-50 dark:bg-blue-900/20", ring: "text-blue-500" },
+    "English": { bg: "from-purple-500 to-fuchsia-600", text: "text-purple-600 dark:text-purple-400", bgLight: "bg-purple-50 dark:bg-purple-900/20", ring: "text-purple-500" },
+    "Logical": { bg: "from-pink-500 to-rose-600", text: "text-pink-600 dark:text-pink-400", bgLight: "bg-pink-50 dark:bg-pink-900/20", ring: "text-pink-500" },
   };
+  const config = subjectConfig[subjectName] || { bg: "from-slate-700 to-slate-900", text: "text-slate-600 dark:text-slate-300", bgLight: "bg-slate-100 dark:bg-slate-700", ring: "text-slate-500" };
 
-  const handleCustomTimeChange = (e) => {
-    const val = e.target.value;
-    if (val === '') { setTimerMinutes(''); return; }
-    const num = parseInt(val, 10);
-    if (isNaN(num)) { setTimerMinutes(''); }
-    else { setTimerMinutes(Math.max(1, num)); }
-  };
-
-  const startTest = () => {
-    if (maxQuestions === 0 || !numQuestions || numQuestions < 1) return;
-    const selectedChapters = (hasMultipleChapters && chapterFilter !== 'All Chapters') ? [chapterFilter] : null;
-    navigate(`/test-engine/${encodeURIComponent(subjectName)}/${encodeURIComponent(chapterName)}/${numQuestions}`, {
-      state: { filter, paperSubject, difficulty, selectedOriginalChapters: selectedChapters, timerMode, timerMinutes: timerMode === 'Timed' ? timerMinutes : null }
-    });
-  };
-
-  if (!subject || !chapter) {
-    const debugInfo = subject ? `Chapters available: ${subject.chapters.map(c => `"${c.name}"`).join(', ')}` : `Subjects available: ${structuredData.map(s => `"${s.name}"`).join(', ')}`;
+  if (!subject) {
     return (
-      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-8 text-center flex items-center justify-center text-slate-800 dark:text-slate-200 transition-colors">
-        <div className="max-w-md">
-          <h1 className="text-2xl font-bold text-red-400 mb-4">Chapter not found!</h1>
-          <p className="text-slate-500 dark:text-slate-400 text-sm mb-2">Looking for: {subjectName} / {chapterName}</p>
-          <p className="text-slate-500 dark:text-slate-400 text-xs mb-6 break-all">{debugInfo}</p>
-          <Link to="/" className="text-indigo-400 underline inline-block">Go Home</Link>
-        </div>
+      <div className="min-h-screen bg-slate-50 dark:bg-slate-900 p-8 text-center flex flex-col items-center justify-center">
+        <h1 className="text-2xl font-bold text-red-500 mb-4">Subject not found!</h1>
+        <Link to="/" className="text-indigo-600 font-semibold bg-indigo-50 dark:bg-indigo-900/20 dark:text-indigo-400 px-4 py-2 rounded-lg">Go Back Home</Link>
       </div>
     );
   }
 
+  const totalMcqsCount = subject.totalMcqs || subject.chapters.reduce((acc, ch) => acc + (ch.questions?.length || 0), 0);
+  
+  // Calculate ACTUAL Overall Subject Progress
+  let totalSolvedInSubject = 0;
+  let totalQuestionsInSubject = 0;
+
+  subject.chapters.forEach(ch => {
+    const total = ch.questions?.length || 0;
+    const solved = ch.questions?.filter(q => used.includes(q.id)).length || 0;
+    totalSolvedInSubject += solved;
+    totalQuestionsInSubject += total;
+  });
+
+  const overallProgress = totalQuestionsInSubject > 0 ? Math.round((totalSolvedInSubject / totalQuestionsInSubject) * 100) : 0;
+
+  const sortedChapters = [...subject.chapters].sort((a, b) => {
+    const aIsDemo = a.name.toLowerCase().includes("demo");
+    const bIsDemo = b.name.toLowerCase().includes("demo");
+    if (aIsDemo && !bIsDemo) return -1;
+    if (!aIsDemo && bIsDemo) return 1;
+    return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
+  });
+
+  // Filter logic for search only
+  const filteredChapters = sortedChapters.filter(chapter => {
+    return chapter.name.toLowerCase().includes(searchQuery.toLowerCase());
+  });
+
+  // Helper to get ACTUAL chapter progress
+  const getActualChapterProgress = (chapter) => {
+    if (!chapter.questions || chapter.questions.length === 0) return 0;
+    const solved = chapter.questions.filter(q => used.includes(q.id)).length;
+    return Math.round((solved / chapter.questions.length) * 100);
+  };
+
+  const handleLibraryClick = () => {
+    const lastPath = localStorage.getItem('lastOpenedPath');
+    navigate(lastPath || '/');
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 p-4 md:p-8 transition-colors duration-300">
-      <div className="max-w-3xl mx-auto">
-        <Link to={`/subject/${encodeURIComponent(subject.name)}`} className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-indigo-400 mb-8 transition-colors text-sm">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
-          Back to {subject.name}
-        </Link>
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 dark:text-slate-100 font-sans pb-24 transition-colors duration-300">
+      
+      {/* Header Section */}
+      <div className={`bg-gradient-to-br ${config.bg} px-5 pt-10 pb-16 rounded-b-[2.5rem] text-white relative overflow-hidden shadow-xl`}>
+        <div className="absolute top-0 right-0 w-48 h-48 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
+        <div className="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-10 rounded-full -ml-12 -mb-12"></div>
         
-        <header className="mb-10 flex flex-col md:flex-row items-center justify-between gap-8">
-          <div className="text-center md:text-left">
-            <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">Build Your Perfect Test</h1>
-            <p className="text-base md:text-lg font-medium mt-3 text-slate-500 dark:text-slate-400">Customize your test and start practicing smartly.</p>
-            <p className="text-lg font-semibold italic mt-4 text-indigo-600 dark:text-indigo-400">✦ {chapter.questions?.length || 0} Total MCQs in {chapter.name} ✦</p>
-          </div>
-          
-          <div className="hidden md:flex relative w-52 h-44 items-center justify-center flex-shrink-0">
-            <div className="absolute bottom-4 left-4 w-24 h-10 rounded-lg bg-indigo-600 shadow-2xl flex items-center justify-center transform rotate-6 border border-indigo-400/50 z-10">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-            </div>
-            <div className="absolute bottom-12 left-0 w-24 h-10 rounded-lg bg-purple-600 shadow-2xl flex items-center justify-center transform -rotate-6 border border-purple-400/50 z-0">
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
-            </div>
-            <div className="absolute top-0 right-2 w-20 h-20 rounded-full bg-red-500 shadow-2xl flex items-center justify-center border-4 border-red-300 z-20">
-              <svg className="w-10 h-10 text-white" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="13" r="8"></circle><path d="M12 9v4l2 2"></path><path d="M9 2h6"></path><path d="M12 2v3"></path></svg>
-            </div>
-            <div className="absolute top-12 right-8 w-28 h-32 rounded-xl bg-white dark:bg-slate-700 shadow-2xl flex flex-col items-center p-3 border border-slate-200 dark:border-slate-600 transform rotate-3 z-10">
-              <div className="w-14 h-4 bg-slate-200 dark:bg-slate-600 rounded mb-3"></div>
-              <div className="w-full flex flex-col gap-2 mt-1">
-                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center"><svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" strokeWidth="4" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg></div><div className="w-12 h-2 bg-slate-200 dark:bg-slate-600 rounded-full"></div></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-green-500 rounded-full flex items-center justify-center"><svg className="w-2 h-2 text-white" fill="none" stroke="currentColor" strokeWidth="4" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg></div><div className="w-10 h-2 bg-slate-200 dark:bg-slate-600 rounded-full"></div></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-slate-300 dark:bg-slate-500 rounded-full"></div><div className="w-14 h-2 bg-slate-200 dark:bg-slate-600 rounded-full"></div></div>
-                <div className="flex items-center gap-2"><div className="w-3 h-3 bg-slate-300 dark:bg-slate-500 rounded-full"></div><div className="w-8 h-2 bg-slate-200 dark:bg-slate-600 rounded-full"></div></div>
-              </div>
-            </div>
-          </div>
-        </header>
-
-        <div className="bg-white dark:bg-slate-800 border border-slate-100 dark:border-slate-700 rounded-2xl p-6 md:p-8 space-y-8 shadow-xl transition-colors">
-          
-          {isSpecialPaper && availableSubjects.length > 2 && (
-            <div>
-              <label className="flex items-center gap-2 text-base font-bold text-slate-700 dark:text-slate-200 mb-3">📚 Subject Category</label>
-              <select value={paperSubject} onChange={(e) => setPaperSubject(e.target.value)} className="w-full p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
-                {availableSubjects.map(sub => (<option key={sub} value={sub}>{sub === 'All' ? 'All Subjects' : `${sub} Only`}</option>))}
-              </select>
-              {paperSubject !== 'All' && (<p className="text-xs mt-2 text-indigo-500 dark:text-indigo-400">Showing {maxQuestions} {paperSubject} MCQs</p>)}
-            </div>
-          )}
-
-          {hasMultipleChapters && (
-            <div>
-              <label className="flex items-center gap-2 text-base font-bold text-slate-700 dark:text-slate-200 mb-3">📖 Chapter Filter</label>
-              <select value={chapterFilter} onChange={(e) => setChapterFilter(e.target.value)} className="w-full p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
-                {availableChapters.map(ch => (<option key={ch} value={ch}>{ch}</option>))}
-              </select>
-              {chapterFilter !== 'All Chapters' && (<p className="text-xs mt-2 text-indigo-500 dark:text-indigo-400">Showing {maxQuestions} MCQs from chapter: {chapterFilter}</p>)}
-            </div>
-          )}
-
-          <div>
-            <label className="flex items-center gap-2 text-base font-bold text-slate-700 dark:text-slate-200 mb-3">🔍 Question Filter</label>
-            <select value={filter} onChange={(e) => setFilter(e.target.value)} className="w-full p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 transition-all">
-              <option value="Mixed">Mixed (All Questions)</option><option value="Unused">Unused Questions</option><option value="Used">Used Questions</option><option value="Correct">Correct Questions</option><option value="Incorrect">Incorrect Questions</option><option value="Favourite">Favourite Questions</option>
-            </select>
-          </div>
-
-          <div>
-            <label className="flex items-center gap-2 text-base font-bold text-slate-700 dark:text-slate-200 mb-3">🎯 Difficulty Level</label>
-            <div className="flex flex-wrap gap-3">
-              {['All', 'Easy', 'Medium', 'Hard'].map((level) => (
-                <button key={level} onClick={() => setDifficulty(level)} className={`px-5 py-2.5 rounded-lg font-semibold transition-all ${difficulty === level ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600'}`}>
-                  {level === 'All' ? 'All Levels' : level}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <label className="flex items-center gap-2 text-base font-bold text-slate-700 dark:text-slate-200 mb-3">🔢 Number of Questions <span className="ml-2 text-xs font-medium text-slate-400">({maxQuestions} available)</span></label>
-            <div className="flex flex-wrap gap-3">
-              {[10, 20, 30, 50, 75, 100].map(num => (
-                <button key={num} onClick={() => handleNumQuestionsClick(num)} className={`px-5 py-2.5 rounded-lg font-semibold transition-all ${numQuestions === num ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : num > maxQuestions ? 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed border border-slate-100 dark:border-slate-700' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600'}`} disabled={num > maxQuestions}>{num}</button>
-              ))}
-            </div>
-            <div className="flex items-center mt-4 gap-3">
-              <input type="number" min="1" max={maxQuestions} value={numQuestions} onChange={handleCustomInputChange} disabled={maxQuestions === 0} className="w-32 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500 disabled:opacity-50" />
-              <span className="text-sm text-slate-500 dark:text-slate-400">Custom (Max: {maxQuestions})</span>
-            </div>
-          </div>
-
-          <div>
-            <label className="flex items-center gap-2 text-base font-bold text-slate-700 dark:text-slate-200 mb-3">⏱️ Timer Mode</label>
-            <div className="flex flex-wrap gap-3 mb-4">
-              <button onClick={() => setTimerMode('Practice')} className={`px-5 py-2.5 rounded-lg font-semibold transition-all ${timerMode === 'Practice' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600'}`}>Practice Mode (No Timer)</button>
-              <button onClick={() => setTimerMode('Timed')} className={`px-5 py-2.5 rounded-lg font-semibold transition-all ${timerMode === 'Timed' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600'}`}>Timed Mode</button>
-            </div>
-            {timerMode === 'Timed' && (
-              <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-4">
-                <div className="flex items-center gap-2">
-                  <input type="number" min="1" max="300" value={timerMinutes} onChange={handleCustomTimeChange} className="w-24 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-center focus:outline-none focus:ring-2 focus:ring-indigo-500" placeholder="Min" />
-                  <span className="text-sm text-slate-500 dark:text-slate-400">Minutes</span>
-                </div>
-                <div className="flex flex-wrap gap-2">
-                  {[15, 30, 60, 90].map(min => (
-                    <button key={min} onClick={() => setTimerMinutes(min)} className={`px-4 py-2 rounded-lg text-sm font-semibold transition-all ${timerMinutes === min ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-600/30' : 'bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600'}`}>{min}m</button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-
-          {maxQuestions === 0 ? (
-            <div className="w-full py-4 rounded-xl font-bold text-lg text-center bg-red-500/10 text-red-500 border border-red-500/30">No questions match this filter yet!</div>
-          ) : (
-            <button onClick={startTest} className="w-full py-4 rounded-xl font-bold text-lg bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white transition-all shadow-lg shadow-indigo-600/30 flex items-center justify-center gap-2">
-              Start Test <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M14 5l7 7m0 0l-7 7m7-7H3" /></svg>
+        <div className="relative z-10">
+          <div className="flex justify-between items-center mb-6">
+            <Link to="/" className="flex items-center text-white text-sm font-semibold">
+              <svg className="w-5 h-5 mr-1" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+              Back
+            </Link>
+            <button className="w-9 h-9 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
             </button>
-          )}
+          </div>
+
+          <div className="flex items-center gap-4">
+            <div className="w-16 h-16 bg-white/20 border border-white/30 rounded-2xl flex items-center justify-center text-3xl">
+              📚
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">{subject.name}</h1>
+              <p className="text-sm opacity-90 mt-1">{totalMcqsCount.toLocaleString()} MCQs | {subject.chapters.length} Chapters</p>
+            </div>
+          </div>
+
+          {/* Overall Progress - Actual */}
+          <div className="mt-6">
+            <div className="flex justify-between text-xs font-medium mb-1.5">
+              <span className="opacity-90">Overall Progress</span>
+              <span className="font-bold">{overallProgress}%</span>
+            </div>
+            <div className="w-full h-2.5 bg-white/30 rounded-full overflow-hidden">
+              <div className="h-full bg-white rounded-full transition-all duration-500" style={{ width: `${overallProgress}%` }}></div>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Search Bar Floating Card */}
+      <div className="px-5 -mt-8 relative z-20">
+        <div className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-lg border border-slate-100 dark:border-slate-700 transition-colors">
+          <div className="relative">
+            <svg className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
+            <input 
+              type="text" 
+              placeholder="Search chapters..." 
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full pl-10 pr-4 py-2.5 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-700 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-slate-800 transition-all"
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Chapter List */}
+      <div className="px-5 mt-6 space-y-3">
+        {filteredChapters.length > 0 ? (
+          filteredChapters.map((chapter, index) => {
+            const isLocked = !chapter.name.toLowerCase().includes("demo") && (!currentUser || !isPremium);
+            const chapterMcqCount = chapter.totalMcqs || chapter.questions?.length || 0;
+            // Get actual progress
+            const actualProgress = getActualChapterProgress(chapter);
+
+            return (
+              <Link
+                key={index} 
+                to={isLocked ? (currentUser ? "/payment" : "/login") : `/test-builder/${encodeURIComponent(subject.name)}/${encodeURIComponent(chapter.name)}`}
+                className="bg-white dark:bg-slate-800 p-4 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 flex items-center justify-between hover:shadow-md transition-shadow w-full text-left"
+              >
+                <div className="flex items-center gap-3 flex-1 min-w-0">
+                  <div className={`w-10 h-10 rounded-full ${config.bgLight} ${config.text} flex items-center justify-center font-bold text-sm flex-shrink-0`}>
+                    {String(index + 1).padStart(2, '0')}
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm truncate">{chapter.name}</h3>
+                    <p className="text-xs text-slate-400 dark:text-slate-500 mt-0.5">{chapterMcqCount} MCQs</p>
+                  </div>
+                </div>
+
+                <div className="flex items-center gap-3 ml-2">
+                  <div className={config.ring}>
+                    <CircularProgress percentage={actualProgress} isLocked={isLocked} />
+                  </div>
+                  {!isLocked && (
+                    <svg className="w-5 h-5 text-slate-300 dark:text-slate-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+                  )}
+                </div>
+              </Link>
+            );
+          })
+        ) : (
+          <div className="text-center py-10 text-slate-400 dark:text-slate-500 text-sm">No chapters found matching your search.</div>
+        )}
+      </div>
+
+      {/* Bottom Banner */}
+      <div className="px-5 mt-8">
+        <div className={`bg-gradient-to-r ${config.bg} rounded-2xl p-5 text-center text-white shadow-md relative overflow-hidden`}>
+          <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-10 rounded-full -mr-8 -mt-8"></div>
+          <h3 className="font-bold text-base relative z-10">Master {subject.name}</h3>
+          <p className="text-white/80 text-xs mt-1 relative z-10">Unlock all chapters to maximize your score!</p>
+        </div>
+      </div>
+
+      {/* Fixed Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 flex justify-around py-3 px-5 rounded-t-2xl shadow-2xl z-50 transition-colors duration-300">
+        <Link to="/" className="flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+          <span className="text-[10px] mt-1 font-medium">Home</span>
+        </Link>
+        <button onClick={handleLibraryClick} className="flex flex-col items-center text-indigo-600 dark:text-indigo-400">
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" /></svg>
+          <span className="text-[10px] mt-1 font-bold">Library</span>
+        </button>
+        <Link to="/dashboard" className="flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
+          <span className="text-[10px] mt-1 font-medium">Stats</span>
+        </Link>
+        <Link to="/profile" className="flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          <span className="text-[10px] mt-1 font-medium">Profile</span>
+        </Link>
+      </div>
+
     </div>
   );
 }
