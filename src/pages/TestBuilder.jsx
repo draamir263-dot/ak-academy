@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
 import { useParams, useLocation, useNavigate, Link } from 'react-router-dom';
-import { structuredData } from '../data/questionLoader';
+import { structuredData } from '../service/questionLoader.js';
 
 const TestBuilder = () => {
   const { subjectName, chapterName } = useParams();
