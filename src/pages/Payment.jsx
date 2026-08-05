@@ -93,87 +93,87 @@ export default function Payment() {
   const bankInfo = paymentInfo?.faySalBank || paymentInfo?.faysalBank || null;
 
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans pb-24">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 dark:text-slate-100 p-4 md:p-8 font-sans pb-24 transition-colors duration-300">
       <div className="max-w-2xl mx-auto">
-        <Link to="/" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 transition-colors text-sm font-semibold">
+        <Link to="/" className="inline-flex items-center gap-2 text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white mb-6 transition-colors text-sm font-semibold">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
           Back to Home
         </Link>
         
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-5 md:p-8 space-y-6">
+        <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-100 dark:border-slate-700 p-5 md:p-8 space-y-6 transition-colors">
           <div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-800 mb-1">Unlock MedLife</h1>
-            <p className="text-sm text-slate-500">Get access to 50,000+ MCQs, Mock Exams, and Performance Analytics.</p>
+            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-slate-800 dark:text-slate-100 mb-1">Unlock MedLife</h1>
+            <p className="text-sm text-slate-500 dark:text-slate-400">Get access to 50,000+ MCQs, Mock Exams, and Performance Analytics.</p>
           </div>
 
           {isUpgrade && (
-            <div className="p-4 bg-indigo-50 border border-indigo-200 text-indigo-700 rounded-xl text-sm">
+            <div className="p-4 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 rounded-xl text-sm">
               <p className="font-bold mb-1">Upgrade Calculation</p>
               <p>You've used <strong>{daysSpent} days</strong> of your current plan.</p>
               <p>Remaining value: <strong>{remainingValue} PKR</strong></p>
-              <p className="mt-2 text-green-600 font-bold">Amount due for upgrade: {amountToPay} PKR</p>
+              <p className="mt-2 text-green-600 dark:text-green-400 font-bold">Amount due for upgrade: {amountToPay} PKR</p>
             </div>
           )}
 
           {/* Plans Grid - Compact for Mobile */}
           <div>
-            <h3 className="text-sm font-bold text-slate-800 mb-3">Select a Plan</h3>
+            <h3 className="text-sm font-bold text-slate-800 dark:text-slate-100 mb-3">Select a Plan</h3>
             <div className="grid grid-cols-2 md:grid-cols-3 gap-2.5">
               {Object.entries(PLANS)
                 .filter(([key]) => key !== '3_Months') 
                 .map(([key, config]) => (
                 <div 
                   key={key}
-                  className={`p-3 rounded-xl cursor-pointer flex flex-col justify-between transition-all ${plan === key ? 'bg-indigo-50 border-2 border-indigo-500 ring-2 ring-indigo-500/20' : 'bg-slate-50 border border-slate-200 hover:border-indigo-400'}`} 
+                  className={`p-3 rounded-xl cursor-pointer flex flex-col justify-between transition-all ${plan === key ? 'bg-indigo-50 dark:bg-indigo-900/20 border-2 border-indigo-500 ring-2 ring-indigo-500/20' : 'bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 hover:border-indigo-400'}`} 
                   onClick={() => setPlan(key)}
                 >
-                  <h3 className={`font-bold text-sm ${plan === key ? 'text-indigo-700' : 'text-slate-700'}`}>{config.label}</h3>
-                  <p className={`text-lg font-extrabold mt-1 ${plan === key ? 'text-indigo-800' : 'text-slate-800'}`}>{config.price} PKR</p>
-                  <p className={`text-[10px] mt-1 ${plan === key ? 'text-indigo-500' : 'text-slate-400'}`}>{config.desc}</p>
+                  <h3 className={`font-bold text-sm ${plan === key ? 'text-indigo-700 dark:text-indigo-300' : 'text-slate-700 dark:text-slate-300'}`}>{config.label}</h3>
+                  <p className={`text-lg font-extrabold mt-1 ${plan === key ? 'text-indigo-800 dark:text-indigo-200' : 'text-slate-800 dark:text-slate-100'}`}>{config.price} PKR</p>
+                  <p className={`text-[10px] mt-1 ${plan === key ? 'text-indigo-500 dark:text-indigo-400' : 'text-slate-400 dark:text-slate-500'}`}>{config.desc}</p>
                 </div>
               ))}
             </div>
           </div>
 
           {/* Payment Info */}
-          <div className="bg-slate-50 p-4 rounded-xl border border-slate-200 space-y-3">
-            <h3 className="font-bold text-slate-800 text-sm">Transfer {isUpgrade ? 'the upgrade amount' : 'the amount'} to:</h3>
+          <div className="bg-slate-50 dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-700 space-y-3 transition-colors">
+            <h3 className="font-bold text-slate-800 dark:text-slate-100 text-sm">Transfer {isUpgrade ? 'the upgrade amount' : 'the amount'} to:</h3>
             
             {paymentInfo?.jazzCashSadapay && (
-              <div className="border-b border-slate-200 pb-3">
-                <p className="font-semibold text-slate-700 text-sm">JazzCash / SadaPay</p>
-                <p className="text-slate-500 text-xs mt-1">Title: {paymentInfo.jazzCashSadapay.accountName}</p>
-                <p className="text-slate-500 text-xs">Number: {paymentInfo.jazzCashSadapay.accountNumber}</p>
+              <div className="border-b border-slate-200 dark:border-slate-700 pb-3">
+                <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm">JazzCash / SadaPay</p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Title: {paymentInfo.jazzCashSadapay.accountName}</p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs">Number: {paymentInfo.jazzCashSadapay.accountNumber}</p>
               </div>
             )}
 
             {bankInfo && (
               <div>
-                <p className="font-semibold text-slate-700 text-sm">Faysal Bank</p>
-                <p className="text-slate-500 text-xs mt-1">Title: {bankInfo.accountName}</p>
-                <p className="text-slate-500 text-xs">Account Number: {bankInfo.accountNumber}</p>
+                <p className="font-semibold text-slate-700 dark:text-slate-300 text-sm">Faysal Bank</p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs mt-1">Title: {bankInfo.accountName}</p>
+                <p className="text-slate-500 dark:text-slate-400 text-xs">Account Number: {bankInfo.accountNumber}</p>
               </div>
             )}
 
-            <p className="text-xs text-red-500 mt-2">*After transferring <strong>{amountToPay} PKR</strong>, enter your Transaction ID below.</p>
+            <p className="text-xs text-red-500 dark:text-red-400 mt-2">*After transferring <strong>{amountToPay} PKR</strong>, enter your Transaction ID below.</p>
           </div>
 
           {/* Contact Admin */}
-          <div className="bg-blue-50 border border-blue-100 p-3 rounded-xl text-center">
-            <p className="text-xs text-blue-800">Having issues with payments or upgrades?</p>
-            <p className="text-xs text-blue-800 mt-1">
-              Contact Admin: <a href={`mailto:${paymentInfo?.contactEmail || ''}`} className="font-bold text-blue-600 hover:text-blue-700 underline">{paymentInfo?.contactEmail || 'Loading...'}</a>
+          <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800 p-3 rounded-xl text-center transition-colors">
+            <p className="text-xs text-blue-800 dark:text-blue-300">Having issues with payments or upgrades?</p>
+            <p className="text-xs text-blue-800 dark:text-blue-300 mt-1">
+              Contact Admin: <a href={`mailto:${paymentInfo?.contactEmail || ''}`} className="font-bold text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline">{paymentInfo?.contactEmail || 'Loading...'}</a>
             </p>
           </div>
 
           {message && (
-            <div className="p-3 bg-green-50 border border-green-200 text-green-700 rounded-xl text-sm text-center">
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-300 rounded-xl text-sm text-center transition-colors">
               {message}
             </div>
           )}
 
           {user?.paymentStatus === 'rejected' && (
-            <div className="p-3 bg-red-50 border border-red-200 text-red-600 rounded-xl text-sm text-center font-bold">
+            <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 rounded-xl text-sm text-center font-bold transition-colors">
               Your previous payment request was rejected (Invalid Transaction ID).<br /> 
               Please verify and submit the correct Transaction ID below.
             </div>
@@ -182,13 +182,13 @@ export default function Payment() {
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4 pt-2">
             <div>
-              <label className="block text-xs font-bold text-slate-600 uppercase tracking-wide mb-2">JazzCash / Bank Transaction ID</label>
+              <label className="block text-xs font-bold text-slate-600 dark:text-slate-400 uppercase tracking-wide mb-2">JazzCash / Bank Transaction ID</label>
               <input 
                 type="text" 
                 required 
                 value={trxId}
                 onChange={(e) => setTrxId(e.target.value)}
-                className="w-full p-3 rounded-lg bg-slate-50 border border-slate-200 text-slate-800 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
+                className="w-full p-3 rounded-lg bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-800 dark:text-slate-100 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white dark:focus:bg-slate-800 transition-all"
                 placeholder="e.g. TXN123456789"
               />
             </div>
@@ -196,7 +196,7 @@ export default function Payment() {
             <button 
               type="submit" 
               disabled={loading}
-              className="w-full py-3.5 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 disabled:opacity-60"
+              className="w-full py-3.5 rounded-xl font-semibold text-white bg-indigo-600 hover:bg-indigo-700 dark:bg-indigo-500 dark:hover:bg-indigo-600 transition-colors shadow-md shadow-indigo-600/20 flex items-center justify-center gap-2 disabled:opacity-60"
             >
               {loading ? 'Submitting...' : `Submit Payment Request (${amountToPay} PKR)`}
             </button>
@@ -205,20 +205,20 @@ export default function Payment() {
       </div>
 
       {/* Fixed Bottom Navigation */}
-      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-100 flex justify-around py-3 px-5 rounded-t-2xl shadow-2xl z-50">
-        <button onClick={() => navigate('/')} className="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition-colors">
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 flex justify-around py-3 px-5 rounded-t-2xl shadow-2xl z-50 transition-colors duration-300">
+        <button onClick={() => navigate('/')} className="flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
           <span className="text-[10px] mt-1 font-medium">Home</span>
         </button>
-        <button onClick={() => navigate('/')} className="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition-colors">
+        <button onClick={() => navigate('/')} className="flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
           <span className="text-[10px] mt-1 font-medium">Library</span>
         </button>
-        <Link to="/dashboard" className="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition-colors">
+        <Link to="/dashboard" className="flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
           <span className="text-[10px] mt-1 font-medium">Stats</span>
         </Link>
-        <Link to="/profile" className="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition-colors">
+        <Link to="/profile" className="flex flex-col items-center text-slate-400 dark:text-slate-500 hover:text-indigo-600 dark:hover:text-indigo-400 transition-colors">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
           <span className="text-[10px] mt-1 font-medium">Profile</span>
         </Link>
