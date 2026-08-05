@@ -51,7 +51,7 @@ export default function TestEngine() {
   const { subjectName, chapterName, numQuestions } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { progress, recordAnswer, toggleFavourite, isFavourite } = useProgress();
+  const { progress, recordAnswer } = useProgress(); // Removed toggleFavourite/isFavourite as per request
 
   const filter = location.state?.filter || 'Mixed';
   const paperSubject = location.state?.paperSubject || 'All';
@@ -89,7 +89,6 @@ export default function TestEngine() {
 
     let pool = chapter ? [...chapter.questions] : [];
 
-    // Chapter filter: only include questions from selected original chapters
     if (selectedOriginalChapters && selectedOriginalChapters.length > 0) {
       pool = pool.filter(q => selectedOriginalChapters.includes(q.originalChapter));
     }
@@ -136,16 +135,18 @@ export default function TestEngine() {
 
   if (testQuestions.length === 0) {
     return (
-      <div className="min-h-screen bg-blue-900 p-8 text-center flex items-center justify-center">
-        <div>
-          <h1 className="text-2xl font-bold text-red-400">No questions found for this filter!</h1>
-          <p className="text-blue-200 mt-2">
+      <div className="min-h-screen bg-slate-50 p-8 text-center flex items-center justify-center">
+        <div className="bg-white p-8 rounded-2xl shadow-sm border border-slate-100 max-w-md">
+          <h1 className="text-xl font-bold text-slate-800 mb-2">No questions found for this filter!</h1>
+          <p className="text-slate-500 text-sm mt-2 mb-4">
             {selectedOriginalChapters ? `${selectedOriginalChapters.length} chapters selected | ` : ''}
-            {paperSubject !== 'All' && `Subject filter: ${paperSubject} | `}
+            {paperSubject !== 'All' && `Subject: ${paperSubject} | `}
             {difficulty !== 'All' && `Difficulty: ${difficulty} | `}
             Filter: {filter}
           </p>
-          <Link to={`/test-builder/${subjectName}/${chapterName}`} className="text-yellow-400 underline mt-4 inline-block">Go Back</Link>
+          <Link to={`/test-builder/${subjectName}/${chapterName}`} className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-indigo-700 inline-block">
+            Go Back
+          </Link>
         </div>
       </div>
     );
@@ -195,7 +196,7 @@ export default function TestEngine() {
 
   const getOptionClass = (option) => {
     if (!selectedOption) {
-      return "bg-white border-gray-200 hover:border-blue-400 hover:bg-blue-50 text-gray-800";
+      return "bg-white border-slate-200 hover:border-indigo-400 hover:bg-indigo-50 text-slate-800";
     }
     if (option === currentQuestion.correctAnswer) {
       return "bg-green-50 border-green-500 text-green-800 font-semibold"; 
@@ -203,47 +204,51 @@ export default function TestEngine() {
     if (option === selectedOption) {
       return "bg-red-50 border-red-500 text-red-800 font-semibold"; 
     }
-    return "bg-white border-gray-200 text-gray-400 opacity-60"; 
+    return "bg-white border-slate-200 text-slate-400 opacity-70"; 
   };
 
   return (
-    <div className="min-h-screen bg-blue-900 p-4 md:p-8">
-      <div className="max-w-3xl mx-auto">
-        
-        <div className="flex justify-between items-center mb-6">
-          <button onClick={handleExitTest} className="text-yellow-400 text-sm font-medium">&larr; Exit Test</button>
-          <button 
-            onClick={handleEndTest}
-            className="bg-red-500 text-white px-4 py-2 rounded-lg font-semibold hover:bg-red-600 text-sm"
-          >
-            End Test
+    <div className="min-h-screen bg-slate-50 flex flex-col">
+      
+      {/* Sticky Top Header */}
+      <div className="sticky top-0 bg-white z-10 shadow-sm border-b border-slate-100">
+        <div className="max-w-3xl mx-auto px-4 py-3 flex justify-between items-center gap-4">
+          <button onClick={handleExitTest} className="text-slate-500 hover:text-slate-900 transition-colors flex-shrink-0">
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
           </button>
+          
+          {/* Chapter Name Title */}
+          <h1 className="font-bold text-slate-800 text-sm sm:text-base truncate flex-1 text-center">
+            {chapterName}
+          </h1>
+          
+          {/* Small Question Counter */}
+          <div className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1.5 rounded-lg flex-shrink-0">
+            {currentIndex + 1} / {testQuestions.length}
+          </div>
         </div>
-
-        <div className="w-full bg-blue-700 rounded-full h-2.5 mb-6">
+        
+        {/* Slim Progress Bar */}
+        <div className="w-full bg-slate-100 h-1.5">
           <div 
-            className="bg-yellow-400 h-2.5 rounded-full transition-all duration-300" 
+            className="bg-indigo-600 h-1.5 rounded-r-full transition-all duration-300" 
             style={{ width: `${((currentIndex + 1) / testQuestions.length) * 100}%` }}
           ></div>
         </div>
+      </div>
 
-        <div className="bg-white rounded-2xl shadow-xl border border-blue-800 p-6 md:p-8">
-          <div className="flex justify-between items-start mb-4">
-            <span className="text-sm font-bold text-gray-400">
-              Question {currentIndex + 1} of {testQuestions.length}
+      <div className="flex-1 max-w-3xl w-full mx-auto p-4 md:p-6">
+        
+        <div className="bg-white rounded-2xl shadow-sm border border-slate-100 p-6 md:p-8">
+          
+          <div className="mb-6">
+            <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-2 py-1 rounded-md uppercase tracking-wider">
+              Question {currentIndex + 1}
             </span>
-            
-            <button 
-              onClick={() => toggleFavourite(currentQuestion.id)} 
-              className={`${isFavourite(currentQuestion.id) ? 'text-yellow-500' : 'text-gray-300 hover:text-yellow-400'}`}
-            >
-              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill={isFavourite(currentQuestion.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
-            </button>
+            <h2 className="text-lg md:text-xl font-bold text-slate-800 mt-3 leading-relaxed">
+              {currentQuestion.question}
+            </h2>
           </div>
-
-          <h1 className="text-base md:text-lg font-bold text-blue-900 mb-6 leading-relaxed">
-            {currentQuestion.question}
-          </h1>
 
           <div className="space-y-3">
             {['A', 'B', 'C', 'D'].map((option) => (
@@ -251,69 +256,107 @@ export default function TestEngine() {
                 key={option}
                 onClick={() => handleSelectOption(option)}
                 disabled={!!selectedOption}
-                className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center ${getOptionClass(option)}`}
+                className={`w-full text-left p-4 rounded-xl border-2 transition-all flex items-center justify-between ${getOptionClass(option)}`}
               >
-                <span className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 font-bold mr-4">
-                  {option}
-                </span>
-                <span>{currentQuestion[`option${option}`]}</span>
+                <div className="flex items-center">
+                  <span className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-bold mr-4 transition-colors ${
+                    selectedOption && option === currentQuestion.correctAnswer ? 'bg-green-500 text-white' :
+                    selectedOption && option === selectedOption ? 'bg-red-500 text-white' : 'bg-slate-100 text-slate-600'
+                  }`}>
+                    {option}
+                  </span>
+                  <span className="text-sm md:text-base">{currentQuestion[`option${option}`]}</span>
+                </div>
+
+                {/* Checkmark & Cross Icons */}
+                {selectedOption && option === currentQuestion.correctAnswer && (
+                  <svg className="w-6 h-6 text-green-500 flex-shrink-0 ml-2" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                )}
+                {selectedOption && option === selectedOption && option !== currentQuestion.correctAnswer && (
+                  <svg className="w-6 h-6 text-red-500 flex-shrink-0 ml-2" fill="none" stroke="currentColor" strokeWidth="2.5" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+                )}
               </button>
             ))}
           </div>
 
+          {/* Explanation Section */}
           {showExplanation && (
-            <div className="mt-6 p-5 bg-blue-50 border-l-4 border-blue-500 rounded-r-xl space-y-4">
-              <div>
-                <h3 className="font-bold text-blue-900 mb-1">Explanation</h3>
-                <p className="text-gray-700">{currentQuestion.explanation}</p>
+            <div className="mt-6 space-y-4">
+              <div className="p-5 bg-indigo-50 border-l-4 border-indigo-500 rounded-r-xl">
+                <div className="flex items-center gap-2 mb-2">
+                  <svg className="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+                  <h3 className="font-bold text-indigo-900">Explanation</h3>
+                </div>
+                <p className="text-slate-700 text-sm leading-relaxed">{currentQuestion.explanation}</p>
               </div>
               
-              <div className="border-t border-blue-200 pt-3 space-y-3">
-                <h4 className="font-semibold text-gray-700 text-sm">Option Breakdown:</h4>
+              <div className="space-y-3">
+                <h4 className="font-semibold text-slate-700 text-sm px-1">Option Breakdown:</h4>
                 {['A', 'B', 'C', 'D'].map(opt => (
-                  <div key={opt} className={`p-3 rounded-lg ${opt === currentQuestion.correctAnswer ? 'bg-green-50 border border-green-200' : 'bg-red-50 border border-red-200'}`}>
-                    <p className={`font-bold text-sm ${opt === currentQuestion.correctAnswer ? 'text-green-800' : 'text-red-800'}`}>
-                      {opt}. {currentQuestion[`option${opt}`]} {opt === currentQuestion.correctAnswer ? '(Correct)' : ''}
-                    </p>
-                    <p className="text-gray-600 text-sm mt-1">
+                  <div key={opt} className={`p-3 rounded-xl border ${opt === currentQuestion.correctAnswer ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                    <div className="flex items-center justify-between">
+                      <p className={`font-bold text-sm ${opt === currentQuestion.correctAnswer ? 'text-green-800' : 'text-red-800'}`}>
+                        Option {opt}: {currentQuestion[`option${opt}`]}
+                      </p>
+                      {opt === currentQuestion.correctAnswer ? (
+                         <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-0.5 rounded">Correct</span>
+                      ) : (
+                         <span className="text-xs font-bold text-red-600 bg-red-100 px-2 py-0.5 rounded">Incorrect</span>
+                      )}
+                    </div>
+                    <p className="text-slate-600 text-xs mt-1.5 leading-relaxed pl-1">
                       {currentQuestion[`explanation${opt}`] || "No specific explanation provided for this option."}
                     </p>
                   </div>
                 ))}
               </div>
 
-              <div className="bg-white p-3 rounded-lg border border-gray-100">
-                <p className="text-sm font-semibold text-gray-500">Summary:</p>
-                <p className="text-sm text-gray-700">{currentQuestion.summary}</p>
+              <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
+                <p className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1">Summary</p>
+                <p className="text-sm text-slate-700">{currentQuestion.summary}</p>
               </div>
             </div>
           )}
         </div>
 
-        <div className="flex justify-between mt-6">
+        {/* Footer Navigation Buttons */}
+        <div className="flex gap-3 mt-6">
           <button 
             onClick={handlePrevious}
             disabled={currentIndex === 0}
-            className="bg-gray-200 text-gray-700 px-6 py-3 rounded-lg font-semibold hover:bg-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 bg-white border border-slate-200 text-slate-700 py-3.5 rounded-xl font-semibold hover:bg-slate-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
           >
-            &larr; Previous
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
+            Previous
           </button>
           
           {currentIndex < testQuestions.length - 1 ? (
             <button 
               onClick={handleNext}
-              className="bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-blue-700"
+              className="flex-1 bg-indigo-600 text-white py-3.5 rounded-xl font-semibold hover:bg-indigo-700 transition-colors flex items-center justify-center gap-2 shadow-md shadow-indigo-600/20"
             >
-              Next &rarr;
+              Next
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
             </button>
           ) : (
             <button 
               onClick={handleEndTest}
-              className="bg-green-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-green-700"
+              className="flex-1 bg-green-500 text-white py-3.5 rounded-xl font-semibold hover:bg-green-600 transition-colors flex items-center justify-center gap-2 shadow-md shadow-green-500/20"
             >
               Finish Test
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
             </button>
           )}
+        </div>
+
+        {/* End Test Button (Separate) */}
+        <div className="text-center mt-4 mb-8">
+          <button 
+            onClick={handleEndTest}
+            className="text-xs font-semibold text-slate-400 hover:text-red-500 transition-colors"
+          >
+            End Test & View Results
+          </button>
         </div>
 
       </div>
