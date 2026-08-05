@@ -5,7 +5,7 @@ import { useProgress } from '../context/ProgressContext';
 import { structuredData } from '../services/questionLoader';
 
 // Reusable Circular Progress Component
-const CircularProgress = ({ percentage, size = 80, stroke = 7, color = "#4f46e5", trackColor = "#e2e8f0", label }) => {
+const CircularProgress = ({ percentage, size = 80, stroke = 7, color = "#4f46e5" }) => {
   const radius = (size - stroke) / 2;
   const circumference = 2 * Math.PI * radius;
   const offset = circumference - (percentage / 100) * circumference;
@@ -14,14 +14,13 @@ const CircularProgress = ({ percentage, size = 80, stroke = 7, color = "#4f46e5"
     <div className="relative flex flex-col items-center justify-center flex-shrink-0">
       <div className="relative" style={{ width: size, height: size }}>
         <svg className="w-full h-full transform -rotate-90" viewBox={`0 0 ${size} ${size}`}>
-          <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="currentColor" strokeWidth={stroke} className={`text-slate-100 dark:text-slate-700`}></circle>
+          <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke="currentColor" strokeWidth={stroke} className="text-slate-100 dark:text-slate-700"></circle>
           <circle cx={size/2} cy={size/2} r={radius} fill="none" stroke={color} strokeWidth={stroke} strokeDasharray={circumference} strokeDashoffset={offset} strokeLinecap="round" className="transition-all duration-700 ease-out"></circle>
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
           <span className="font-extrabold text-slate-800 dark:text-slate-100" style={{ fontSize: size / 4.5 }}>{percentage}%</span>
         </div>
       </div>
-      {label && <span className="mt-1.5 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider whitespace-nowrap">{label}</span>}
     </div>
   );
 };
@@ -31,6 +30,7 @@ export default function Dashboard() {
   const { progress, resetChapterProgress, resetSubjectProgress } = useProgress();
   const [openSubject, setOpenSubject] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0); // Force re-render state
+  const [resetTarget, setResetTarget] = useState(null); // For custom modal
   const navigate = useNavigate();
 
   // Overall Stats
@@ -41,83 +41,53 @@ export default function Dashboard() {
   const overallAccuracy = totalUsed > 0 ? Math.round((totalCorrect / totalUsed) * 100) : 0;
   const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)) : 0;
 
-  const handleResetChapter = (chapter) => {
-    if (window.confirm(`Are you sure you want to reset all progress for "${chapter.name}"?`)) {
-      // Try calling context function
+  const handleConfirmReset = () => {
+    if (!resetTarget) return;
+
+    // Check if it's a chapter or subject based on whether it has a 'questions' array
+    const isChapter = !!resetTarget.questions;
+
+    if (isChapter) {
       if (typeof resetChapterProgress === 'function') {
-        resetChapterProgress(chapter.name);
+        resetChapterProgress(resetTarget.name);
       } else {
-        // Fallback: manually filter and save to localStorage
-        const cIds = new Set(chapter.questions.map(q => q.id));
+        // Manual Fallback
+        const cIds = new Set(resetTarget.questions.map(q => q.id));
         const newProgress = {
           used: progress.used.filter(id => !cIds.has(id)),
           correct: progress.correct.filter(id => !cIds.has(id)),
           incorrect: progress.incorrect.filter(id => !cIds.has(id)),
           favourites: progress.favourites.filter(id => !cIds.has(id))
         };
-        let updated = false;
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key.toLowerCase().includes('progress')) {
-            try {
-              const parsed = JSON.parse(localStorage.getItem(key));
-              if (parsed && Array.isArray(parsed.used)) {
-                localStorage.setItem(key, JSON.stringify(newProgress));
-                updated = true;
-              }
-            } catch(e) {}
-          }
-        }
-        if (!updated) localStorage.setItem('ak_academy_progress', JSON.stringify(newProgress));
+        localStorage.setItem('ak_academy_progress', JSON.stringify(newProgress));
         window.location.reload();
-        return;
       }
-      // Force UI to update instantly
-      setRefreshKey(prev => prev + 1);
-    }
-  };
-
-  const handleResetSubject = (subject) => {
-    if (window.confirm(`Are you sure you want to reset ALL progress for "${subject.name}"?`)) {
+    } else {
+      // It's a subject
       if (typeof resetSubjectProgress === 'function') {
-        resetSubjectProgress(subject.name);
+        resetSubjectProgress(resetTarget.name);
       } else {
-        // Fallback: manually filter and save to localStorage
-        const sIds = new Set(subject.chapters.flatMap(c => c.questions.map(q => q.id)));
+        // Manual Fallback
+        const sIds = new Set(resetTarget.chapters.flatMap(c => c.questions.map(q => q.id)));
         const newProgress = {
           used: progress.used.filter(id => !sIds.has(id)),
           correct: progress.correct.filter(id => !sIds.has(id)),
           incorrect: progress.incorrect.filter(id => !sIds.has(id)),
           favourites: progress.favourites.filter(id => !sIds.has(id))
         };
-        let updated = false;
-        for (let i = 0; i < localStorage.length; i++) {
-          const key = localStorage.key(i);
-          if (key.toLowerCase().includes('progress')) {
-            try {
-              const parsed = JSON.parse(localStorage.getItem(key));
-              if (parsed && Array.isArray(parsed.used)) {
-                localStorage.setItem(key, JSON.stringify(newProgress));
-                updated = true;
-              }
-            } catch(e) {}
-          }
-        }
-        if (!updated) localStorage.setItem('ak_academy_progress', JSON.stringify(newProgress));
+        localStorage.setItem('ak_academy_progress', JSON.stringify(newProgress));
         window.location.reload();
-        return;
       }
-      setRefreshKey(prev => prev + 1);
     }
+
+    setRefreshKey(prev => prev + 1);
+    setResetTarget(null);
   };
 
   const handleLibraryClick = () => {
     const lastPath = localStorage.getItem('lastOpenedPath');
     navigate(lastPath || '/');
   };
-
-  // refreshKey is used here to force recalculation if state mutation happened
-  const progressData = progress; 
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-slate-900 dark:text-slate-100 p-4 md:p-8 font-sans pb-24 transition-colors duration-300" key={refreshKey}>
@@ -173,8 +143,8 @@ export default function Dashboard() {
         <div className="space-y-4 mb-8">
           {structuredData.map((subject) => {
             const subjectIds = subject.chapters.flatMap(c => c.questions.map(q => q.id));
-            const sUsed = subjectIds.filter(id => progressData.used.includes(id)).length;
-            const sCorrect = subjectIds.filter(id => progressData.correct.includes(id)).length;
+            const sUsed = subjectIds.filter(id => progress.used.includes(id)).length;
+            const sCorrect = subjectIds.filter(id => progress.correct.includes(id)).length;
             const sAcc = sUsed > 0 ? Math.round((sCorrect / sUsed) * 100) : 0;
             const isOpen = openSubject === subject.name;
             const subjectColor = sAcc >= 60 ? '#10b981' : sAcc > 0 ? '#ef4444' : '#cbd5e1';
@@ -192,7 +162,11 @@ export default function Dashboard() {
                   </div>
                   <div className="flex items-center gap-3">
                     {sUsed > 0 && sAcc < 60 && (<span className="hidden sm:block text-xs font-bold text-red-600 bg-red-100 dark:bg-red-900/30 dark:text-red-400 px-2 py-1 rounded">Needs Work</span>)}
-                    <button onClick={(e) => { e.stopPropagation(); handleResetSubject(subject); }} className="text-[10px] font-bold text-red-500 hover:text-red-600 transition-colors px-2 py-1 rounded border border-red-200 dark:border-red-900/50 dark:bg-red-900/20">
+                    <button 
+                      type="button"
+                      onClick={(e) => { e.stopPropagation(); setResetTarget(subject); }} 
+                      className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors px-3 py-2 rounded-lg border border-red-200 dark:border-red-900/50 dark:bg-red-900/20"
+                    >
                       Reset All
                     </button>
                     <span className="text-slate-400 dark:text-slate-500"><svg className={`w-5 h-5 transform transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" /></svg></span>
@@ -204,9 +178,9 @@ export default function Dashboard() {
                   <div className="border-t border-slate-100 dark:border-slate-700 bg-slate-50 dark:bg-slate-900/50 p-4 space-y-3">
                     {subject.chapters.map(chapter => {
                       const cIds = chapter.questions.map(q => q.id);
-                      const cUsed = cIds.filter(id => progressData.used.includes(id)).length;
-                      const cCorrect = cIds.filter(id => progressData.correct.includes(id)).length;
-                      const cIncorrect = cIds.filter(id => progressData.incorrect.includes(id)).length;
+                      const cUsed = cIds.filter(id => progress.used.includes(id)).length;
+                      const cCorrect = cIds.filter(id => progress.correct.includes(id)).length;
+                      const cIncorrect = cIds.filter(id => progress.incorrect.includes(id)).length;
                       const cAcc = cUsed > 0 ? Math.round((cCorrect / cUsed) * 100) : 0;
                       const progressWidth = chapter.totalMcqs > 0 ? Math.round((cUsed / chapter.totalMcqs) * 100) : 0;
                       const chapterColor = cAcc >= 60 ? '#10b981' : cAcc > 0 ? '#ef4444' : '#cbd5e1';
@@ -223,7 +197,11 @@ export default function Dashboard() {
                           </div>
                           <div className="flex items-center gap-4 flex-shrink-0">
                             {cUsed > 0 && (
-                              <button onClick={() => handleResetChapter(chapter)} className="text-[10px] font-bold text-red-500 hover:text-red-600 transition-colors px-2 py-1 rounded border border-red-200 dark:border-red-900/50 dark:bg-red-900/20">
+                              <button 
+                                type="button"
+                                onClick={() => setResetTarget(chapter)} 
+                                className="text-xs font-bold text-red-500 hover:text-red-600 transition-colors px-3 py-2 rounded-lg border border-red-200 dark:border-red-900/50 dark:bg-red-900/20"
+                              >
                                 Reset
                               </button>
                             )}
@@ -239,6 +217,33 @@ export default function Dashboard() {
           })}
         </div>
       </div>
+
+      {/* Custom Reset Confirmation Modal (Replaces window.confirm for mobile compatibility) */}
+      {resetTarget && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4" onClick={() => setResetTarget(null)}>
+          <div className="bg-white dark:bg-slate-800 rounded-2xl p-6 shadow-2xl border border-slate-100 dark:border-slate-700 max-w-sm w-full text-center transition-colors" onClick={(e) => e.stopPropagation()}>
+            <div className="w-16 h-16 mx-auto bg-red-50 dark:bg-red-900/20 rounded-full flex items-center justify-center mb-4">
+              <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M9 7V4a1 1 0 011-1h4a1 1 0 011 1v3" /></svg>
+            </div>
+            <h2 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Reset Progress?</h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Are you sure you want to reset all progress for "{resetTarget.name}"? This action cannot be undone.</p>
+            <div className="flex gap-3">
+              <button 
+                onClick={() => setResetTarget(null)} 
+                className="flex-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 py-3 rounded-xl font-semibold hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+              >
+                Cancel
+              </button>
+              <button 
+                onClick={handleConfirmReset} 
+                className="flex-1 bg-red-500 text-white py-3 rounded-xl font-semibold hover:bg-red-600 transition-colors"
+              >
+                Reset
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Fixed Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white dark:bg-slate-800 border-t border-slate-100 dark:border-slate-700 flex justify-around py-3 px-5 rounded-t-2xl shadow-2xl z-50 transition-colors duration-300">
