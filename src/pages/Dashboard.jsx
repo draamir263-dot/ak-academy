@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useProgress } from '../context/ProgressContext';
 import { structuredData } from '../services/questionLoader';
@@ -39,6 +39,7 @@ export default function Dashboard() {
   const { isPremium, expiryDate } = useAuth();
   const { progress, resetChapterProgress, resetSubjectProgress } = useProgress();
   const [openSubject, setOpenSubject] = useState(null);
+  const navigate = useNavigate();
 
   // Overall Stats
   const totalUsed = progress.used.length;
@@ -60,8 +61,13 @@ export default function Dashboard() {
     }
   };
 
+  const handleLibraryClick = () => {
+    const lastPath = localStorage.getItem('lastOpenedPath');
+    navigate(lastPath || '/');
+  };
+
   return (
-    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans">
+    <div className="min-h-screen bg-slate-50 p-4 md:p-8 font-sans pb-24">
       <div className="max-w-5xl mx-auto">
         <Link to="/" className="inline-flex items-center gap-2 text-slate-500 hover:text-slate-900 mb-6 transition-colors text-sm font-semibold">
           <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" /></svg>
@@ -73,29 +79,35 @@ export default function Dashboard() {
           <p className="text-base text-slate-500 mt-2">Track your MDCAT preparation progress here.</p>
         </header>
 
-        {/* Premium Status */}
+        {/* Premium Status - With Upgrade Button */}
         <div className={`rounded-2xl shadow-sm border p-6 mb-8 ${isPremium ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-          <div className="flex flex-col md:flex-row justify-between items-center">
-            <div>
+          <div className="flex flex-col md:flex-row justify-between items-center gap-4">
+            <div className="text-center md:text-left">
               <h2 className={`text-xl font-bold ${isPremium ? 'text-green-800' : 'text-red-800'}`}>
                 {isPremium ? "⭐ Premium Account Active" : "🔒 Account Expired"}
               </h2>
-              {isPremium ? (
-                <p className="text-slate-600 mt-1 text-sm">Your premium access will expire in:</p>
-              ) : (
-                <p className="text-slate-600 mt-1 text-sm">Your premium access has ended.</p>
-              )}
+              <p className="text-slate-600 mt-1 text-sm">
+                {isPremium ? "Your premium access will expire in:" : "Your premium access has ended."}
+              </p>
             </div>
-            {isPremium ? (
-              <div className="text-center mt-4 md:mt-0 bg-white px-6 py-3 rounded-xl shadow-sm border border-green-100">
-                <span className="text-3xl font-extrabold text-green-600">{daysLeft}</span>
-                <p className="text-xs font-semibold text-slate-500 uppercase tracking-wide">Days Remaining</p>
-              </div>
-            ) : (
-              <Link to="/payment" className="mt-4 md:mt-0 bg-indigo-600 text-white px-6 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors text-sm">
-                Recharge Now
+            
+            <div className="flex items-center gap-4">
+              {isPremium && (
+                <div className="text-center bg-white px-4 py-2 rounded-xl shadow-sm border border-green-100">
+                  <span className="text-2xl font-extrabold text-green-600">{daysLeft}</span>
+                  <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wide">Days Left</p>
+                </div>
+              )}
+              
+              {/* Upgrade / Recharge Button */}
+              <Link 
+                to="/payment" 
+                className="bg-indigo-600 text-white px-5 py-3 rounded-lg font-semibold hover:bg-indigo-700 transition-colors text-sm flex items-center gap-2 shadow-md shadow-indigo-600/20"
+              >
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 10l7-7m0 0l7 7m-7-7v18" /></svg>
+                {isPremium ? "Upgrade Plan" : "Recharge Now"}
               </Link>
-            )}
+            </div>
           </div>
         </div>
 
@@ -226,6 +238,27 @@ export default function Dashboard() {
         </div>
 
       </div>
+
+      {/* Fixed Bottom Navigation */}
+      <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-100 flex justify-around py-3 px-5 rounded-t-2xl shadow-2xl z-50">
+        <Link to="/" className="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+          <span className="text-[10px] mt-1 font-medium">Home</span>
+        </Link>
+        <button onClick={handleLibraryClick} className="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" /></svg>
+          <span className="text-[10px] mt-1 font-medium">Library</span>
+        </button>
+        <Link to="/dashboard" className="flex flex-col items-center text-indigo-600">
+          <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M2 11a1 1 0 011-1h2a1 1 0 011 1v5a1 1 0 01-1 1H3a1 1 0 01-1-1v-5zM8 7a1 1 0 011-1h2a1 1 0 011 1v9a1 1 0 01-1 1H9a1 1 0 01-1-1V7zM14 4a1 1 0 011-1h2a1 1 0 011 1v12a1 1 0 01-1 1h-2a1 1 0 01-1-1V4z" /></svg>
+          <span className="text-[10px] mt-1 font-bold">Stats</span>
+        </Link>
+        <Link to="/profile" className="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition-colors">
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
+          <span className="text-[10px] mt-1 font-medium">Profile</span>
+        </Link>
+      </div>
+
     </div>
   );
 }
