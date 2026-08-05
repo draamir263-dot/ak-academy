@@ -1,116 +1,74 @@
-// questionLoader.js — DO NOT CHANGE (folder-based grouping)
-// This file groups MCQs by FOLDER name for navigation.
-// The filtering by JSON fields (chapter, subject, difficulty) happens
-// downstream in TestBuilder.jsx and TestEngine.jsx.
+const textFiles = import.meta.glob('../data/**/*.json', { eager: true });
 
-const questionFiles = import.meta.glob('/src/data/**/*.json', { eager: true });
-
-function formatName(name) {
-  return name
-    .replace(/[-_]/g, ' ')
-    .replace(/\b\w/g, (c) => c.toUpperCase())
-    .trim();
-}
-
-function inferCategory(q) {
-  if (!q) return 'General';
-  const text = `${q.question || ''} ${q.optionA || ''} ${q.optionB || ''}`.toLowerCase();
-  if (text.includes('cell') || text.includes('gene') || text.includes('dna') || text.includes('enzyme') || text.includes('protein') || text.includes('biology')) return 'Biology';
-  if (text.includes('atom') || text.includes('mole') || text.includes('reaction') || text.includes('chemistry') || text.includes('bond')) return 'Chemistry';
-  if (text.includes('force') || text.includes('velocity') || text.includes('energy') || text.includes('physics') || text.includes('wave')) return 'Physics';
-  if (text.includes('grammar') || text.includes('vocabulary') || text.includes('english')) return 'English';
-  if (text.includes('logical') || text.includes('reasoning') || text.includes('syllogism')) return 'Logical Reasoning';
-  return 'General';
-}
-
-const structuredData = [];
+let allQuestions = [];
 const subjectsMap = {};
 
-for (const filePath of Object.keys(questionFiles)) {
-  const fileModule = questionFiles[filePath];
-  const fileData = fileModule.default || fileModule;
+// --- SMART AUTO-CATEGORIZATION (last-resort fallback only) ---
+// Runs ONLY when a question has NO explicit subject field in its JSON.
+function inferCategory(q) {
+  if (q.category) return q.category;
+  const summary = (q.summary || "").toLowerCase();
+  
+  if (summary.includes("english")) return "English";
+  if (summary.includes("logical") || summary.includes("reasoning") || summary.includes("syllogism")) return "Logical Reasoning";
+  
+  // Check Physics
+  const physKeywords = ["physics", "mechanics", "kinematics", "circular motion", "projectile", "gravitation", "wave", "sound", "optics", "thermodynamics", "electrostatics", "electricity", "electromagnet", "nuclear", "fluid", "oscillation", "work and energy", "electronics", "circuit", "vector", "force", "momentum", "torque", "angular", "magnetic", "charge", "voltage", "current", "resistance", "capacitor", "inductance", "transformer", "diode", "semi", "photoelectric", "photon", "velocity", "acceleration", "newton", "coulomb", "faraday", "lenz", "ohm", "watt", "joule", "electron volt", "half-life", "radioactive", "fission", "fusion", "binding energy", "atomic physics", "modern physics", "power"];
+  if (physKeywords.some(kw => summary.includes(kw))) return "Physics";
 
-  // Extract folder structure from path
-  // e.g., /src/data/Biology/Genetics/mcqs.json
-  //   subjectFolder = Biology, chapterFolder = Genetics
-  const parts = filePath.replace('/src/data/', '').replace('.json', '').split('/');
+  // Check Chemistry
+  const chemKeywords = ["chemistry", "chemical", "vsepr", "atomic structure", "periodic", "stoichio", "thermochem", "electrochem", "organic", "inorganic", "nomenclature", "polymer", "kinetics", "equilibrium", "solution", "gas laws", "acids and bases", "bonding", "intermolecular", "liquid", "solid state", "oxidation", "reduction", "redox", "mole", "catalyst", "reagent", "functional group", "alkene", "alkyne", "alkane", "benzene", "aromatic", "spectroscop", "chromatography", "buffer", "solubility", "enthalpy", "entropy", "orbital", "quantum", "proton", "neutron", "isotope", "hybridization", "dipole", "polar", "hydrogen bond", "van der waals", "viscosity", "surface tension", "boiling point", "crystal", "isomerism", "carbocation", "carbanion", "radical", "ester", "ether", "alcohol", "phenol", "aldehyde", "ketone", "carboxylic", "amine", "amide", "lipid", "carbohydrate", "protein", "nucleic acid", "dna", "rna", "atp", "enzyme", "vitamin", "hormone", "drug", "poison", "pollut", "environment", "industrial", "fertilizer", "acid rain", "greenhouse", "ozone", "metal", "non-metal", "transition", "alkali", "halogen", "noble gas", "alloy", "corrosion", "rust", "electroplating", "battery", "electrolyte", "anode", "cathode", "salt", "hydrate", "molarity", "molality", "titration", "neutralization", "ph", "hydrolysis", "ligand", "coordination", "chelate", "rate", "order", "activation energy", "collision theory", "arrhenius", "half life", "carbon dating", "mole", "empirical", "structural", "substitution", "addition", "elimination", "hydrolysis", "hydration", "dehydration", "hydrogenation", "halogenation", "nitration", "grignard", "aldol", "ozonolysis", "periodic table", "ionization", "electronegativity", "atomic radius", "flame test", "phosphorus", "sulfur", "nitrogen", "carbon", "oxygen", "hydrogen", "helium", "lithium", "beryllium", "boron", "fluorine", "neon", "sodium", "magnesium", "aluminium", "silicon", "chlorine", "argon", "potassium", "calcium", "scandium", "titanium", "vanadium", "chromium", "manganese", "iron", "cobalt", "nickel", "copper", "zinc", "gallium", "germanium", "arsenic", "selenium", "bromine", "krypton", "rubidium", "strontium", "yttrium", "zirconium", "niobium", "molybdenum", "technetium", "ruthenium", "rhodium", "palladium", "silver", "cadmium", "indium", "tin", "antimony", "tellurium", "iodine", "xenon", "caesium", "barium", "lanthanum", "cerium", "praseodymium", "neodymium", "promethium", "samarium", "europium", "gadolinium", "terbium", "dysprosium", "holmium", "erbium", "thulium", "ytterbium", "lutetium", "hafnium", "tantalum", "tungsten", "rhenium", "osmium", "iridium", "platinum", "gold", "mercury", "thallium", "lead", "bismuth", "polonium", "astatine", "radon", "francium", "radium", "actinium", "thorium", "protactinium", "uranium", "neptunium", "plutonium", "americium", "curium", "berkelium", "californium", "einsteinium", "fermium", "mendelevium", "nobelium", "lawrencium", "rutherfordium", "dubnium", "seaborgium", "bohrium", "hassium", "meitnerium", "darmstadtium", "roentgenium", "copernicium", "nihonium", "flerovium", "moscovium", "livermorium", "tennessine", "oganesson"];
+  if (chemKeywords.some(kw => summary.includes(kw))) return "Chemistry";
 
-  let subjectFolder, chapterFolder, explicitSubject;
+  // If none of the above, default to Biology
+  return "Biology";
+}
 
-  if (parts.length === 1) {
-    // File directly in /src/data/filename.json
-    subjectFolder = 'General';
-    chapterFolder = parts[0];
-  } else if (parts.length === 2) {
-    // /src/data/ChapterName/filename.json  OR  /src/data/SubjectName/filename.json
-    // Check if the folder is a known subject
-    const knownSubjects = ['Biology', 'Chemistry', 'Physics', 'English', 'Logical Reasoning',
-      'Mathematics', 'General Knowledge', 'Islamiyat', 'Pakistan Studies'];
-    const folderName = formatName(parts[0]);
-    if (knownSubjects.some(s => folderName.toLowerCase().includes(s.toLowerCase()))) {
-      subjectFolder = folderName;
-      chapterFolder = parts[1];
-    } else {
-      subjectFolder = 'General';
-      chapterFolder = parts[0];
-      explicitSubject = undefined;
-    }
-  } else {
-    // /src/data/SubjectName/ChapterName/filename.json
-    subjectFolder = formatName(parts[0]);
-    chapterFolder = formatName(parts[1]);
-  }
+Object.keys(textFiles).forEach((path) => {
+  const fileData = textFiles[path].default || textFiles[path];
+  if (!Array.isArray(fileData)) return;
 
-  // Get questions array from JSON
-  const questions = Array.isArray(fileData) ? fileData : (fileData.questions || []);
+  const parts = path.split('/');
+  parts.pop(); // removes 'part1.json'
+  const chapterName = parts.pop(); 
+  const dataIndex = parts.indexOf('data');
+  const subjectName = parts[dataIndex + 1] || 'Unknown';
+  const formattedSubject = subjectName.charAt(0).toUpperCase() + subjectName.slice(1);
 
-  if (questions.length === 0) continue;
-
-  const formattedSubject = formatName(subjectFolder);
-  const chapterName = formatName(chapterFolder);
-
-  // Initialize subject if not exists
   if (!subjectsMap[formattedSubject]) {
-    subjectsMap[formattedSubject] = {
-      name: formattedSubject,
-      totalMcqs: 0,
-      chapters: {},
-    };
+    subjectsMap[formattedSubject] = { name: formattedSubject, totalMcqs: 0, chapters: {} };
   }
 
-  // Initialize chapter if not exists
   if (!subjectsMap[formattedSubject].chapters[chapterName]) {
-    subjectsMap[formattedSubject].chapters[chapterName] = {
-      name: chapterName,
-      totalMcqs: 0,
-      questions: [],
-    };
+    subjectsMap[formattedSubject].chapters[chapterName] = { name: chapterName, totalMcqs: 0, questions: [] };
   }
 
-  // Process each question
-  for (const q of questions) {
-    // SAVE JSON's original fields BEFORE overwriting
-    q.originalChapter = q.chapter;   // JSON's "chapter" field (e.g., "Enzymes", "Genetics")
-    q.category = q.subject || inferCategory(q);  // JSON's "subject" field (e.g., "Biology", "Chemistry")
+  fileData.forEach(q => {
+    // IMPORTANT: Save the question's OWN academic subject BEFORE overwriting.
+    // The raw JSON has "subject": "Biology" — we need to preserve this.
+    const explicitSubject = q.subject;
 
-    // Overwrite with folder name for NAVIGATION grouping
-    q.chapter = chapterName;    // Folder name for navigation
-    q.subject = formattedSubject;  // Parent folder for navigation
+    // q.subject gets OVERWRITTEN with the folder name (e.g. "Past-papers")
+    // This is by design — the folder name is used for navigation.
+    q.subject = formattedSubject;
+    q.originalChapter = q.chapter;
+    q.chapter = chapterName;
+
+    // q.category = the REAL academic subject (Biology, Chemistry, etc.)
+    // This is what TestBuilder and TestEngine use for subject-based filtering.
+    // Only falls back to keyword inference if the question JSON had no subject.
+    q.category = (explicitSubject && explicitSubject.toString().trim() !== '')
+      ? explicitSubject
+      : inferCategory(q);
 
     subjectsMap[formattedSubject].chapters[chapterName].questions.push(q);
     subjectsMap[formattedSubject].chapters[chapterName].totalMcqs++;
     subjectsMap[formattedSubject].totalMcqs++;
-  }
-}
-
-// Convert maps to arrays
-for (const subjectKey of Object.keys(subjectsMap)) {
-  const subject = subjectsMap[subjectKey];
-  structuredData.push({
-    name: subject.name,
-    totalMcqs: subject.totalMcqs,
-    chapters: Object.values(subject.chapters),
+    allQuestions.push(q);
   });
-}
+});
 
-export { structuredData };
+export const structuredData = Object.values(subjectsMap).map(subject => ({
+  ...subject,
+  chapters: Object.values(subject.chapters)
+}));
