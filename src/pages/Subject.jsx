@@ -1,4 +1,4 @@
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useState, useEffect } from 'react';
 import { structuredData } from '../services/questionLoader';
 import { useAuth } from '../context/AuthContext';
@@ -36,6 +36,7 @@ const CircularProgress = ({ percentage, isLocked }) => {
 
 export default function Subject() {
   const { subjectName } = useParams();
+  const navigate = useNavigate(); // Added useNavigate for Library button
   const { currentUser, isPremium } = useAuth();
   const { progress } = useProgress();
   const [searchQuery, setSearchQuery] = useState('');
@@ -104,6 +105,11 @@ export default function Subject() {
     if (!chapter.questions || chapter.questions.length === 0) return 0;
     const solved = chapter.questions.filter(q => used.includes(q.id)).length;
     return Math.round((solved / chapter.questions.length) * 100);
+  };
+
+  const handleLibraryClick = () => {
+    const lastPath = localStorage.getItem('lastOpenedPath');
+    navigate(lastPath || '/');
   };
 
   return (
@@ -216,22 +222,22 @@ export default function Subject() {
 
       {/* Fixed Bottom Navigation */}
       <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-100 flex justify-around py-3 px-5 rounded-t-2xl shadow-2xl z-50">
-        <Link to="/" className="flex flex-col items-center text-slate-400">
+        <Link to="/" className="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition-colors">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
           <span className="text-[10px] mt-1 font-medium">Home</span>
         </Link>
-        <button className="flex flex-col items-center text-indigo-600">
+        <button onClick={handleLibraryClick} className="flex flex-col items-center text-indigo-600">
           <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M9 4.804A7.968 7.968 0 005.5 4c-1.255 0-2.443.29-3.5.804v10A7.969 7.969 0 015.5 14c1.669 0 3.218.51 4.5 1.385A7.962 7.962 0 0114.5 14c1.255 0 2.443.29 3.5.804v-10A7.968 7.968 0 0014.5 4c-1.255 0-2.443.29-3.5.804V12a1 1 0 11-2 0V4.804z" /></svg>
           <span className="text-[10px] mt-1 font-bold">Library</span>
         </button>
-        <Link to="/dashboard" className="flex flex-col items-center text-slate-400">
+        <Link to="/dashboard" className="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition-colors">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
           <span className="text-[10px] mt-1 font-medium">Stats</span>
         </Link>
-        <button className="flex flex-col items-center text-slate-400">
+        <Link to="/profile" className="flex flex-col items-center text-slate-400 hover:text-indigo-600 transition-colors">
           <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
           <span className="text-[10px] mt-1 font-medium">Profile</span>
-        </button>
+        </Link>
       </div>
 
     </div>
