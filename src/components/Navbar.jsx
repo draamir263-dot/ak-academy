@@ -3,24 +3,21 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
 export default function Navbar() {
-  const { currentUser, user, isPremium, expiryDate, logout } = useAuth();
+  const { currentUser, isPremium, expiryDate, logout } = useAuth();
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
   const [isAdmin, setIsAdmin] = useState(false);
   const menuRef = useRef(null);
-  const profileRef = useRef(null);
 
   const handleLogout = async () => {
     await logout();
     setShowMenu(false);
-    setShowProfile(false);
     navigate('/', { replace: true });
   };
 
   const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)) : 0;
   const userName = currentUser?.email ? currentUser.email.split('@')[0] : 'Account';
-  const canUpgrade = user?.currentPlan && user.currentPlan !== '1_year' && user.currentPlan !== 'none';
+  const canUpgrade = currentUser?.currentPlan && currentUser.currentPlan !== '1_year' && currentUser.currentPlan !== 'none';
 
   useEffect(() => {
     if (currentUser) {
@@ -35,9 +32,6 @@ export default function Navbar() {
       if (menuRef.current && !menuRef.current.contains(e.target) && !e.target.closest('.hamburger-btn')) {
         setShowMenu(false);
       }
-      if (profileRef.current && !profileRef.current.contains(e.target) && !e.target.closest('.profile-btn')) {
-        setShowProfile(false);
-      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
@@ -45,7 +39,6 @@ export default function Navbar() {
 
   useEffect(() => {
     setShowMenu(false);
-    setShowProfile(false);
   }, [navigate]);
 
   return (
@@ -59,7 +52,6 @@ export default function Navbar() {
           </Link>
 
           <div className="flex items-center space-x-2">
-
             {isAdmin && (
               <Link 
                 to="/admin" 
@@ -69,17 +61,7 @@ export default function Navbar() {
               </Link>
             )}
 
-            {currentUser ? (
-              <button
-                onClick={() => { setShowProfile(!showProfile); setShowMenu(false); }}
-                className="profile-btn bg-blue-800 text-white px-3 py-2 rounded-md text-sm font-semibold hover:bg-blue-700 transition-colors flex items-center gap-2"
-              >
-                <span className="w-6 h-6 bg-white text-blue-900 rounded-full flex items-center justify-center text-xs uppercase">
-                  {userName.charAt(0)}
-                </span>
-                <span className="hidden sm:block capitalize">{userName}</span>
-              </button>
-            ) : (
+            {!currentUser && (
               <Link 
                 to="/login" 
                 className="bg-yellow-400 text-blue-900 px-3 py-2 rounded-md text-sm font-bold hover:bg-yellow-500 transition-colors"
@@ -89,7 +71,7 @@ export default function Navbar() {
             )}
 
             <button
-              onClick={() => { setShowMenu(!showMenu); setShowProfile(false); }}
+              onClick={() => setShowMenu(!showMenu)}
               className="hamburger-btn flex flex-col justify-center items-center w-10 h-10 rounded-md hover:bg-blue-800 transition-colors gap-1.5"
             >
               <span className={`block w-5 h-0.5 bg-white transition-all duration-300 ${showMenu ? 'rotate-45 translate-y-2' : ''}`} />
@@ -141,15 +123,15 @@ export default function Navbar() {
               <div className="border-t border-gray-100" />
               <div className="p-2">
                 <button
-                  onClick={() => { setShowMenu(false); navigate('/dashboard'); }}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-800 hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium w-full"
+                  onClick={() => { setShowMenu(false); navigate('/profile'); }}
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-gray-800 hover:bg-blue-50 hover:text-blue-700 transition-colors font-medium w-full text-left"
                 >
                   <span className="text-lg">👤</span>
                   <span>Profile</span>
                 </button>
                 <button
                   onClick={handleLogout}
-                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors font-medium w-full"
+                  className="flex items-center gap-3 px-4 py-3 rounded-lg text-red-600 hover:bg-red-50 transition-colors font-medium w-full text-left"
                 >
                   <span className="text-lg">🚪</span>
                   <span>Log Out</span>
@@ -174,56 +156,6 @@ export default function Navbar() {
               </div>
             </>
           )}
-        </div>
-      )}
-
-      {showProfile && currentUser && (
-        <div 
-          ref={profileRef}
-          className="absolute right-4 sm:right-8 top-14 w-72 bg-white rounded-xl shadow-2xl border border-gray-100 p-4 z-50"
-          style={{ animation: 'menuSlideIn 0.2s ease-out' }}
-        >
-          <p className="text-xs text-gray-400 font-semibold uppercase">Logged in as</p>
-          <p className="font-bold text-gray-800 mb-4 break-all">{currentUser.email}</p>
-          
-          {isPremium ? (
-            <div className="bg-green-50 border border-green-200 p-3 rounded-lg mb-4 text-center">
-              <p className="text-sm font-bold text-green-700">⭐ Premium Active</p>
-              <p className="text-xs text-gray-500 mt-1">{daysLeft} days remaining</p>
-              {canUpgrade && (
-                <Link 
-                  to="/payment" 
-                  onClick={() => setShowProfile(false)} 
-                  className="block mt-3 bg-blue-600 text-white text-xs font-bold py-2 rounded-md hover:bg-blue-700 transition-colors shadow-sm"
-                >
-                  Upgrade your plan
-                </Link>
-              )}
-            </div>
-          ) : (
-            user?.paymentStatus === 'rejected' ? (
-              <div className="bg-red-50 border border-red-500 p-3 rounded-lg mb-4 text-center">
-                <p className="text-sm font-bold text-red-700">Payment Rejected ❌</p>
-                <p className="text-xs text-gray-700 mt-1 font-medium">Wrong Transaction ID.</p>
-                <Link to="/payment" onClick={() => setShowProfile(false)} className="block mt-2 text-xs text-blue-600 underline font-semibold">
-                  Submit correct ID here
-                </Link>
-              </div>
-            ) : (
-              <div className="bg-red-50 border border-red-200 p-3 rounded-lg mb-4 text-center">
-                <p className="text-sm font-bold text-red-700">Account Expired</p>
-                <Link to="/payment" onClick={() => setShowProfile(false)} className="block mt-1 text-xs text-blue-600 underline font-semibold">
-                  Click here to recharge
-                </Link>
-              </div>
-            )
-          )}
-          <button 
-            onClick={handleLogout}
-            className="w-full bg-red-500 text-white py-2 rounded-md text-sm font-semibold hover:bg-red-600"
-          >
-            Log Out
-          </button>
         </div>
       )}
 
