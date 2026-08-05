@@ -29,7 +29,7 @@ const subjectIcons = {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
       <path d="M4 4c4.5 0 4.5 4.5 8 4.5S15.5 4 20 4" />
       <path d="M4 20c4.5 0 4.5-4.5 8-4.5s3.5 4.5 8 4.5" />
-      <path d="M6.3 6.3l2 2M17.7 6.3l-2 2M6.3 17.7l2-2M17.7 17.7l-2-2" />
+      <path d="M6.3 6.3l2 2M17.7 6.3l-2 2M6.3 17.7l2-2M17.7 17.7l2-2" />
       <path d="M12 9v6" />
     </svg>
   ),
@@ -71,171 +71,177 @@ export default function Home() {
 
   return (
     <PullToRefresh>
-      <div className="min-h-screen bg-slate-50 text-slate-800 pb-24">
+      <div className="min-h-screen bg-slate-50 font-sans pb-24">
         
-        {/* Top Header Section */}
-        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 px-5 pt-8 pb-12 rounded-b-[2rem] text-white relative overflow-hidden shadow-lg">
+        {/* Header Section */}
+        <div className="bg-gradient-to-br from-indigo-600 to-purple-700 px-5 pt-10 pb-20 rounded-b-[2.5rem] text-white relative overflow-hidden shadow-xl">
+          {/* Decorative Blurred Circles */}
           <div className="absolute top-0 right-0 w-48 h-48 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
-          <div className="absolute bottom-0 left-0 w-32 h-32 bg-white opacity-10 rounded-full -ml-12 -mb-12"></div>
+          <div className="absolute bottom-10 left-0 w-32 h-32 bg-white opacity-10 rounded-full -ml-12 -mb-12"></div>
           
-          <div className="relative z-10 flex justify-between items-start">
-            <div>
-              <p className="text-indigo-200 text-sm font-medium">Good Evening,</p>
-              <h1 className="text-2xl font-bold mt-1">Aamir 👋</h1>
+          <div className="relative z-10">
+            <div className="flex justify-between items-center mb-5">
+              <div>
+                <p className="text-indigo-200 text-sm font-medium">Good Evening,</p>
+                <h1 className="text-2xl font-bold tracking-tight">Aamir 👋</h1>
+              </div>
+              <button className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 relative">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-indigo-600"></span>
+              </button>
             </div>
-            <div className="w-10 h-10 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center border border-white/30">
-              <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-            </div>
-          </div>
 
-          {/* Quranic Verse Box */}
-          <div className="relative z-10 mt-5 bg-white/15 backdrop-blur-md border border-white/20 p-4 rounded-2xl">
-            <p 
-              className="text-lg font-bold text-right mb-1" 
-              style={{ fontFamily: 'serif', direction: 'rtl', color: '#ffe9a8' }}
-            >
-              {randomVerse.arabic}
-            </p>
-            <p className="text-xs italic text-indigo-100">
-              "{randomVerse.english}"
-            </p>
-          </div>
-        </div>
-
-        {/* Stats Grid - Overlapping the header slightly */}
-        <div className="px-5 -mt-8">
-          <div className="grid grid-cols-4 gap-2 bg-white p-3 rounded-2xl shadow-lg border border-slate-100">
-            <div className="flex flex-col items-center">
-              <div className="text-orange-500 text-xl font-bold flex items-center gap-1">
-                🔥 <span className="text-slate-800 text-lg">25</span>
-              </div>
-              <p className="text-[10px] text-slate-500 font-medium mt-1 text-center">Day Streak</p>
-            </div>
-            <div className="flex flex-col items-center border-l border-slate-100">
-              <div className="text-green-500 text-xl font-bold flex items-center gap-1">
-                🎯 <span className="text-slate-800 text-lg">86%</span>
-              </div>
-              <p className="text-[10px] text-slate-500 font-medium mt-1 text-center">Accuracy</p>
-            </div>
-            <div className="flex flex-col items-center border-l border-slate-100">
-              <div className="text-blue-500 text-xl font-bold flex items-center gap-1">
-                📝 <span className="text-slate-800 text-lg">15k</span>
-              </div>
-              <p className="text-[10px] text-slate-500 font-medium mt-1 text-center">MCQs Solved</p>
-            </div>
-            <div className="flex flex-col items-center border-l border-slate-100">
-              <div className="text-purple-500 text-xl font-bold flex items-center gap-1">
-                ⏱️ <span className="text-slate-800 text-lg">120</span>
-              </div>
-              <p className="text-[10px] text-slate-500 font-medium mt-1 text-center">Study Hrs</p>
+            {/* Quranic Verse Section */}
+            <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl">
+              <p 
+                className="text-right text-lg font-bold mb-2 leading-relaxed" 
+                style={{ fontFamily: 'serif', direction: 'rtl', color: '#ffe9a8' }}
+              >
+                {randomVerse.arabic}
+              </p>
+              <p className="text-xs italic text-indigo-100 opacity-90">
+                "{randomVerse.english}"
+              </p>
             </div>
           </div>
         </div>
 
-        {/* Daily Goal Section */}
+        {/* Floating Stats Card */}
+        <div className="px-5 -mt-12 relative z-20">
+          <div className="bg-white p-4 rounded-2xl shadow-lg grid grid-cols-4 gap-2 border border-slate-100">
+            <div className="flex flex-col items-center text-center">
+              <span className="text-xl">🔥</span>
+              <p className="text-lg font-extrabold text-slate-800 mt-1">25</p>
+              <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5 leading-tight">Day Streak</p>
+            </div>
+            <div className="flex flex-col items-center text-center border-l border-slate-100">
+              <span className="text-xl">🎯</span>
+              <p className="text-lg font-extrabold text-slate-800 mt-1">86%</p>
+              <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5 leading-tight">Accuracy</p>
+            </div>
+            <div className="flex flex-col items-center text-center border-l border-slate-100">
+              <span className="text-xl">📝</span>
+              <p className="text-lg font-extrabold text-slate-800 mt-1">15,420</p>
+              <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5 leading-tight">MCQs Solved</p>
+            </div>
+            <div className="flex flex-col items-center text-center border-l border-slate-100">
+              <span className="text-xl">⏱️</span>
+              <p className="text-lg font-extrabold text-slate-800 mt-1">120</p>
+              <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5 leading-tight">Study Hrs</p>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
         <div className="px-5 mt-6">
-          <div className="flex justify-between items-center mb-3">
-            <h2 className="font-bold text-slate-800">Daily Goal</h2>
-            <span className="text-xs font-semibold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">34 / 50 MCQs</span>
-          </div>
-          <div className="w-full h-3 bg-slate-100 rounded-full overflow-hidden">
-            <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" style={{ width: '68%' }}></div>
-          </div>
-          <p className="text-xs text-slate-500 mt-2">You are doing great! Just 16 MCQs left to achieve your goal.</p>
-        </div>
 
-        {/* Continue Learning Section */}
-        <div className="px-5 mt-8">
-          <h2 className="font-bold text-slate-800 mb-3">Continue Learning</h2>
-          <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-5 rounded-2xl text-white shadow-md flex items-center justify-between">
-            <div className="flex-1">
-              <span className="text-[10px] bg-indigo-500 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Biology</span>
-              <h3 className="text-lg font-bold mt-2">Ch 12: Cell Cycle</h3>
-              <div className="flex items-center gap-2 mt-2 text-xs text-slate-300">
-                <span>18 Questions left</span>
-                <span className="w-1 h-1 bg-slate-500 rounded-full"></span>
-                <span>72% Completed</span>
-              </div>
-              <div className="w-full h-1.5 bg-slate-700 rounded-full mt-2">
-                <div className="h-full bg-indigo-400 rounded-full" style={{ width: '72%' }}></div>
-              </div>
+          {/* Daily Goal */}
+          <div className="mb-6">
+            <div className="flex justify-between items-center mb-2">
+              <h2 className="font-bold text-slate-800 text-base">Daily Goal</h2>
+              <span className="text-xs font-bold text-indigo-600 bg-indigo-50 px-3 py-1 rounded-full">34 / 50 MCQs</span>
             </div>
-            <Link to="/subject/Biology" className="ml-4 w-12 h-12 flex items-center justify-center bg-white text-indigo-600 rounded-full shadow-lg hover:scale-110 transition-transform">
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" /><path strokeLinecap="round" strokeLinejoin="round" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-            </Link>
+            <div className="w-full h-3 bg-slate-200 rounded-full overflow-hidden">
+              <div className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full" style={{ width: '68%' }}></div>
+            </div>
+            <p className="text-xs text-slate-500 mt-2">You're doing great! Just 16 MCQs left to hit your target.</p>
           </div>
-        </div>
 
-        {/* Subjects Grid */}
-        <div className="px-5 mt-8">
-          <h2 className="font-bold text-slate-800 mb-3">Subjects</h2>
-          <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
-            {structuredData && structuredData.length > 0 ? (
-              structuredData.map((subject) => {
-                // Dynamic color classes for icons based on subject
-                const colors = {
-                  "Biology": "bg-green-100 text-green-600",
-                  "Chemistry": "bg-orange-100 text-orange-600",
-                  "Physics": "bg-blue-100 text-blue-600",
-                  "English": "bg-purple-100 text-purple-600",
-                  "Logical": "bg-pink-100 text-pink-600",
-                  "Past Papers": "bg-slate-100 text-slate-600"
-                };
-                const iconColor = colors[subject.name] || "bg-indigo-100 text-indigo-600";
+          {/* Continue Learning */}
+          <div className="mb-6">
+            <h2 className="font-bold text-slate-800 text-base mb-3">Continue Learning</h2>
+            <div className="bg-gradient-to-r from-slate-800 to-slate-900 p-5 rounded-2xl text-white shadow-lg flex items-center justify-between">
+              <div className="flex-1">
+                <span className="text-[10px] bg-indigo-500 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Biology</span>
+                <h3 className="text-lg font-bold mt-2">Ch 12: Cell Cycle</h3>
+                <div className="flex items-center gap-2 mt-1 text-xs text-slate-400">
+                  <span>18 Questions left</span>
+                  <span className="w-1 h-1 bg-slate-500 rounded-full"></span>
+                  <span>72% Completed</span>
+                </div>
+                <div className="w-full h-1.5 bg-slate-700 rounded-full mt-3">
+                  <div className="h-full bg-indigo-500 rounded-full" style={{ width: '72%' }}></div>
+                </div>
+              </div>
+              <Link to="/subject/Biology" className="ml-4 w-12 h-12 flex items-center justify-center bg-white text-indigo-600 rounded-full shadow-md hover:scale-110 transition-transform">
+                <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                  <path d="M6.3 2.841A1.5 1.5 0 004 4.11V15.89a1.5 1.5 0 002.3 1.269l9.344-5.89a1.5 1.5 0 000-2.538L6.3 2.84z" />
+                </svg>
+              </Link>
+            </div>
+          </div>
 
-                return (
-                  <div 
-                    key={subject.name} 
-                    className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center hover:shadow-md transition-shadow"
-                  >
-                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${iconColor}`}>
-                      <div className="w-6 h-6">{subjectIcons[subject.name] || fallbackIcon}</div>
-                    </div>
-                    <h3 className="font-bold text-slate-800 text-sm mb-1">{subject.name}</h3>
-                    
-                    <div className="flex justify-around w-full mt-2 py-2 border-t border-slate-100">
-                      <div>
-                        <p className="text-base font-extrabold text-slate-800">{subject.totalMcqs}</p>
-                        <p className="text-[9px] text-slate-400 font-medium uppercase mt-0.5">MCQs</p>
-                      </div>
-                      <div className="w-px bg-slate-100"></div>
-                      <div>
-                        <p className="text-base font-extrabold text-slate-800">{subject.chapters.length}</p>
-                        <p className="text-[9px] text-slate-400 font-medium uppercase mt-0.5">Chapters</p>
-                      </div>
-                    </div>
+          {/* Subjects Grid */}
+          <div className="mb-6">
+            <h2 className="font-bold text-slate-800 text-base mb-3">Subjects</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {structuredData && structuredData.length > 0 ? (
+                structuredData.map((subject) => {
+                  const colors = {
+                    "Biology": "bg-green-100 text-green-600",
+                    "Chemistry": "bg-orange-100 text-orange-600",
+                    "Physics": "bg-blue-100 text-blue-600",
+                    "English": "bg-purple-100 text-purple-600",
+                    "Logical": "bg-pink-100 text-pink-600",
+                    "Past Papers": "bg-slate-100 text-slate-600"
+                  };
+                  const iconColor = colors[subject.name] || "bg-indigo-100 text-indigo-600";
 
-                    <Link 
-                      to={`/subject/${subject.name}`}
-                      className="mt-3 w-full py-2 rounded-lg font-bold text-center text-xs bg-slate-800 text-white hover:bg-slate-900 transition-colors"
+                  return (
+                    <div 
+                      key={subject.name} 
+                      className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col"
                     >
-                      Start Practice
-                    </Link>
-                  </div>
-                );
-              })
-            ) : (
-              <p className="text-slate-500 col-span-full text-center py-10">Loading subjects... If this stays, check your JSON files for errors.</p>
-            )}
+                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${iconColor}`}>
+                        <div className="w-6 h-6">{subjectIcons[subject.name] || fallbackIcon}</div>
+                      </div>
+                      <h3 className="font-bold text-slate-800 text-sm mb-3">{subject.name}</h3>
+                      
+                      <div className="flex justify-between w-full py-2 border-t border-slate-100 text-center">
+                        <div className="flex-1">
+                          <p className="text-base font-extrabold text-slate-800">{subject.totalMcqs}</p>
+                          <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5">MCQs</p>
+                        </div>
+                        <div className="w-px bg-slate-100 mx-1"></div>
+                        <div className="flex-1">
+                          <p className="text-base font-extrabold text-slate-800">{subject.chapters.length}</p>
+                          <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5">Chapters</p>
+                        </div>
+                      </div>
+
+                      <Link 
+                        to={`/subject/${subject.name}`}
+                        className="mt-3 w-full py-2 rounded-lg font-bold text-center text-xs bg-slate-800 text-white hover:bg-slate-900 transition-colors"
+                      >
+                        Start Practice
+                      </Link>
+                    </div>
+                  );
+                })
+              ) : (
+                <p className="text-slate-500 col-span-full text-center py-10">Loading subjects...</p>
+              )}
+            </div>
           </div>
+
+          {/* Bottom Banner */}
+          <div className="mb-2">
+            <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-5 text-center text-white shadow-lg relative overflow-hidden">
+              <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-10 rounded-full -mr-8 -mt-8"></div>
+              <div className="absolute bottom-0 left-0 w-16 h-16 bg-white opacity-10 rounded-full -ml-8 -mb-8"></div>
+              <h3 className="font-bold text-lg relative z-10">Make MDCAT on your Fingerprint</h3>
+              <p className="text-indigo-100 text-xs mt-1 relative z-10">Consistency is the key to success. Keep going!</p>
+            </div>
+          </div>
+
         </div>
 
-        {/* Bottom Banner */}
-        <div className="px-5 mt-8">
-          <div className="bg-indigo-600 rounded-2xl p-5 text-center text-white shadow-md relative overflow-hidden">
-            <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-10 rounded-full -mr-8 -mt-8"></div>
-            <h3 className="font-bold text-lg relative z-10">Make MDCAT on your Fingerprint</h3>
-            <p className="text-indigo-100 text-xs mt-1 relative z-10">Consistency is the key to success. Keep going!</p>
-          </div>
-        </div>
-
-        {/* Bottom Navigation Mockup */}
-        {/* Note: Remove this if you have a global navbar layout */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-100 flex justify-around py-3 px-5 max-w-md mx-auto rounded-t-2xl shadow-2xl">
+        {/* Fixed Bottom Navigation */}
+        <div className="fixed bottom-0 left-0 right-0 max-w-md mx-auto bg-white border-t border-slate-100 flex justify-around py-3 px-5 rounded-t-2xl shadow-2xl z-50">
           <button className="flex flex-col items-center text-indigo-600">
-            <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" /></svg>
+            <svg className="w-6 h-6" fill="currentColor" viewBox="0 0 20 20"><path d="M10.707 2.293a1 1 0 00-1.414 0l-7 7a1 1 0 001.414 1.414L4 10.414V17a1 1 0 001 1h2a1 1 0 001-1v-2a1 1 0 011-1h2a1 1 0 011 1v2a1 1 0 001 1h2a1 1 0 001-1v-6.586l.293.293a1 1 0 001.414-1.414l-7-7z" /></svg>
             <span className="text-[10px] mt-1 font-bold">Home</span>
           </button>
           <button className="flex flex-col items-center text-slate-400">
