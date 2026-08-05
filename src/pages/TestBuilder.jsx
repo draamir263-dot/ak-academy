@@ -77,6 +77,7 @@ export default function TestBuilder() {
   const [numQuestions, setNumQuestions] = useState(10);
   const [filter, setFilter] = useState('Mixed');
   const [timerMode, setTimerMode] = useState('Practice');
+  const [timerMinutes, setTimerMinutes] = useState(15); // Added state for custom time
   const [paperSubject, setPaperSubject] = useState('All'); 
   const [difficulty, setDifficulty] = useState('All');
   const [chapterFilter, setChapterFilter] = useState('All Chapters');
@@ -166,6 +167,15 @@ export default function TestBuilder() {
     else { setNumQuestions(Math.min(Math.max(1, num), maxQuestions)); }
   };
 
+  // Added handler for custom time input
+  const handleCustomTimeChange = (e) => {
+    const val = e.target.value;
+    if (val === '') { setTimerMinutes(''); return; }
+    const num = parseInt(val, 10);
+    if (isNaN(num)) { setTimerMinutes(''); }
+    else { setTimerMinutes(Math.max(1, num)); } // Minimum 1 minute
+  };
+
   const startTest = () => {
     if (maxQuestions === 0 || !numQuestions || numQuestions < 1) return;
 
@@ -179,7 +189,9 @@ export default function TestBuilder() {
         filter,
         paperSubject,
         difficulty,
-        selectedOriginalChapters: selectedChapters
+        selectedOriginalChapters: selectedChapters,
+        timerMode,
+        timerMinutes: timerMode === 'Timed' ? timerMinutes : null // Pass custom time if Timed
       }
     });
   };
@@ -251,10 +263,11 @@ export default function TestBuilder() {
         </Link>
         
         <header className="mb-8 text-center">
-          <h1 className="text-3xl md:text-5xl font-extrabold tracking-tight aurora-title">{chapter.name}</h1>
+          <h1 className="text-4xl md:text-5xl font-extrabold tracking-tight aurora-title">MedLife</h1>
           <p className="text-sm md:text-lg font-semibold italic mt-2" style={{ color: '#ffe9a8' }}>
-            ✦ {chapter.questions?.length || 0} Total MCQs in Chapter ✦
+            ✦ Build Your Perfect Test ✦
           </p>
+          <p className="text-xs text-indigo-200 mt-2 opacity-80">{chapter.name}</p>
         </header>
 
         <div className="aurora-card rounded-2xl p-6 sm:p-8 space-y-8">
@@ -384,14 +397,30 @@ export default function TestBuilder() {
               >Timed Mode</button>
             </div>
             {timerMode === 'Timed' && (
-              <select className="aurora-input w-full p-2.5 rounded-lg focus:outline-none">
-                <option value="15">15 Minutes</option>
-                <option value="30">30 Minutes</option>
-                <option value="45">45 Minutes</option>
-                <option value="60">60 Minutes</option>
-                <option value="90">90 Minutes</option>
-                <option value="120">120 Minutes</option>
-              </select>
+              <div className="mt-4 flex flex-col sm:flex-row sm:items-center gap-4">
+                <div className="flex items-center">
+                  <input 
+                    type="number" min="1" max="300" value={timerMinutes}
+                    onChange={handleCustomTimeChange}
+                    className="aurora-input w-24 p-2 rounded-lg focus:outline-none font-bold text-center"
+                    placeholder="Min"
+                  />
+                  <span className="ml-2 text-sm" style={{ color: '#eee9ff', opacity: 0.8 }}>Minutes (Custom)</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {[15, 30, 60, 90].map(min => (
+                    <button 
+                      key={min}
+                      onClick={() => setTimerMinutes(min)}
+                      className={`px-3 py-2 rounded-lg text-sm font-semibold transition-colors ${
+                        timerMinutes === min ? 'aurora-chip-active' : 'aurora-chip'
+                      }`}
+                    >
+                      {min} min
+                    </button>
+                  ))}
+                </div>
+              </div>
             )}
           </div>
 
