@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { structuredData } from '../services/questionLoader';
 import { useProgress } from '../context/ProgressContext';
-import { useAuth } from '../context/AuthContext'; // Added to get user info
+import { useAuth } from '../context/AuthContext';
 import PullToRefresh from '../components/PullToRefresh';
 
 // 10 Motivational Quranic Verses about Hard Work & Knowledge
@@ -70,12 +70,11 @@ const fallbackIcon = (
 
 export default function Home() {
   const [showAll, setShowAll] = useState(false);
-  const [showProfile, setShowProfile] = useState(false);
   const [isEditingGoal, setIsEditingGoal] = useState(false);
   const [goalInput, setGoalInput] = useState(50);
   
   const { progress } = useProgress();
-  const { user, currentUser, isPremium, expiryDate, logout } = useAuth();
+  const { user } = useAuth();
   const navigate = useNavigate();
   const randomVerse = quranVerses[Math.floor(Math.random() * quranVerses.length)];
 
@@ -83,22 +82,20 @@ export default function Home() {
     streak: 0,
     studyHours: 0,
     dailyGoalTarget: 50,
-    dailyGoalCurrent: 0, // Mocking with total used for now
+    dailyGoalCurrent: 0,
   });
 
-  // Fetch Stats & Streak from localStorage
   useEffect(() => {
     const today = new Date().toDateString();
     const lastActive = localStorage.getItem('lastActiveDate');
     let currentStreak = parseInt(localStorage.getItem('streak') || '0');
 
-    // Streak Logic
     if (lastActive !== today) {
       const yesterday = new Date(Date.now() - 86400000).toDateString();
       if (lastActive === yesterday) {
         currentStreak += 1;
       } else if (lastActive !== yesterday) {
-        currentStreak = 1; // Reset streak
+        currentStreak = 1;
       }
       localStorage.setItem('lastActiveDate', today);
       localStorage.setItem('streak', currentStreak);
@@ -120,7 +117,7 @@ export default function Home() {
   const dailyGoalPercentage = stats.dailyGoalTarget > 0 ? (stats.dailyGoalCurrent / stats.dailyGoalTarget) * 100 : 0;
 
   const saveDailyGoal = () => {
-    const newTarget = Math.max(1, Math.min(500, goalInput)); // Clamp between 1 and 500
+    const newTarget = Math.max(1, Math.min(500, goalInput));
     const savedStats = JSON.parse(localStorage.getItem('user_stats')) || {};
     savedStats.dailyGoalTarget = newTarget;
     localStorage.setItem('user_stats', JSON.stringify(savedStats));
@@ -128,7 +125,6 @@ export default function Home() {
     setIsEditingGoal(false);
   };
 
-  // Find Continue Learning
   const findContinueLearning = () => {
     for (const subject of structuredData) {
       for (const chapter of subject.chapters) {
@@ -145,19 +141,11 @@ export default function Home() {
   const continueLearning = findContinueLearning();
 
   const visibleSubjects = showAll ? structuredData : structuredData.slice(0, 6);
-  const daysLeft = expiryDate ? Math.ceil((expiryDate - new Date()) / (1000 * 60 * 60 * 24)) : 0;
   const userName = user?.email ? user.email.split('@')[0] : 'Student';
 
-  // Handle Library Click (Last Opened)
   const handleLibraryClick = () => {
     const lastPath = localStorage.getItem('lastOpenedPath');
     navigate(lastPath || '/');
-  };
-
-  const handleLogout = async () => {
-    await logout();
-    setShowProfile(false);
-    navigate('/');
   };
 
   return (
@@ -175,14 +163,14 @@ export default function Home() {
                 <p className="text-indigo-200 text-sm font-medium">Good Evening,</p>
                 <h1 className="text-2xl font-bold tracking-tight capitalize">{userName} 👋</h1>
               </div>
-              <button onClick={() => setShowProfile(true)} className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 relative">
+              {/* Profile Link triggers navigation to separate page */}
+              <Link to="/profile" className="w-10 h-10 bg-white/20 backdrop-blur-sm rounded-full flex items-center justify-center border border-white/30 relative">
                 <span className="w-6 h-6 bg-white text-indigo-600 rounded-full flex items-center justify-center text-xs font-bold uppercase">
                   {userName.charAt(0)}
                 </span>
-              </button>
+              </Link>
             </div>
 
-            {/* Quranic Verse Section */}
             <div className="bg-white/10 backdrop-blur-md border border-white/20 p-4 rounded-2xl">
               <p className="text-right text-lg font-bold mb-2 leading-relaxed" style={{ fontFamily: 'serif', direction: 'rtl', color: '#ffe9a8' }}>
                 {randomVerse.arabic}
@@ -218,9 +206,7 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Main Content */}
         <div className="px-5 mt-6">
-
           {/* Daily Goal (Editable) */}
           <div className="mb-6">
             <div className="flex justify-between items-center mb-2">
@@ -357,50 +343,12 @@ export default function Home() {
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" /></svg>
             <span className="text-[10px] mt-1 font-medium">Stats</span>
           </Link>
-          <button onClick={() => setShowProfile(true)} className="flex flex-col items-center text-slate-400">
+          {/* Profile Link triggers navigation to separate page */}
+          <Link to="/profile" className="flex flex-col items-center text-slate-400">
             <svg className="w-6 h-6" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>
             <span className="text-[10px] mt-1 font-medium">Profile</span>
-          </button>
+          </Link>
         </div>
-
-        {/* Profile Bottom Sheet Modal */}
-        {showProfile && (
-          <div className="fixed inset-0 z-[100] flex items-end justify-center" onClick={() => setShowProfile(false)}>
-            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm"></div>
-            <div className="relative bg-white w-full max-w-md rounded-t-3xl p-6 shadow-2xl transition-transform transform translate-y-0" onClick={(e) => e.stopPropagation()}>
-              <div className="w-12 h-1.5 bg-slate-200 rounded-full mx-auto mb-6"></div>
-              
-              <div className="flex flex-col items-center text-center mb-6">
-                <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center text-3xl font-bold text-indigo-600 mb-3 uppercase">
-                  {userName.charAt(0)}
-                </div>
-                <h2 className="text-xl font-bold text-slate-800 capitalize">{userName}</h2>
-                <p className="text-sm text-slate-500">{user?.email}</p>
-              </div>
-
-              {/* Premium Status Card */}
-              <div className={`rounded-2xl border p-4 mb-6 ${isPremium ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <h3 className={`font-bold ${isPremium ? 'text-green-800' : 'text-red-800'}`}>
-                      {isPremium ? "⭐ Premium Active" : "🔒 Account Expired"}
-                    </h3>
-                    {isPremium && <p className="text-xs text-gray-500 mt-1">{daysLeft} days remaining</p>}
-                  </div>
-                  {isPremium ? (
-                     <Link to="/payment" onClick={() => setShowProfile(false)} className="text-xs font-bold text-indigo-600 bg-white px-3 py-2 rounded-lg border border-indigo-100">Upgrade</Link>
-                  ) : (
-                     <Link to="/payment" onClick={() => setShowProfile(false)} className="text-xs font-bold text-white bg-red-500 px-3 py-2 rounded-lg">Recharge</Link>
-                  )}
-                </div>
-              </div>
-
-              <button onClick={handleLogout} className="w-full bg-slate-800 text-white py-3 rounded-xl font-semibold hover:bg-slate-900 transition-colors">
-                Log Out
-              </button>
-            </div>
-          </div>
-        )}
 
       </div>
     </PullToRefresh>
