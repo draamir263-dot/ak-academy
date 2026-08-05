@@ -12,6 +12,7 @@ import Payment from './pages/Payment';
 import Admin from './pages/Admin';
 import Navbar from './components/Navbar';
 import About from './pages/About';
+import Profile from './pages/Profile'; // <-- Added Profile import here
 
 function App() {
   const [isOnline, setIsOnline] = useState(navigator.onLine);
@@ -71,6 +72,7 @@ function App() {
         <Route path="/results" element={<Results />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/about" element={<About />} />
+        <Route path="/profile" element={<Profile />} /> {/* <-- Added Profile route here */}
         <Route path="*" element={<NotFound />} />
       </Routes>
     </div>
