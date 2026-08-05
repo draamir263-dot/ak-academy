@@ -17,7 +17,6 @@ const CircularProgress = ({ percentage, isLocked }) => {
           <circle 
             cx="18" cy="18" r="16" 
             fill="none" 
-            stroke="#3b82f600" // Transparent base, we use stroke-dasharray
             strokeDasharray={c} 
             strokeDashoffset={offset} 
             strokeLinecap="round" 
@@ -38,7 +37,6 @@ export default function Subject() {
   const { subjectName } = useParams();
   const { currentUser, isPremium } = useAuth();
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeTab, setActiveTab] = useState('All');
 
   const subject = structuredData.find(s => s.name === subjectName);
 
@@ -62,8 +60,6 @@ export default function Subject() {
   }
 
   const totalMcqsCount = subject.totalMcqs || subject.chapters.reduce((acc, ch) => acc + (ch.questions?.length || 0), 0);
-  
-  // Mock overall progress calculation
   const overallProgress = 72; 
 
   const sortedChapters = [...subject.chapters].sort((a, b) => {
@@ -74,16 +70,9 @@ export default function Subject() {
     return a.name.localeCompare(b.name, undefined, { numeric: true, sensitivity: 'base' });
   });
 
-  // Filter logic for search and tabs
+  // Filter logic for search only
   const filteredChapters = sortedChapters.filter(chapter => {
-    const matchesSearch = chapter.name.toLowerCase().includes(searchQuery.toLowerCase());
-    if (!matchesSearch) return false;
-    
-    if (activeTab === 'All') return true;
-    if (activeTab === '11th') return chapter.name.toLowerCase().includes('11') || chapter.name.toLowerCase().includes('xi');
-    if (activeTab === '12th') return chapter.name.toLowerCase().includes('12') || chapter.name.toLowerCase().includes('xii');
-    
-    return true;
+    return chapter.name.toLowerCase().includes(searchQuery.toLowerCase());
   });
 
   // Helper to generate a mock stable progress percentage for UI display
@@ -138,11 +127,10 @@ export default function Subject() {
         </div>
       </div>
 
-      {/* Search and Tabs */}
+      {/* Search Bar Floating Card */}
       <div className="px-5 -mt-8 relative z-20">
         <div className="bg-white p-4 rounded-2xl shadow-lg border border-slate-100">
-          {/* Search Bar */}
-          <div className="relative mb-4">
+          <div className="relative">
             <svg className="w-5 h-5 text-slate-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
             <input 
               type="text" 
@@ -151,28 +139,6 @@ export default function Subject() {
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-700 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:bg-white transition-all"
             />
-          </div>
-
-          {/* Category Tabs */}
-          <div className="flex gap-2 overflow-x-auto pb-1">
-            <button 
-              onClick={() => setActiveTab('All')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${activeTab === 'All' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500'}`}
-            >
-              All Chapters
-            </button>
-            <button 
-              onClick={() => setActiveTab('11th')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${activeTab === '11th' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500'}`}
-            >
-              11th Class
-            </button>
-            <button 
-              onClick={() => setActiveTab('12th')}
-              className={`px-4 py-1.5 rounded-lg text-xs font-bold whitespace-nowrap transition-colors ${activeTab === '12th' ? 'bg-slate-800 text-white' : 'bg-slate-100 text-slate-500'}`}
-            >
-              12th Class
-            </button>
           </div>
         </div>
       </div>

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { structuredData } from '../services/questionLoader';
 import PullToRefresh from '../components/PullToRefresh';
@@ -66,8 +67,11 @@ const fallbackIcon = (
 );
 
 export default function Home() {
-  // Pick a random verse on every app refresh
+  const [showAll, setShowAll] = useState(false);
   const randomVerse = quranVerses[Math.floor(Math.random() * quranVerses.length)];
+
+  // Show only 6 subjects initially, or all if showAll is true
+  const visibleSubjects = showAll ? structuredData : structuredData.slice(0, 6);
 
   return (
     <PullToRefresh>
@@ -75,7 +79,6 @@ export default function Home() {
         
         {/* Header Section */}
         <div className="bg-gradient-to-br from-indigo-600 to-purple-700 px-5 pt-10 pb-20 rounded-b-[2.5rem] text-white relative overflow-hidden shadow-xl">
-          {/* Decorative Blurred Circles */}
           <div className="absolute top-0 right-0 w-48 h-48 bg-white opacity-10 rounded-full -mr-16 -mt-16"></div>
           <div className="absolute bottom-10 left-0 w-32 h-32 bg-white opacity-10 rounded-full -ml-12 -mb-12"></div>
           
@@ -174,11 +177,11 @@ export default function Home() {
           </div>
 
           {/* Subjects Grid */}
-          <div className="mb-6">
+          <div className="mb-2">
             <h2 className="font-bold text-slate-800 text-base mb-3">Subjects</h2>
-            <div className="grid grid-cols-2 gap-4">
-              {structuredData && structuredData.length > 0 ? (
-                structuredData.map((subject) => {
+            <div className="grid grid-cols-3 gap-3">
+              {visibleSubjects && visibleSubjects.length > 0 ? (
+                visibleSubjects.map((subject) => {
                   const colors = {
                     "Biology": "bg-green-100 text-green-600",
                     "Chemistry": "bg-orange-100 text-orange-600",
@@ -192,30 +195,30 @@ export default function Home() {
                   return (
                     <div 
                       key={subject.name} 
-                      className="bg-white p-4 rounded-2xl shadow-sm border border-slate-100 flex flex-col"
+                      className="bg-white p-3 rounded-2xl shadow-sm border border-slate-100 flex flex-col items-center text-center hover:shadow-md transition-shadow"
                     >
-                      <div className={`w-12 h-12 rounded-xl flex items-center justify-center mb-3 ${iconColor}`}>
-                        <div className="w-6 h-6">{subjectIcons[subject.name] || fallbackIcon}</div>
+                      <div className={`w-10 h-10 rounded-xl flex items-center justify-center mb-2 ${iconColor}`}>
+                        <div className="w-5 h-5">{subjectIcons[subject.name] || fallbackIcon}</div>
                       </div>
-                      <h3 className="font-bold text-slate-800 text-sm mb-3">{subject.name}</h3>
+                      <h3 className="font-bold text-slate-800 text-xs mb-2 leading-tight">{subject.name}</h3>
                       
-                      <div className="flex justify-between w-full py-2 border-t border-slate-100 text-center">
+                      <div className="flex justify-between w-full py-1.5 border-t border-slate-100 text-center">
                         <div className="flex-1">
-                          <p className="text-base font-extrabold text-slate-800">{subject.totalMcqs}</p>
-                          <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5">MCQs</p>
+                          <p className="text-xs font-extrabold text-slate-800">{subject.totalMcqs}</p>
+                          <p className="text-[8px] text-slate-400 font-semibold uppercase mt-0.5">MCQs</p>
                         </div>
                         <div className="w-px bg-slate-100 mx-1"></div>
                         <div className="flex-1">
-                          <p className="text-base font-extrabold text-slate-800">{subject.chapters.length}</p>
-                          <p className="text-[9px] text-slate-400 font-semibold uppercase mt-0.5">Chapters</p>
+                          <p className="text-xs font-extrabold text-slate-800">{subject.chapters.length}</p>
+                          <p className="text-[8px] text-slate-400 font-semibold uppercase mt-0.5">Chapters</p>
                         </div>
                       </div>
 
                       <Link 
                         to={`/subject/${subject.name}`}
-                        className="mt-3 w-full py-2 rounded-lg font-bold text-center text-xs bg-slate-800 text-white hover:bg-slate-900 transition-colors"
+                        className="mt-2 w-full py-1.5 rounded-lg font-bold text-center text-[10px] bg-slate-800 text-white hover:bg-slate-900 transition-colors"
                       >
-                        Start Practice
+                        Start
                       </Link>
                     </div>
                   );
@@ -224,10 +227,20 @@ export default function Home() {
                 <p className="text-slate-500 col-span-full text-center py-10">Loading subjects...</p>
               )}
             </div>
+
+            {/* Show All / Show Less Button */}
+            {structuredData && structuredData.length > 6 && (
+              <button 
+                onClick={() => setShowAll(!showAll)}
+                className="mt-4 w-full text-center text-sm font-bold text-indigo-600 bg-indigo-50 py-2.5 rounded-xl hover:bg-indigo-100 transition-colors"
+              >
+                {showAll ? 'Show Less' : 'Show All'}
+              </button>
+            )}
           </div>
 
           {/* Bottom Banner */}
-          <div className="mb-2">
+          <div className="mt-8">
             <div className="bg-gradient-to-r from-indigo-600 to-purple-600 rounded-2xl p-5 text-center text-white shadow-lg relative overflow-hidden">
               <div className="absolute top-0 right-0 w-24 h-24 bg-white opacity-10 rounded-full -mr-8 -mt-8"></div>
               <div className="absolute bottom-0 left-0 w-16 h-16 bg-white opacity-10 rounded-full -ml-8 -mb-8"></div>
