@@ -51,7 +51,7 @@ export default function TestEngine() {
   const { subjectName, chapterName, numQuestions } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
-  const { progress, recordAnswer } = useProgress(); // Removed toggleFavourite/isFavourite as per request
+  const { progress, recordAnswer, toggleFavourite, isFavourite } = useProgress();
 
   const filter = location.state?.filter || 'Mixed';
   const paperSubject = location.state?.paperSubject || 'All';
@@ -222,18 +222,36 @@ export default function TestEngine() {
             {chapterName}
           </h1>
           
-          {/* Small Question Counter */}
-          <div className="text-xs font-bold text-slate-500 bg-slate-100 px-2.5 py-1.5 rounded-lg flex-shrink-0">
-            {currentIndex + 1} / {testQuestions.length}
+          {/* Right Side Actions: Favorite & End Test */}
+          <div className="flex items-center gap-3 flex-shrink-0">
+            <button 
+              onClick={() => toggleFavourite(currentQuestion.id)} 
+              className={`${isFavourite(currentQuestion.id) ? 'text-yellow-500' : 'text-slate-300 hover:text-yellow-400'} transition-colors`}
+              title="Mark as Favorite"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill={isFavourite(currentQuestion.id) ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path></svg>
+            </button>
+            
+            <button 
+              onClick={handleEndTest}
+              className="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-red-100 transition-colors border border-red-100"
+            >
+              End Test
+            </button>
           </div>
         </div>
         
-        {/* Slim Progress Bar */}
-        <div className="w-full bg-slate-100 h-1.5">
-          <div 
-            className="bg-indigo-600 h-1.5 rounded-r-full transition-all duration-300" 
-            style={{ width: `${((currentIndex + 1) / testQuestions.length) * 100}%` }}
-          ></div>
+        {/* Progress Bar & Counter (Small to save space) */}
+        <div className="max-w-3xl mx-auto px-4 pb-2 flex items-center gap-3">
+          <span className="text-xs font-bold text-slate-500 whitespace-nowrap">
+            {currentIndex + 1} / {testQuestions.length}
+          </span>
+          <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+            <div 
+              className="bg-indigo-600 h-1.5 rounded-full transition-all duration-300" 
+              style={{ width: `${((currentIndex + 1) / testQuestions.length) * 100}%` }}
+            ></div>
+          </div>
         </div>
       </div>
 
@@ -347,16 +365,6 @@ export default function TestEngine() {
               <svg className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
             </button>
           )}
-        </div>
-
-        {/* End Test Button (Separate) */}
-        <div className="text-center mt-4 mb-8">
-          <button 
-            onClick={handleEndTest}
-            className="text-xs font-semibold text-slate-400 hover:text-red-500 transition-colors"
-          >
-            End Test & View Results
-          </button>
         </div>
 
       </div>
